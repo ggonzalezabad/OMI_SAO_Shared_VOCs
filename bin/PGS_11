@@ -1,0 +1,13 @@
+PGSTK,PGSCUC,11
+93696,PGSCUC_E_CANT_GET_FILE_ID,NULL,No matching filepath to input fileid
+93697,PGSCUC_E_CANT_OPEN_INPUT_FILE,NULL,Cant open input file
+93698,PGSCUC_E_AGG_CANT_BE_INSERTED,NULL,Base node, aggregate cannot be formed
+93699,PGSCUC_E_READLABEL_PARSE_ERROR,NULL,Pointer to aggregate label parsing error
+93700,PGSCUC_E_PARAMETER_INVALID,NULL,Parameter not found within input file
+93701,PGSCUC_E_FIRST_NODE_NOT_FOUND,NULL,Parameter node not found
+93702,PGSCUC_E__ERROR,NULL,CUC runtime error
+93703,PGSCUC_E_COULDNT_INIT_UDUNITS3,NULL,Couldnt initialise Data file
+93704,PGSCUC_E_DONT_KNOW_INP_UNIT,NULL,Input unit is not known
+93705,PGSCUC_E_DONT_KNOW_OUTP_UNIT,NULL,Output unit is not known
+93706,PGSCUC_E_UNITS_ARE_INCOMPATIBLE,NULL,No conversion between units
+91147,PGSCUC_E_A_UNIT_IS_CORRUPTED,NULL,A unit in the data file is corrupted

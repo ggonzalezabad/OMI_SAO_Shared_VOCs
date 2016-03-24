@@ -1,0 +1,56 @@
+PGSTK,PGSAA,10
+82432,PGSAA_S_NEWFILE,NULL,need to open new file
+85505,PGSAA_E_SUPPORTFILE,NULL,support or format files inaccessible
+85506,PGSAA_E_CHECK_CALL,NULL,an error in mapping parm from suppSupport list file
+85507,PGSAA_E_PARMSNOTFOUND,NULL,parameter(s) not found in the support support file
+85508,PGSAA_E_DATARATEUNSET,NULL,dataRate attribute unset in support file
+85509,PGSAA_E_PARMSFROMANYFILES,NULL,parameters requested from more than one physical file
+85510,PGSAA_E_INVALIDNOPARMS,NULL,no of parms incorrect
+85511,PGSAA_E_BADSUPPSUPPORT,NULL,tool support file is corrupted or incomplete
+85512,PGSAA_E_CANTFINDFILE,NULL,format or input data file inaccessible
+85513,PGSAA_E_FFERROR,NULL,a freeform error has occured
+85514,PGSAA_E_FFDBIN,NULL,failure in Freeform make_dbin function
+85515,PGSAA_E_FFDBSET,NULL,failure in Freeform db_set function
+85516,PGSAA_E_FFDBEVENTS,NULL,failure in Freeform db_events function
+85517,PGSAA_E_MALLOC,NULL,failure to malloc
+85518,PGSAA_E_CANT_PARSE_FILE,NULL,cant parse data file
+85519,PGSAA_E_PEV_ERROR,NULL,an error has occured in the PeV tool
+85520,PGSAA_E_PEV_XS_SUPPFILES,NULL,too many PeV files open, increase MAXFILES
+85521,PGSAA_E_CANT_GET_VALUE,NULL,unable to extract value from dbin
+85522,PGSAA_E_CANT_GET_FILE,NULL,error obtaining file name
+85523,PGSAA_E_GETDBIN,NULL,error in PeV tool obtaining dbin
+85524,PGSAA_E_CANT_GET_FILE_ID,NULL,cant map from pevlogical to filename
+85525,PGSAA_E_CANT_OPEN_INPUT_FILE,NULL,cant open file to create ODL tree
+85526,PGSAA_E_AGG_CANT_BE_INSERTED,NULL,cant insert a new aggregate into the tree
+85527,PGSAA_E_READLABEL_PARSE_ERROR,NULL,Pointer to aggregate label parsing error
+85528,PGSAA_E_PARAMETER_INVALID,NULL,Parameter not found within input file
+85529,PGSAA_E_FIRST_NODE_NOT_FOUND,NULL,Parameter node not found
+85530,PGSAA_E_PEVA_ERROR,NULL,an error has occurred in the PeVarray Tool
+85531,PGSAA_E_GETSUPP,NULL,an error was detected while extracting support data
+85532,PGSAA_E_POSITION_CALC_FAILURE,NULL,the position in the parmBuffer of the requested values was miscalculated
+85533,PGSAA_E_TWOD_READ_ERROR,NULL,function failure to read parameter values from buffer
+85534,PGSAA_E_EXTRACTORESULTSERROR,NULL,failure to transfer selected values from parmBuffer to results
+85535,PGSAA_E_THREED_READ_ERROR,NULL,function failure to read parameter values from buffer
+85536,PGSAA_E_OUTOFRANGE,NULL,input values out of data set range
+85537,PGSAA_E_NPOINTSINVALID,NULL,nPOints argument out of range
+85538,PGSAA_E_GEOERROR,NULL,error in GEO extraction
+85539,PGSAA_E_AUTOOPERATION,NULL,error in executing autoOperation
+85540,PGSAA_E_AUTOOPERATIONUNSET,NULL,no autOperation found in support file
+85541,PGSAA_E_OPERATION,NULL,error in executing operation
+85542,PGSAA_E_OPERATIONUNSET,NULL,operation not set by user
+85543,PGSAA_E_GEOTOSTRUCT,NULL,failure in calculation of structure from lat/lon
+85544,PGSAA_E_DCW_ERROR,NULL,DCW error
+85033,PGSAA_W_DCW_NODATA,NULL,No data found in data base
+85546,PGSAA_E_CANT_FIND_PARM,NULL,Parm input from user cannot be found in dbase
+85547,PGSAA_E_CANT_GET_POINT_INFO,NULL,Cant extract point information
+85548,PGSAA_E_CANT_GET_DATABASE_PATH,NULL,Location of data base information not found
+85549,PGSAA_E_CANT_GET_AFT_PATH,NULL,Cant get path to Area Feature Table
+85550,PGSAA_E_NPARMSINVALID,NULL,Number of parameters for input invalid
+85551,PGSAA_E_CANT_FIND_FACE,NULL,Cannot find location in any data base faces
+85552,PGSAA_E_TILE_STATUS,NULL,could not establish tile status of the DEM file
+85553,PGSAA_E_2DGEO,NULL,error returned from PGS_AA_2Dgeo
+85554,PGSAA_E_SUPPORTID,NULL,could not establish support file id
+85555,PGSAA_E_MINMAX,NULL,could not establish min/max range for the DEM
+85556,PGSAA_E_DATATYPE,NULL,could not establish parameter datatype
+85557,PGSAA_E_UNKNOWN_DATATYPE,NULL,DEM datafile datatype is unknown
+85046,PGSAA_W_MISSING_POINTS,NULL,Some points were not located in the DEM

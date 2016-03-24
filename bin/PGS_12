@@ -1,0 +1,35 @@
+PGSTK,PGSGCT,12
+101888,PGSGCT_E_NO_DATA_FILES,NULL,Unable to find data files for State Plane
+101889,PGSGCT_E_GCTP_ERROR,NULL,Error has occurred in the GCTP library
+101890,PGSGCT_E_BAD_INC_ANGLE,NULL,Inclination angle of the satellite should be between 0 and PI
+101891,PGSGCT_E_BAD_RADIUS,NULL,Semi major axis value should be greater than zero
+101892,PGSGCT_E_BAD_MINOR_AXIS,NULL,Semi minor axis value should be greater than zero
+101893,PGSGCT_E_MINOR_GT_MAJOR,NULL,Semi major axis greater than Semi minor axis
+101894,PGSGCT_E_BAD_LONGITUDE,NULL,Longitude value should range between -PI to PI
+101895,PGSGCT_E_BAD_LATITUDE,NULL,Latitude value should range between -PI/2 to PI/2
+101896,PGSGCT_E_INVD_SPCS_SPHEROID,NULL,Invalid SPCS Spheroid (only CLARK66 or GRS80_WGS84)
+101897,PGSGCT_E_BAD_ZONE,NULL,UTM zone value should only be between -60 to 60
+101898,PGSGCT_E_BAD_DIRECTION,NULL,Direction should either be forward or inverse
+101899,PGSGCT_E_INVD_PROJECTION,NULL,The given projection does not exist
+101900,PGSGCT_E_NO_POINTS,NULL,Number of points should be greater tahn or equal to one
+101389,PGSGCT_W_INTP_REGION,NULL,interrupted region encountered for some of the input points
+101902,PGSGCT_E_STD_PARALLEL,NULL,Equal latitudes for St. Parallels on opposite sides of equator
+101903,PGSGCT_E_ITER_EXCEEDED,NULL,Too many iterations in inverse
+101904,PGSGCT_E_POINT_PROJECT,NULL,Point projects into a circle of radius 2 * PI * radius_major
+101905,PGSGCT_E_INPUT_DATA_ERROR,NULL,Input data error
+101906,PGSGCT_E_STD_PARALLEL_OPP,NULL,Standard Parallels on opposite sides of equator
+101907,PGSGCT_E_INFINITE,NULL,Point projects into infinity
+101908,PGSGCT_E_ITER_FAILED,NULL,Iteration failed to converge
+101909,PGSGCT_E_PROJECT_FAILED,NULL,Point cannot be projected
+101910,PGSGCT_E_POINTS_ON_POLES,NULL,Transformation cannot be computed at the poles
+101911,PGSGCT_E_ITER_SOM,NULL,50 iterations without conv
+101912,PGSGCT_E_SPCS_ZONE,NULL,Illegal zone for the given spheroid
+101913,PGSGCT_E_SPCS_FILE,NULL,Error opening State Plane parameter file
+101914,PGSGCT_E_CONV_ERROR,NULL,Convergence Error
+101915,PGSGCT_E_LAT_15,NULL,Latitude failed to converge after 15 iterations
+101916,PGSGCT_E_LAT_CONVERGE,NULL,Lattitude failed to converge
+101917,PGSGCT_E_ISIN_ERROR,NULL,Bad parameter
+101918,PGSGCT_E_DMS_ERROR,NULL,Illegal DMS field
+101919,PGSGCT_E_INVERSE_FAILED,NULL,Error in inversing equations--mapping x,y to lat/long
+101920,PGSGCT_E_NO_RMAJORRMINOR,NULL,Semi major axis value or Semi minor axis value should be defined
+101921,PGSGCT_E_INVALID_SWITCH,NULL,Switch for setting or getting Major and Minor should be defined

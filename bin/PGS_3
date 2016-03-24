@@ -1,0 +1,25 @@
+PGSTK,PGSTD,3
+26112,PGSTD_M_ASCII_TIME_FMT_B,NULL,the time string passed in is in proper CCSDS ASCII Time Format B
+26113,PGSTD_M_LEAP_SEC_IGNORED,NULL,the input time string seconds field has been reduced from 60 to 59
+26114,PGSTD_M_TIME_TRUNCATED,NULL,the input time has been truncated to match the resolution of the output time format
+27651,PGSTD_W_DATA_FILE_MISSING,NULL,an open file call failed
+27652,PGSTD_W_JD_OUT_OF_RANGE,NULL,input julian day out of range for tabulated corrections
+27653,PGSTD_W_PRED_LEAPS,NULL,predicted value of TAI-UTC used (actual value unavailable)
+27654,PGSTD_W_BAD_SC_TIME,NULL,one or more spacecraft times in the input array (other than the 1st) could not be deciphered
+28167,PGSTD_E_BAD_P_FIELD,NULL,the first 9 bits of the P-field (which are constant for EOS PM) differ from the expected state
+28168,PGSTD_E_DATE_OUT_OF_RANGE,NULL,the input time is outside the range of allowable values for the spacecraft clock
+28169,PGSTD_E_MICSEC_TOO_BIG,NULL,microsecond field too large, should be < 1000
+28170,PGSTD_E_MILSEC_TOO_BIG,NULL,millisecond field too large, should be < 86401000
+28171,PGSTD_E_NO_LEAP_SECS,NULL,no leap second correction available
+28172,PGSTD_E_SC_TAG_UNKNOWN,NULL,spacecraft tag is unknown or not currently supported
+28173,PGSTD_E_TIME_FMT_ERROR,NULL,error in ascii time string format (generic format: YYYY-MM-DDThh:mm:ss.ddddddZ)
+28174,PGSTD_E_TIME_VALUE_ERROR,NULL,error in ascii time string value (e.g. hours > 23)
+28175,PGSTD_E_UNIX_ERROR,NULL,some sort of unix error occured
+28176,PGSTD_E_NO_UT1_VALUE,NULL,no UT1 value available
+28177,PGSTD_E_BAD_2ND_HDR_FLAG,NULL,the secondary header ID flag (one bit value) is set to 1 (should be set to 0)
+28178,PGSTD_E_BAD_INITIAL_TIME,NULL,the initial spacecraft time in the input array cannot be deciphered
+28179,PGSTD_E_BAD_ARRAY_SIZE,NULL,incorrect array size (e.g. negative) specified
+28180,PGSTD_E_SECONDS_TOO_BIG,NULL,seconds field to large, should be < 86401
+28181,PGSTD_E_UTCF_UNINITIALIZED,NULL,the TRMM UTCF value has not been initialized
+28182,PGSTD_E_TMDF_UNINITIALIZED,NULL,the ADEOS-II TMDF values (period, s/c reference and ground reference) have not been initialized
+26135,PGSTD_M_HEADER_UPDATED,NULL,the leap seconds file header was updated to show USNO listed no new leap second

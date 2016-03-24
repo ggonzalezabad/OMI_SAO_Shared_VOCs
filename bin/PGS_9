@@ -1,0 +1,35 @@
+PGSTK,PGSPC,9
+77312,PGSPC_E_FILE_OPEN_ERROR,NULL,Error opening file:  %s
+77313,PGSPC_E_INVALID_MODE,NULL,Mode value not defined:  %d
+76802,PGSPC_W_NO_FILES_EXIST,NULL,File not found in product group:  %d
+76803,PGSPC_W_NO_CONFIG_VALUE,NULL,No configuration value exists for logical
+77316,PGSPC_E_FILE_READ_ERROR,NULL,Error while reading from Process Control file:  %s
+77317,PGSPC_E_LINE_FORMAT_ERROR,NULL,Incorrect format in line of file:  %s
+77318,PGSPC_E_ENVIRONMENT_ERROR,NULL,Environment variable not set:  %s
+76807,PGSPC_W_NO_DATA_PRESENT,NULL,The data requested is not in the line found.
+77320,PGSPC_E_DATA_ACCESS_ERROR,NULL,Error accessing Process Control Status data.
+76809,PGSPC_W_NO_REFERENCE_FOUND,NULL,No reference was found matching Product ID (%d) and Version number (%d).
+76810,PGSPC_W_NO_CONFIG_FOR_ID,NULL,The Product ID does not contain a configuration value.
+76811,PGSPC_W_NO_FILES_FOR_ID,NULL,The Logical ID (%d) does not contain a physical File Name.
+76812,PGSPC_W_NO_ATTR_FOR_ID,NULL,The reference does not contain an attribute.
+76813,PGSPC_W_TRUNCATED,NULL,The value was truncated.
+76814,PGSPC_W_ATTR_TRUNCATED,NULL,The attribute was truncated due to maxSize being exceeded.
+76815,PGSPC_W_NO_ATTR_MATCH,NULL,No attribute was found that matches the attribute passed in.
+76816,PGSPC_W_INVALID_VERSION,NULL,Version number must be greater than or equal to one (1).
+76817,PGSPC_W_FILE_NOT_ON_DISK,NULL,The file requested to be removed was not on disk:  %s
+77330,PGSPC_E_NULL_DIVPOINTER_SHM,NULL,Division pointer equal to NULL - PCF was invalid at initialization.
+77331,PGSPC_E_INDEX_ERROR_SHM,NULL,Logical ID error from PCF.
+76820,PGSPC_W_NULL_DATA_SHM,NULL,Data field is NULL.
+77333,PGSPC_E_INV_DIVPOINTER_SHM,NULL,Division pointer not pointing to divider symbol.
+77334,PGSPC_E_EXCEEDED_SHM,NULL,Exceeded amount of shared memory requested - write failed.
+77335,PGSPC_E_NO_DEFAULT_LOC,NULL,Default file location not specified.
+77336,PGSPC_E_ENV_NOT_PC,NULL,Environment not defined by Process Control Tools:  %s
+78873,PGSPC_C_PGSINFO_PGE_START,NULL,PGE Processing starting up.
+78874,PGSPC_C_PGSINFO_PGE_STOP,NULL,PGE Processing will NOT be performed.
+78875,PGSPC_C_PGSINFO_TERM_START,NULL,Toolkit Termination Procedure is underway.
+75292,PGSPC_M_TOOLKIT_INIT_PASS,PGSPC_C_PGSINFO_PGE_START,Toolkit Initialization Procedure has succeeded!
+77341,PGSPC_E_TOOLKIT_INIT_FAIL,PGSPC_C_PGSINFO_PGE_STOP,Toolkit Initialization Procedure has failed!
+75294,PGSPC_M_TOOLKIT_TERM_BEGIN,PGSPC_C_PGSINFO_TERM_START,Initialization or PGE Processing has completed.
+77343,PGSPC_E_PCF_UPDATE_FAILED,NULL,PCF Update failed - errno = %d.
+76832,PGSPC_W_PCF_CLEANUP_WARN,NULL,PCF Cleanup warning - errno = %d.
+76833,PGSPC_W_NO_UREF_DATA,NULL,The Product ID contains no Universal Reference.

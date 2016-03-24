@@ -1,0 +1,60 @@
+PGSTK,PGSCSC,4
+35840,PGSCSC_W_JD_OUT_OF_RANGE,NULL,input julian day out of range for tabulated corrections
+35841,PGSCSC_W_DATA_FILE_MISSING,NULL,an open file call failed
+36354,PGSCSC_E_BAD_DIRECTION_FLAG,NULL,the TRUE/FALSE flag has invalid value
+36355,PGSCSC_E_JD_WRONG_EPOCH,NULL,indicates input date not = to J2000 as required
+36356,PGSCSC_E_ZERO_INPUT_VECTOR,NULL,input vector with zero length when direction is required
+36357,PGSCSC_E_BAD_FLAT,NULL,error in flattening value used, flattening must be < 1
+36358,PGSCSC_E_NEG_OR_ZERO_RAD,NULL,radius must be greater than 0.0
+36359,PGSCSC_E_BAD_LAT,NULL,bad value for latitude
+36360,PGSCSC_E_BAD_LON,NULL,bad value for longitude
+35849,PGSCSC_W_PROLATE_BODY,NULL,prolate body assumed
+35850,PGSCSC_W_SPHERE_BODY,NULL,perfectly spherical body assumed
+35851,PGSCSC_W_BELOW_SURFACE,NULL,location is below surface
+36364,PGSCSC_E_BAD_ROT_AXIS_INDEX,NULL,value of rotation axis index invalid
+36365,PGSCSC_E_SC_TAG_UNKNOWN,NULL,unknown/unsupported spacecraft tag
+36366,PGSCSC_E_TRANS_FLAG_ERR,NULL,coordinate system transformation flag not recognized/supported
+36367,PGSCSC_E_INVALID_VECTAG,NULL,invalid tag for vector whose zenith and azimuth are sought
+35856,PGSCSC_W_BELOW_HORIZON,NULL,vector whose zenith angle is sought is below horizon
+36369,PGSCSC_E_LOOK_PT_ALTIT_RANGE,NULL,look point altitude unreasonably low or high
+35858,PGSCSC_W_UNDEFINED_AZIMUTH,NULL,azimuth worthless because ray is at zenith
+35859,PGSCSC_W_SUBTERRANEAN,NULL,below the ground
+35860,PGSCSC_W_TOO_MANY_ITERS,NULL,poor convergence - suggests bad Earth model or bad data
+35861,PGSCSC_W_ZERO_JACOBIAN_DET,NULL,Singularity at N or S pole - or bad data
+35862,PGSCSC_W_DEFAULT_EARTH_MODEL,NULL,Default Earth model used
+35863,PGSCSC_W_MISS_EARTH,NULL,look vector does not intersect Earth
+35864,PGSCSC_W_INSTRUMENT_OFF_BOARD,NULL,user-provided instrument offset exceeds 120 meters
+35865,PGSCSC_W_ZERO_PIXEL_VECTOR,NULL,user-provided pixel unit vector has zero length
+35866,PGSCSC_W_BAD_ACCURACY_FLAG,NULL,Value other than PGS_TRUE or PGS_FALSE detected
+35867,PGSCSC_W_BAD_EPH_FOR_PIXEL,NULL,Bad SC ephemeris values encountered for some pixels
+36380,PGSCSC_E_INACCURATE_UTCPOLE,NULL,status of data should be one of 'f' for final, 'p' for predicted or 'i' for interim
+35869,PGSCSC_W_INTERIM_UT1,NULL,status of data used is interim
+35870,PGSCSC_W_PREDICTED_UT1,NULL,status of data used is predicted
+36383,PGSCSC_E_BAD_QUATERNION,NULL,the input quaternion is invalid, the sum of the squares of the components of a quaternion must = 1
+35872,PGSCSC_W_ERRORS_IN_GHA,NULL,error computing Greenwich Hour angle from either getting UTC time, Julian date, polar motion correction, or GMST time
+35873,PGSCSC_W_ERROR_IN_DAYNIGHT,NULL,an error occurred in computing at least one after dark value
+35874,PGSCSC_W_BAD_TRANSFORM_VALUE,NULL,an error occurred in at least one of the transformations
+36387,PGSCSC_E_INVALID_LIMITTAG,NULL,invalid sun zenith limit tag
+36388,PGSCSC_E_BAD_ARRAY_SIZE,NULL,incorrect array size
+35877,PGSCSC_W_INVALID_ALTITUDE,NULL,invalid altitude - probably indicates bad input data
+35878,PGSCSC_W_LARGE_FLATTENING,NULL,flattening should be about 1/300 for Earth
+35879,PGSCSC_W_ERROR_IN_SUBSATPT,NULL,an error occurred in computing at least one subsatellite point value
+35880,PGSCSC_W_NO_REFRACTION,NULL,unable to perform refraction calculation
+36393,PGSCSC_E_EULER_REP_INVALID,NULL,invalid euler angle representation
+36394,PGSCSC_E_EULER_INDEX_ERROR,NULL,euler angle index is out of range - should be one of 1, 2 or 3
+35883,PGSCSC_W_ACCURACY_SUSPECT,NULL,accuracy of the output is suspect
+36396,PGSCSC_E_QUAT_NOT_FOUND,NULL,the rotation could not be determined
+36397,PGSCSC_E_INVALID_FOV_DATA,NULL,FOV perimeter vectors are invalid
+36398,PGSCSC_E_FOV_TOO_LARGE,NULL,FOV specification outside algorithmic limits
+36399,PGSCSC_E_INVALID_EARTH_PT,NULL,one of the Earth point vectors was zero
+34352,PGSCSC_M_EARTH_BLOCKS_CB,NULL,Earth blocks the celestial body
+34353,PGSCSC_M_EARTH_BLOCKS_FOV,NULL,Earth blocks the FOV
+34354,PGSCSC_M_CHECK_EARTH_BULGE,NULL,check to see if the Earth's bulge occults the CB
+36403,PGSCSC_E_BAD_EARTH_MODEL,NULL,bad Earth model specified (e.g. negative or zero Earth radii or prolate Earth)
+35892,PGSCSC_W_ERROR_IN_EARTHPTFOV,NULL,an error occurred in determining if point was in the FOV for at least one case
+36405,PGSCSC_E_INVALID_ZENITH,NULL,invalid zenith angle specified
+36406,PGSCSC_E_BELOW_SURFACE,NULL,altitude specified is more than 50,000 km below surface of Earth
+36407,PGSCSC_E_ABORT_UTCPOLE_UPDATE,NULL,error condition in updating - see LogStatus file
+35896,PGSCSC_W_ERROR_IN_GRAZINGRAY,NULL,an error occurred in a function called by this one
+35897,PGSCSC_W_HIT_EARTH,NULL,line of sight intended to miss the horizon (i.e. limb sounder) hits Earth
+35898,PGSCSC_W_LOOK_AWAY,NULL,line of sight of instrument points above the horizontal

@@ -1,0 +1,7 @@
+PGSTK,PGSDEM,14
+118272,PGSDEM_E_IMPROPER_TAG,NULL,improper resolution tag or layer...%s
+118273,PGSDEM_E_CANNOT_ACCESS_DATA,NULL,cannot access datasets...%s
+118274,PGSDEM_E_HDFEOS,NULL,problem with accessing HDF-EOS file
+116227,PGSDEM_M_FILLVALUE_INCLUDED,NULL,fill values included in final output
+116228,PGSDEM_M_MULTIPLE_RESOLUTIONS,NULL,data accessed from multiple resolutions
+117765,PGSDEM_W_HDFEOS,NULL,attr. layers_existvalue is not in HDF-EOS file

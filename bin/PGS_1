@@ -1,0 +1,75 @@
+PGSTK,PGSIO,1
+11776,PGSIO_E_FILEMAP,NULL,Attempt to map logical to physical file failed.
+11777,PGSIO_E_GEN_OPEN,NULL,Generic IO - Attempt to open file failed.
+11778,PGSIO_E_GEN_OPENMODE,NULL,Generic IO - Invalid mode for file open.
+11779,PGSIO_E_GEN_FILE_NOEXIST,NULL,File does not exist, or cannot be created.
+11780,PGSIO_E_GEN_NO_TEMP_NAME,NULL,New name could not be generated for this temporary file
+11781,PGSIO_E_GEN_REFERENCE_FAILURE,NULL,File reference could not be achieved
+11782,PGSIO_E_GEN_CREATE_FAILURE,NULL,File creation could not be achieved
+11783,PGSIO_E_GEN_BAD_FILE_DURATION,NULL,An invalid file duration setting was requested
+11272,PGSIO_W_GEN_ACCESS_MODIFIED,NULL,File exists! resetting access mode to PGSd_IO_Gen_Append Update
+11273,PGSIO_W_GEN_DURATION_NOMOD,NULL,Intermediate file duration may not be modified in this access mode
+11274,PGSIO_W_GEN_NEW_FILE,NULL,New file was created eventhough access mode was not explicit write
+11787,PGSIO_E_PARTIAL_NAME,NULL,Generated temporary file name missing key component
+11788,PGSIO_E_GEN_NO_FREE_LUN,NULL,No free logical unit number available to allocate
+11789,PGSIO_E_GEN_ILLEGAL_LUN,NULL,Illegal value for logical unit number: can't deallocate
+11278,PGSIO_W_GEN_UNUSED_LUN,NULL,The LUN marked for deallocation was not allocated
+11279,PGSIO_W_GEN_OLD_FILE,NULL,File exists! Changing access mode from Write to Update
+11792,PGSIO_E_GEN_OPEN_OLD,NULL,Attempt to do FORTRAN Open with STATUS=OLD failed!
+11793,PGSIO_E_GEN_OPEN_NEW,NULL,Attempt to do FORTRAN Open with STATUS=NEW failed!
+11794,PGSIO_E_GEN_OPEN_UNKNOWN,NULL,Attempt to do FORTRAN Open with STATUS=UNKNOWN failed!
+11795,PGSIO_E_GEN_OPEN_RECL,NULL,Illegal value for record length
+11796,PGSIO_E_GEN_FILE_NODEL,NULL,File does not exist, or cannot be deleted
+11285,PGSIO_W_GEN_FILE_NOT_FOUND,NULL,File could not be located on disk
+11798,PGSIO_E_GEN_CLOSE,NULL,Generic IO - Attempt to close file failed.
+11799,PGSIO_E_GEN_BAD_ENVIRONMENT,NULL,Bad default setting detected for I/O path
+11800,PGSIO_E_L0_BAD_BUF_SIZ,NULL,Buffer size must be a positive integer
+11801,PGSIO_E_L0_BAD_SPACECRAFT_TAG,NULL,Illegal spacecraft tag
+11802,PGSIO_E_L0_FSEEK,NULL,Failed to locate requested byte in file
+11803,PGSIO_E_L0_MANAGE_TABLE,NULL,Error accessing internal virtual file table
+11804,PGSIO_E_L0_PHYSICAL_OPEN,NULL,Unable to open physical file
+11805,PGSIO_E_L0_UNEXPECTED_EOF,NULL,Encountered unexpected end-of-file
+11806,PGSIO_E_L0_VIRTUAL_DS_NOT_OPEN,NULL,Virtual data set is not open
+9759,PGSIO_M_L0_HEADER_CHANGED,NULL,New physical file open - file header has changed
+11296,PGSIO_W_L0_PKT_BUF_TRUNCATE,NULL,Insufficient packet buffer size - data truncated
+11297,PGSIO_W_L0_PHYSICAL_CLOSE,NULL,Failed to close physical file
+11810,PGSIO_E_L0_INIT_FILE_TABLE,NULL,Error during read of physical file header for initialization
+11811,PGSIO_E_L0_INVALID_FILE_LOGICAL,NULL,Failed to process this file logical in process control file
+11812,PGSIO_E_L0_MAP_VERSIONS,NULL,Failed to initialize internal physical file table
+11813,PGSIO_E_L0_SEEK_1ST_PACKET,NULL,Can't find 1st packet in dataset
+11302,PGSIO_W_L0_TIME_NOT_FOUND,NULL,Requested start time not found; file pointer position was unchanged
+11815,PGSIO_E_L0_SEEK_PACKET,NULL,Unable to find requested packet
+11816,PGSIO_E_L0_PHYSICAL_NOT_OPEN,NULL,No physical file currently open for this virtual data set
+11817,PGSIO_E_L0_PKT_BUF_OVERFLOW,NULL,Packet buffer too small; no data was read
+11306,PGSIO_W_L0_END_OF_VIRTUAL_DS,NULL,Reached end of the current data set
+11819,PGSIO_E_L0_NEXT_PHYSICAL,NULL,Error opening next physical file in sequence
+11820,PGSIO_E_L0_ILLEGAL_COMMAND,NULL,Specified command code is illegal
+11821,PGSIO_E_L0_ILLEGAL_PACKET_NUM,NULL,Illegal packet number
+11822,PGSIO_E_L0_INDEX_OUT_OF_RANGE,NULL,File table lookup index is out of range
+11823,PGSIO_E_L0_MAX_OPEN_EXCEEDED,NULL,Max no. of open Level 0 data sets exceeded
+11824,PGSIO_E_L0_MEM_ALLOC,NULL,Error occurred during memory allocation
+11825,PGSIO_E_L0_UNUSED_TABLE_ENTRY,NULL,File table lookup index points to unused table entry
+11826,PGSIO_E_L0_VERSION_COUNT,NULL,Unable to read number of file versions from PCF
+11827,PGSIO_E_L0_VERSION_INFO,NULL,Error occurred attempting to get physical file header information
+11828,PGSIO_E_L0_PACKET_NOT_FOUND,NULL,Packet not found in current physical file
+11829,PGSIO_E_L0_TIME_CONVERSION,NULL,Error occurred during time conversion
+11830,PGSIO_E_L0_BAD_FILEINFO,NULL,Error occurred determining file information
+11831,PGSIO_E_L0_BAD_NUM_PKTS,NULL,Illegal number of packets
+11832,PGSIO_E_L0_BAD_APP_ID,NULL,At least 1 packet had a bad Application ID
+11833,PGSIO_E_L0_BAD_FIRST_PKTNUM,NULL,Illegal first packet number
+11834,PGSIO_E_L0_BAD_DATA_LENGTH,NULL,At least 1 packet had a bad data length
+11835,PGSIO_E_L0_BAD_NUM_APP_IDS,NULL,Illegal number of differing Application IDs
+11324,PGSIO_W_L0_HDR_BUF_TRUNCATE,NULL,Insufficient header buffer size - data truncated
+11325,PGSIO_W_L0_FTR_BUF_TRUNCATE,NULL,Insufficient footer buffer size - data truncated
+11326,PGSIO_W_L0_ALL_BUF_TRUNCATE,NULL,Insufficient header buffer AND footer buffer sizes - data truncated
+11327,PGSIO_W_L0_BUFTRUNC_END_DS,NULL,Insufficient packet buffer size - data truncated, reached end of the current data set
+11328,PGSIO_W_L0_BUFTRUNC_HDR_CHG,NULL,Insufficient packet buffer size - data truncated, new physical file open - file header has changed
+11841,PGSIO_E_L0_BUFTRUNC_NXTFILE,NULL,Insufficient packet buffer size - data truncated, error opening next physical file in sequence
+11330,PGSIO_W_L0_HDR_TIME_ORDER,NULL,Time of last packet is earlier than time of first packet in file header
+11843,PGSIO_E_L0_BAD_VAR_HDR_SIZE,NULL,The size of the variable header as indicated in the fixed header is invalid
+11332,PGSIO_W_L0_BAD_PKT_DATA_SIZE,NULL,The total size of the packet data as indicated in the file header is invalid
+11333,PGSIO_W_L0_BAD_PACKET_COUNT,NULL,The total number of packets as indicated in the file header is invalid
+11334,PGSIO_W_L0_BAD_FOOTER_SIZE,NULL,The size of the file footer as indicated in the file header is invalid
+11335,PGSIO_W_L0_ZERO_PACKET_COUNT,NULL,The total number of packets as indicated in the file header is zero
+11336,PGSIO_W_L0_CORRUPT_FILE_HDR,NULL,An error was found in the file header
+11337,PGSIO_W_L0_BITFLIP_IN_MICSEC,NULL,Bit flip problem in the micro second field of packet time

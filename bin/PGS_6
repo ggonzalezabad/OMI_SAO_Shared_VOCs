@@ -1,0 +1,27 @@
+PGSTK,PGSCBP,6
+52736,PGSCBP_E_NO_EPHEMERIS_DATA,NULL,Ephemeris data (file) is unavailable.
+52737,PGSCBP_E_BAD_ARRAY_SIZE,NULL,Invalid arrays size
+52738,PGSCBP_E_BAD_TIME_FORMAT,NULL,Invalid time format
+52739,PGSCBP_E_NO_MEMORY,NULL,Memory allocation failed, array may be to large
+52740,PGSCBP_E_BAD_CB_ID,NULL,Invalid celestian body identifier
+52741,PGSCBP_E_TIME_OUT_OF_RANGE,NULL,There is NO data for time specified.
+52230,PGSCBP_W_EPHEMERIS_ERROR,NULL,Error occured in JPL Ephemeris software function PLEPH
+52743,PGSCBP_E_UNABLE_TO_READ_FILE,NULL,Input file can't be open
+52744,PGSCBP_E_UNABLE_TO_OPEN_FILE,NULL,Output file can't be open
+52233,PGSCBP_W_NOT_HEADER,NULL,Header not found
+52746,PGSCBP_E_INVALID_NCOEFF,NULL,NCOEFF is invalid
+52747,PGSCBP_E_NO_OVERLAP,NULL,Records do not overlap or abut
+52236,PGSCBP_W_NO_RECORD_WRITTEN,NULL,Records not written
+52749,PGSCBP_E_INVALID_CB_ID,NULL,Invalid cb_id
+52750,PGSCBP_E_NO_LIBRATIONS,NULL,No librations
+52751,PGSCBP_E_TARG_EQUAL_CENTER,NULL,Target equal to center
+52752,PGSCBP_E_INVALID_FILE_POS,NULL,File not positioned
+52753,PGSCBP_E_READ_RECORD_ERROR,NULL,Read error record
+52754,PGSCBP_E_INVALID_INT_FLAG,NULL,Invalid flag
+52755,PGSCBP_E_EPOCH_OUT_OF_SPAN,NULL,Ephemeris out of span
+52756,PGSCBP_E_NO_NUTATIONS,NULL,No nutations
+52757,PGSCBP_E_INVALID_BODY,NULL,Invalid requested body
+52758,PGSCBP_E_BAD_INITIAL_TIME,NULL,initial time incorrect
+52247,PGSCBP_W_EARTH_CB_ID,NULL,cbId of Earth
+52248,PGSCBP_W_BAD_CB_VECTOR,NULL,one or more bad vectors for requested times
+52249,PGSCBP_W_ERROR_IN_BODYINFOV,NULL,an error occurred in determining if the CB was in the FOV for at least one case

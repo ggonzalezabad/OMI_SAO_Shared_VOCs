@@ -1,0 +1,7 @@
+PGSTK,PGSTSF,15
+126464,PGSTSF_E_NOT_THREADSAFE,NULL,The toolkit is not built in threadsafe mode.
+126465,PGSTSF_E_MUTEXINIT_FAIL,NULL,The mutex failed to initialize.
+126466,PGSTSF_E_MUTEXLOCK_FAIL,NULL,The mutex failed to lock.
+125955,PGSTSF_W_MUTEXUNLOCK_FAIL,NULL,Unlock operation had a problem.
+126468,PGSTSF_E_KEYCREATE_FAIL,NULL,The key create failed.
+126469,PGSTSF_E_GENERAL_FAILURE,NULL,There was a problem in TSF.

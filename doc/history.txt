@@ -1,0 +1,66 @@
+--------------------------------------------------------------------------------
+history.txt for OMI_SAO_Shared_VOCs
+
+This file shows a summary of changes made for each PGE version:
+
+  (a) What changed in the PGE
+  (b) Why was it changed
+  (c) How the oputput product will be effected by the change
+  (d) The date of the change
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+NOTE: OMI_SAO_Shared_VOCs is not a PGE in itself. It is the shared code
+      directory for the SAO (Smithsonian Astrophysical Observatory) PGEs OMHCHO,
+      OMCHOCHO and OMH2O.
+--------------------------------------------------------------------------------
+
+1.0.6                                                               22 June 2015
+--------------------------------------------------------------------------------
+Modify OMSAO_parameters_module to set up I0 correction for water vapor
+retrievals.
+
+1.0.5                                                                12 May 2015
+--------------------------------------------------------------------------------
+Include option in OMSAO_wfamf_module to output cloud fraction and cloud pressure
+when pge_idx==pge_h2o_idx
+Modify amfdiag flags. Now they correctly represent the use or not of ISCCP
+climatology
+
+1.0.4                                                               02 July 2014
+--------------------------------------------------------------------------------
+Changed he5_output_tools.f90, OMSAO_he5_datafields_module.f90 and
+OMSAO_destriping_module.f90 to add capability to output radiance reference and
+destriping fields in function of the settings of the control file.
+Modified omi_pge_postprocessing.f90 to remove commented out line
+Modified OMSAO_he5_module.f90 to correct typo colunm to column
+Modified omi_pge_fitting_process.f90 to avoid running radiance reference
+calibration if it is not selected
+
+1.0.3                                                               10 June 2014
+--------------------------------------------------------------------------------
+Fixed small bug in OMSAO_slitfunction_module.f90 for array boundary
+Removed array omi_fitspc from subroutines omi_pge_swathline_loop and
+omi_pge_swathline_loop_memory because of a segmentation fault crash when running
+orbits with more than 1700 lines (later in the mission). This array is only nece
+ssary for the diagnostic run if interested in the fitting residuals.
+Removed pixel by pixel correction (for row anomaly pixels) from OMSAO_Reference_
+sector_module since after 2010 there are orbits with different dimensions which
+can cause problems.
+
+1.0.2                                                                28 May 2014
+--------------------------------------------------------------------------------
+Updated OMSAO_wfamf_module to include ISCCP climatology back. Updated file
+OMI_H2OBrOSO2HCHO_GEOS5_2x2p5.he5 to OMI_H2OBrOSO2HCHO_GEOS5_2x2p5_v2.he5 for
+better overpass time matching. File OMI_H2OBrOSO2HCHO_GEOS5_2x2p5.he5 removed
+
+1.0.1                                                              11 April 2014
+--------------------------------------------------------------------------------
+Fix bug in OMSAO_he5_module to avoid PixelArea field in L2 files
+
+1.0.0                                                             22 August 2013
+--------------------------------------------------------------------------------
+First taged version for OMSAO. This version takes as initial point the
+OMI_SAO_Shared v2.0.3. Now it has become the shared code for OMHCHO, OMCHOCHO
+and OMH2O.

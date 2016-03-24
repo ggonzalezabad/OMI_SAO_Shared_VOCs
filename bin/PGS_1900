@@ -1,0 +1,16 @@
+OMI,OMI,1900
+15565312,OMI_S_SUCCESS,NULL,Successful completion
+15568385,OMI_E_FAILURE,NULL,Error occurred
+15568386,OMI_E_FILE_OPEN,NULL,Open file failed
+15568387,OMI_E_SWATH_ATTACH,NULL,Attach swatch failed
+15568388,OMI_E_VALID_RANGE,NULL,Variable out of valid ranges
+15568389,OMI_E_DATA_BLOCK,NULL,NULL pointer to data block storage
+15568390,OMI_E_INPUT,NULL,Error in input data
+15568391,OMI_E_UNKNOWN_INTERP_METHOD,NULL,Undefined interpolation method
+15568392,OMI_E_GENERAL,NULL,General error message
+15567881,OMI_W_GENERAL,NULL,General warning message
+15568394,OMI_E_MEM_ALLOC,NULL,Memory allocation error
+15568395,OMI_E_MEM_REF,NULL,Memory reference error
+15568396,OMI_E_OBJ_CONSTR,NULL,Object construction error
+15568397,OMI_E_HDFEOS,NULL,HDF-EOS failure
+15568398,OMI_E_HDF,NULL,HDF failure

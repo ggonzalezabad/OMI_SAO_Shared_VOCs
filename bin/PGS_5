@@ -1,0 +1,12 @@
+PGSTK,PGSEPH,5
+44544,PGSEPH_E_SIMULATOR_ERROR,NULL,orbit/attitude simulator error
+44033,PGSEPH_W_BAD_EPHEM_VALUE,NULL,one or more of the requested values could not be determined, undetermined values set to 1.0E50
+44546,PGSEPH_E_BAD_ARRAY_SIZE,NULL,incorrect array size (i.e. < 0) specified
+44547,PGSEPH_E_NO_SC_EPHEM_FILE,NULL,error in accessing spacecraft ephemeris and/or attitude file
+44548,PGSEPH_E_BAD_EPHEM_FILE_HDR,NULL,error in file header of spacecraft ephemeris and/or attitude file
+44549,PGSEPH_E_BAD_TIME_ORDER,NULL,bad ordering of input times (start time <= desired time <= stop time)
+44550,PGSEPH_E_NO_DATA_REQUESTED,NULL,no data have been requested (i.e. all data flags set to PGS_FALSE)
+42503,PGSEPH_M_SHORT_ARRAY,NULL,not all elements of input array have been initialized with data
+44040,PGSEPH_W_CORRUPT_METADATA,NULL,one or more ephemeris files have out of order or corrupt metadata
+44041,PGSEPH_W_EPHATT_NUMRECS_DIFFER,NULL,in the given time period number of records for eph is different from number of records for att
+44042,PGSEPH_W_DBLVALUE_METADATA,NULL,for the same orbit from two adjacent eph files the metadata values are slightly different

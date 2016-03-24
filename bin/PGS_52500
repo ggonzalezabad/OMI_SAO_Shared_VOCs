@@ -1,0 +1,99 @@
+OMI,OMSAO,52500
+430083072,OMSAO_W_GETLUN,NULL,WARNING...failed to read LUN from PCF
+430083585,OMSAO_E_GETLUN,NULL,ERROR...failed to read LUN from PCF
+430084098,OMSAO_F_GETLUN,NULL,FATAL ERROR...failed to read LUN from PCF. PGE aborting with exit code 1
+430084099,OMSAO_F_GET_MOLINDEX,NULL,FATAL ERROR...failed to convert molecule ID to index. PGE aborting with exit code 1
+430080516,OMSAO_S_GET_MOLINDEX,NULL,SUCCESS...identified molecule ID for current PGE run
+430084101,OMSAO_F_OPEN_FITCTRL_FILE,NULL,FATAL ERROR...failed to open fitting control file. PGE aborting with exit code 1
+430084102,OMSAO_F_READ_FITCTRL_FILE,NULL,FATAL ERROR...failed during READ from fitting control file. PGE aborting with exit code 1
+430083079,OMSAO_W_CLOSE_FITCTRL_FILE,NULL,WARNING...failed to close fitting control file
+430080520,OMSAO_S_READ_FITCTRL_FILE,NULL,SUCCESS...completed READ from fitting control file
+430084105,OMSAO_F_GET_MOLFITNAME,NULL,FATAL ERROR...failed to convert mol-name to fit-index. PGE aborting with exit code 1
+430083594,OMSAO_E_OPEN_REFSPEC_FILE,NULL,ERROR...failed to open reference spectrum file
+430083595,OMSAO_E_READ_REFSPEC_FILE,NULL,ERROR...failed to READ from reference spectrum file
+430083084,OMSAO_W_CLOSE_REFSPEC_FILE,NULL,WARNING...failed to close reference spectrum file
+430080525,OMSAO_S_READ_REFSPEC_FILE,NULL,SUCCESS...completed READ of all reference spectra
+430083598,OMSAO_E_REFSPEC_MAXPTS,NULL,ERROR...reference spectrum exceeds maximum number of spectral points
+430083087,OMSAO_W_READ_AMFTABLE_NAME,NULL,WARNING...failed to read name of AMF table file from PCF
+430083088,OMSAO_W_OPEN_AMFTABLE_FILE,NULL,WARNING...failed to open AMF table file
+430083089,OMSAO_W_READ_AMFTABLE_FILE,NULL,WARNING...failed during READ from AMF table file
+430083090,OMSAO_W_CLOSE_AMFTABLE_FILE,NULL,WARNING...failed to close AMF table file
+430080531,OMSAO_S_READ_AMFTABLE_FILE,NULL,SUCCESS...completed READ of AMF table file
+430083092,OMSAO_W_AMFTABLE_MEMALLOC,NULL,WARNING...failed to allocate memory for AMF table
+430083605,OMSAO_E_OPEN_RANCIL_FILE,NULL,ERROR...failed to open ancillary file for reading
+430080534,OMSAO_S_OPEN_RANCIL_FILE,NULL,SUCCESS...opened ancillary file for reading
+430083607,OMSAO_E_OPEN_WANCIL_FILE,NULL,ERROR...failed to open ancillary file for writing
+430080536,OMSAO_S_OPEN_WANCIL_FILE,NULL,SUCCESS...openened ancillary file for writing
+430083609,OMSAO_E_OPEN_UANCIL_FILE,NULL,ERROR...unknown action in OPEN of ancillary file
+430083610,OMSAO_E_UACTION_ANCIL_FILE,NULL,ERROR...unknown request to ancillary file
+430083099,OMSAO_W_CLOSE_ANCIL_FILE,NULL,WARNING...failed to close ancillary file
+430080540,OMSAO_S_CLOSE_ANCIL_FILE,NULL,SUCCESS...closed ancillary file
+430084125,OMSAO_F_OPEN_L1B_FILE,NULL,FATAL ERROR...failed to open L1b file. PGE aborting with exit code 1
+430083614,OMSAO_E_READ_L1B_FILE,NULL,ERROR...failed to read from L1b file
+430083103,OMSAO_W_READ_L1B_FILE,NULL,WARNING...failed to read from L1b file
+430083104,OMSAO_W_CLOS_L1B_FILE,NULL,WARNING...failed to close OMI L1B file
+430084129,OMSAO_F_MIXMODE,NULL,FATAL ERROR...unable to handle mixed GLOBAL and SPATIAL ZOOM modes. PGE aborting with exit code 1
+430084130,OMSAO_F_SPAZOOM_PIX,NULL,FATAL ERROR...cross-track pixel out of bounds for spatial zoom mode. PGE aborting with exit code 1
+430084131,OMSAO_F_MEM_ALLOC,NULL,FATAL ERROR...memory allocation failure. PGE aborting with exit code 1
+430083620,OMSAO_E_MEM_DALLOC,NULL,ERROR...memory de-allocation failure
+430083109,OMSAO_W_MEMALLOC,NULL,WARNING...memory allocation failure
+430081062,OMSAO_A_INTERPOL,NULL,ALERT...interpolation failed.
+430083623,OMSAO_E_INTERPOL,NULL,ERROR...interpolation failed
+430083112,OMSAO_W_INTERPOL,NULL,WARNING...interpolation failed
+430083625,OMSAO_E_INTERPOL_REFSPEC,NULL,ERROR...interpolation failed for reference spectum
+430083114,OMSAO_W_INTERPOL_RANGE,NULL,WARNING...interpolation found incomplete wavelength range
+430083627,OMSAO_E_HE5SWOPEN,NULL,ERROR...failed to open HE5 output file
+430084140,OMSAO_F_HE5SWOPEN,NULL,ERROR...failed to open HE5 output file. PGE aborting with exit code 1
+430084141,OMSAO_F_HE5SWCREATE,NULL,FATAL ERROR...failed to create HE5 swath. PGE aborting with exit code 1
+430084142,OMSAO_F_HE5SWDEFDIM,NULL,FATAL ERROR...failed to define HE5 swath dimensions. PGE aborting with exit code 1
+430083631,OMSAO_E_HE5SWDEFFLD,NULL,ERROR...failed to define HE5 swath geo/data fields
+430083632,OMSAO_E_HE5SWATTACH,NULL,ERROR...failed to attach to existing HE5 swath
+430083633,OMSAO_E_HE5SWLOCATE,NULL,ERROR...failed to locate HE5 swath
+430083634,OMSAO_E_HE5SWWRFLD,NULL,ERROR...failed to write to HE5 data field
+430083635,OMSAO_E_HE5SWRDFLD,NULL,ERROR...failed to read from HE5 data field
+430083124,OMSAO_W_HE5SWCLOSE,NULL,WARNING...failed to close HE5 output file
+430083637,OMSAO_E_HE5SWWRATTR,NULL,ERROR...failed to write HE5 swath attribute
+430083126,OMSAO_W_HE5SWRLATTR,NULL,WARNING...failed to write HE5 local attribute
+430083127,OMSAO_W_HE5EHWRGLATT,NULL,WARNING...failed to write HE5 global attribute
+430084152,OMSAO_F_METINIT,NULL,FATAL ERROR...failed to initialize MCF. PGE aborting with exit code 1
+430083641,OMSAO_E_GETATTR,NULL,ERROR...failed to get MetaData Attribute
+430083642,OMSAO_E_METINIT,NULL,ERROR...failed to initialize MCF
+430083643,OMSAO_E_GETREF,NULL,ERROR...failed to get L2 Input Pointer
+430083644,OMSAO_E_MDMISMATCH,NULL,ERROR...mismatch for Metadata value field
+430083645,OMSAO_E_LGIDCOMP,NULL,ERROR...could not compose LocalGranuleID
+430083646,OMSAO_E_MDL2INV,NULL,ERROR...failed to set L2 inventory Metadata
+430083647,OMSAO_E_MDL2ARC,NULL,ERROR...failed to set L2 archived Metadata
+430083648,OMSAO_E_MDINIT,NULL,ERROR...failed to initiate L2 Metadata
+430083137,OMSAO_W_AMDWRT,NULL,WARNING...problems encountered during write of ArchivedMetaData
+430083138,OMSAO_W_CMDWRT,NULL,WARNING...problems encountered during write of CoreMetaData
+430083139,OMSAO_W_MDMISMATCH,NULL,WARNING...mismatch for Metadata value field
+430083140,OMSAO_W_MDL2INV,NULL,WARNING...failed to set L2 inventory Metadata
+430083141,OMSAO_W_MDL2ARC,NULL,WARNING...failed to set L2 archived Metadata
+430083142,OMSAO_W_GETATTR,NULL,WARNING...failed to get MetaData Attribute
+430083143,OMSAO_W_SKIPPIX,NULL,WARNING...unable to process cross-track pixel
+430083144,OMSAO_W_NOPIXEL,NULL,WARNING...no valid cross-track positions to process
+430083657,OMSAO_E_PREFITCOL,NULL,ERROR...failed to access ancillary L2 infomation
+430083658,OMSAO_E_PREFITDIM,NULL,ERROR...dimension mismatch for prefitted columns
+430083147,OMSAO_W_PREFITDIM,NULL,WARNING...dimension mismatch for prefitted columns
+430083148,OMSAO_W_TAI93,NULL,WARNING...failed to compute TAI time at 0z of granule
+430080589,OMSAO_S_PROGRESS,NULL,PGE PROGRESS Message...
+430080590,OMSAO_S_ENDOFRUN,NULL,END_OF_RUN_S...PGE execution completed normally, exit code 0
+430083151,OMSAO_W_ENDOFRUN,NULL,END_OF_RUN_W...PGE execution completed with warnings
+430083664,OMSAO_E_ENDOFRUN,NULL,END_OF_RUN_E...PGE execution completed with errors
+430084177,OMSAO_F_ENDOFRUN,NULL,END_OF_RUN_F...PGE execution terminated abnormally, exit code 1
+430082130,OMSAO_U_ENDOFRUN,NULL,END_OF_RUN_U...PGE execution completed with unknown exit code
+430081107,OMSAO_A_SUBROUTINE,NULL,ALERT...non-zero exit status returned from subroutine
+430083156,OMSAO_W_SUBROUTINE,NULL,WARNING... warning-status returned from subroutine
+430084181,OMSAO_F_XTRMISRAD,NULL,FATAL ERROR...Cross-track position different between L1b radiance granules
+430084182,OMSAO_F_SOLCOM_VS_SOLAVE,NULL,FATAL ERROR...Check control file, both solar composite and solar average set true
+430083671,OMSAO_E_OPEN_SOLMONAVE_FILE,NULL,ERROR...failed to open solar monthly average spectrum file
+430083672,OMSAO_E_READ_SOLMONAVE_FILE,NULL,ERROR...failed to READ from solar monthly average spectrum file
+430083161,OMSAO_W_CLOSE_SOLMONAVE_FILE,NULL,WARNING...failed to close solar monthly average spectrum file
+430080602,OMSAO_S_READ_SOLMONAVE_FILE,NULL,SUCCESS...completed READ of solar monthly average spectrum file
+430083675,OMSAO_E_OPEN_REFSECCOR_FILE,NULL,ERROR...failed to open reference sector corrrection file
+430083676,OMSAO_E_READ_REFSECCOR_FILE,NULL,ERROR...failed to READ from reference sector corrrection file
+430083165,OMSAO_W_CLOSE_REFSECCOR_FILE,NULL,WARNING...failed to close reference sector corrrection file
+430080606,OMSAO_S_READ_REFSECCOR_FILE,NULL,SUCCESS...completed READ of reference sector corrrection file
+430083679,OMSAO_E_HE5GDOPEN,NULL,ERROR...failed to open GRID file
+430083168,OMSAO_W_HE5GDCLOSE,NULL,WARNING...failed to close GRID file
+430083681,OMSAO_E_HE5GDATTACH,NULL,ERROR...failed to attach to GRID

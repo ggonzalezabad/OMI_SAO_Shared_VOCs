@@ -1,0 +1,99 @@
+PGSTK,PGSMET,13
+110080,PGSMET_E_NO_INITIALIZATION,NULL,Metadata control file is not yet loaded using PGS_MET_Init()
+110081,PGSMET_E_AGGREGATE_ERR,NULL,Unable to create odl aggregate %s
+110082,PGSMET_E_OPEN_ERR,NULL,Unable to open %s file with file id %s
+110083,PGSMET_E_ODL_READ_ERR,NULL,Unable to create ODL tree %s with file id %s
+110084,PGSMET_E_LOAD_ERR,NULL,Unable to load %s information
+110085,PGSMET_E_DD_UNKNOWN_PARM,NULL,The requested parameter %s could not be found in %s
+110086,PGSMET_E_UNKNOWN_PARM_ATTR,NULL,Attribute %s is not defined for parameter %s
+110087,PGSMET_E_CORRUPT_MCF,NULL,Unable to find %s definition in the %s
+110088,PGSMET_E_PARM_NOT_SET,NULL,Mandatory Parameter %s not set in %s
+109577,PGSMET_W_NO_MAND_PARM,NULL,No Mandatory Parameter found in %s
+110090,PGSMET_E_INV_ODL_TYPE,NULL,Input odl type is invalid
+110091,PGSMET_E_OUTOFRANGE,NULL,Value of metadata %s at position %s is out of range
+110092,PGSMET_E_DD_ERR,NULL,Unable to access the data dictionary to obtain %s of parameter %s
+110093,PGSMET_E_MCF_DD_CONFLICT,NULL,Conflict with data dictionary for Meta data %s, The data dictionary definition of %s is %sPGSMET_E_PCS_OPEN_ERR		Unable to open PCS file
+110094,PGSMET_E_LABEL_NOT_FOUND,NULL,Unable to find %s  in file %s
+110095,PGSMET_E_CONFIG_VAL_STR_ERR,NULL,Unable to obtain the value of configuration parameter %s from the PCS file
+110096,PGSMET_E_CONFIG_CONV_ERR,NULL,Unable to convert the value of configuration parameter %sfrom the PCS file into an ODL format
+110097,PGSMET_E_INCORRECT_VAL,NULL,Illegal value of the parameter %s defined in the PC table
+110098,PGSMET_E_NO_INVENT_DATA,NULL,Granule data section not in the MCF
+110099,PGSMET_E_CONFIG_DATA_ERR,NULL,Unable to retrieve data from the PC table
+110100,PGSMET_E_CONFIRM_ERR,NULL,Unable to confirm %s's value against DD
+110101,PGSMET_E_LOCATION_ERR,NULL,In object %s value %s for parameter DATA_LOCATION is invalid
+110102,PGSMET_E_NEW_ODL_DATA_ERR,NULL,Unable to create a new odl %s , probably due to lack of memeory
+110103,PGSMET_E_INVALID_DATATYPE,NULL,Invalid data type definition in DD for parameter %s
+110104,PGSMET_E_CHECK_RANGE_ERR,NULL,Unable to check the range for metaData %s
+110105,PGSMET_E_PCREAD_ERR,NULL,Unable to obtain %s from the PC table
+110106,PGSMET_E_FILETOODL_ERR,NULL,Unable to convert %s into an ODL format
+110107,PGSMET_E_SYS_OPEN_ERR,NULL,Unable to open pc attribute file
+110108,PGSMET_E_ODLTOVAL_ERR,NULL,Unable to convert attribute values from the odl format
+110109,PGSMET_E_SD_START,NULL,Unable to open the HDF file
+110110,PGSMET_E_SD_FINDATTR,NULL,Unable to get the attr index
+110111,PGSMET_E_SD_INFO,NULL,Unable to retrieve sd attribute information
+110112,PGSMET_E_MALLOC_ERR,NULL,Unable to allocate memory for the hdf attribute
+110113,PGSMET_E_SD_READ,NULL,Unable to read hdf attribute
+109602,PGSMET_W_CLASS_TYPE,NULL,Illegal class type for parameter %s
+110115,PGSMET_E_SD_SETATTR,NULL,Unable to set the HDF file attribute
+110116,PGSMET_E_GROUP_NOT_FOUND,NULL,No group called %s found in the MCF
+110117,PGSMET_E_INCOMP_GROUP,NULL,Some of the mandatory parameters are not set
+110118,PGSMET_E_PCS_OPEN_ERR,NULL,Unable to open PCS file
+110119,PGSMET_E_ODL_ERROR,NULL,"%s:%s"
+109608,PGSMET_W_ODL_WARNING,NULL,"%s:%s"
+108073,PGSMET_M_ODL_INFO,NULL,"%s:%s"
+110122,PGSMET_E_MINMAX_ERR,NULL,Minimum value is greater than the maximum value of parameter %s in %s
+110123,PGSMET_E_MCF_TYPE_CONFLICT,NULL,Value type in PCF does not match the type given for metadata %s in MCF
+110124,PGSMET_E_MCF_NUMVAL_CONFLICT,NULL,Number of values in PCF does not match the number defined for metadata %s in MCF
+110125,PGSMET_E_NESTED_OBJECTS,NULL,Object descriptions enclosing related objects must not be enclosed themselves by other objects
+110126,PGSMET_E_ODL_MEM_ALLOC,NULL,ODL routine failed to allocate memory
+110127,PGSMET_E_CLASS_PARAMETER,NULL,Container object must also have class parameter defined
+110128,PGSMET_E_METADATA_CHILD,NULL,MetaData Objects are not allowed to enclose other objects
+109617,PGSMET_W_NOT_MULTIPLE,NULL,Object is not supposed to be multiple therefore resetting the value
+110130,PGSMET_E_NO_DEFINITION,NULL,Unable to obtain %s of metadata %s
+110131,PGSMET_E_ILLEGAL_NUMVAL,NULL,Illegal NUMVAL definition for metadata %s . It should be an integer
+110132,PGSMET_E_ILLEGAL_TYPE,NULL,Illegal type definition for metadata %s . It should bea string
+110133,PGSMET_E_INV_DATATYPE,NULL,Invalid data type definition in MCF for parameter %s
+110134,PGSMET_E_PARENT_GROUP,NULL,Multiple objects must have enclosing groups around them
+110135,PGSMET_E_MANDATORY_FIELD,NULL,Mandatory field is not defined for %s
+110136,PGSMET_E_MANDATORY_DEF,NULL,MANDATORY field type is not correct for metadata %s. It should be a STRING
+110137,PGSMET_E_MANDATORY_VALUE,NULL,MANDATORY field value is not correct for metadata %s. It should be a TRUE or FALSE
+110138,PGSMET_E_LOC_FIELD,NULL,Data Location is not defined for %s
+110139,PGSMET_E_LOC_DEF,NULL,Data Location field type is not correct for metadata %s. It should be a STRING
+110140,PGSMET_E_LOC_VALUE,NULL,Data Location value is not correct for metadata %s. It should be a PCF, MCF, PGE, or NONE
+110141,PGSMET_E_CONTAINER_LEVELS,NULL,Metadata objects can only be enclosed by one level of Container objects. The offending object is %s
+110142,PGSMET_E_DUPLICATE_ERR,NULL,There is a another object with the same name for object %s
+110143,PGSMET_E_CLASS,NULL,Illegal class definition for metadata %s. It should be always be M
+110144,PGSMET_E_CLASS_STATEMENTS,NULL,Class statements should be defined for all the sister objects as well as thecontainer objects.The offending object is %s
+110145,PGSMET_E_INV_NUMVAL,NULL,Illegal NUMVAL value for metadata %s. It should be greater than or equal to 1
+110146,PGSMET_E_CLASS_DEF,NULL,Illegal class definition for metadata <metedata name>. It shoualways be PGSd_MET_MULTIPLE_FLAG
+110147,PGSMET_E_CLASS_TYPE,NULL,Illegal class type for metadata %s
+110148,PGSMET_E_MAND_NOT_SET,NULL,Some of the Mandatory metadata were not set
+109637,PGSMET_W_META_NOT_SET,NULL,Some of the metadata descriptions were not set
+109638,PGSMET_W_METADATA_NOT_SET,NULL,The metadata %s is not yet set
+110151,PGSMET_E_FGDC_ERR,NULL,Unable to convert UTC to FGDC format for metadata %s
+110152,PGSMET_E_OUTFILE_ERR,NULL,Unable to open output file
+110153,PGSMET_E_PCF_VALUE_ERR,NULL,Metadata %s could not be set from a value in PCF file
+110154,PGSMET_E_GRP_ERR,NULL,Master groups are not supposed to be enclosed under any other group or object.The offending group is %s
+110155,PGSMET_E_HDFNOTSET,NULL,The value was originally not set in the hdf header
+110156,PGSMET_E_HDFFILENAME_ERR,NULL,Unable to obtain hdf filename
+110157,PGSMET_E_MET_ASCII_ERR,NULL,Unable to open MET ascii file
+110158,PGSMET_E_ILLEGAL_HANDLE,NULL,Handle is illegal. Check that initialization has taken place
+110159,PGSMET_E_NUMOFMCF_ERR,NULL,Unable to load. The number of MCFs allowed has exceeded
+110160,PGSMET_E_GRP_NAME_ERR,NULL,Group Name length should not exceed %s
+110161,PGSMET_E_INVALID_LOCATION,NULL,Invalid data location for setting attribute value %s
+110162,PGSMET_E_NULL_PARAMETER,NULL,The requested Parameter %s is a NULL value
+110163,PGSMET_E_PARAMETER_NOT_SET,NULL,The requested Parameter %s is not set yet
+110164,PGSMET_E_SET_ATTRIBUTE_ERROR,NULL,Unable to set attribute for ProductionDateTime
+110165,PGSMET_E_SEARCH_FAILED,NULL,The requested parameter could not be found after searching the file listing
+110166,PGSMET_E_GROUP_NOT_FOUND_IN_L7,NULL,No group called %s found in the LANDSAT7 Metadata
+109655,PGSMET_W_OBJECT_NOT_SET,NULL,Object for data location of PGE is not set
+110168,PGSMET_E_CONVERT_ERR,NULL,unable to convert HDF-EOS/non HDF-EOS metadata product file, in which unset attributes were defined as NOT SET for Data Location PGE, NOT SUPPLIED for Data Location MCF, or NOT FOUND for Data Location NONE, to a .MCF file
+110169,PGSMET_E_TYPE_ERR,NULL,Unable to obtain data type for the unset attribute
+110170,PGSMET_E_SET_ERR,NULL,Attribute value set up in the data locateion MCF is not allowable to be written over
+110171,PGSMET_E_ILLEGAL_LENGTH,NULL,The length of character string assigned to be the value of the attribute name %s can not exceed PGSd_MET_MAX_STRING_SET_L(255)
+110172,PGSMET_E_ARRAY_ELEMENT_SIZE,NULL,The size of array element of the attribute value assigned for the attribute name %s can not exceed PGSd_MET_MAX_ARRAY_ELEMENT_SIZE(1000)
+110173,PGSMET_E_GETSET_ATTRIBUTE_ERROR,NULL,Unable to get attribute for ProductionDateTime
+108126,PGSMET_M_METADATA_NOT_SET_TK,NULL,Metadata has not been set, TOOLKIT may set it
+108127,PGSMET_M_METADATA_NOT_SET_PGE,NULL,Metadata has not been set, TOOLKIT will not set it
+110176,PGSMET_E_HDF5_FILE_TYPE_ERROR,NULL,HDF5 failed determining file type
+110177,PGSMET_E_SD_END,NULL,Unable to close the HDF file

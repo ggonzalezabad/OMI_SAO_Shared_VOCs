@@ -1,0 +1,13 @@
+PGSTK,PGSMEM,7
+60928,PGSMEM_E_MAXSIZE,NULL,Maximum memory size reached: %d in bytes
+60929,PGSMEM_E_NO_MEMORY,NULL,No memory space available for current process
+60930,PGSMEM_E_ADDR_NOTALLOC,NULL,Address %d is not allocated previously
+60419,PGSMEM_W_MEMORY_USED,NULL,Memory address has been allocated previously
+60932,PGSMEM_E_SHM,NULL,ERRNO %d, %s
+60933,PGSMEM_E_SHM_NOTCREATE,NULL,Shared-memory has not been created
+60934,PGSMEM_E_SHM_MULTICREATE,NULL,More than one shared-memory is created for a given PGE script
+60935,PGSMEM_E_SHM_MULTIATTACH,NULL,Multiply attached shared-memory in a process
+60936,PGSMEM_E_SHM_NOTATTACH,NULL,Shared-memory has not been attached to the process
+60937,PGSMEM_E_SHM_MAXSIZE,NULL,Maximum system-imposed shared memory exceeded
+60938,PGSMEM_E_SHM_ENV,NULL,Environment variable "PGSMEM_SHM_SYSKEY" is not set
+60939,PGSMEM_E_SHM_INVALIDKEY,NULL,Invalid system keyPGSMEM_E_SHM_ENV
