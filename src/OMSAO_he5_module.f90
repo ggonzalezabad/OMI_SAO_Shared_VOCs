@@ -238,7 +238,7 @@ MODULE OMSAO_he5_module
     ! ---------------------------------------------------------------------- GGA
     CHARACTER (LEN=17), PARAMETER :: scaweights_field = "ScatteringWeights"
     CHARACTER (LEN=10), PARAMETER :: gasprofile_field = "GasProfile"
-    CHARACTER (LEN=19), PARAMETER :: clialtgrid_field = "ClimatologyLevels"
+    CHARACTER (LEN=19), PARAMETER :: surfacepre_field = "SurfacePressure"
     CHARACTER (LEN= 6), PARAMETER :: albedo_field     = "Albedo"
 
   ! ------------------
@@ -697,14 +697,14 @@ MODULE OMSAO_he5_module
   CHARACTER (LEN=20), DIMENSION (2,n_sw_fields), PARAMETER ::  &
        sw_field_names = RESHAPE ( (/ &
        "ScatteringWeights   ", "Scattering Weights  ",   &
-       "ClimatologyLevels   ", "Climatology Levels  ",  &
+       "SurfacePressure     ", "Surface Pressure    ",   &
        "GasProfile          ", "Gas Profile         ",   &
        "Albedo              ", "Albedo              "/), &
        (/ 2, n_sw_fields /) )
   CHARACTER (LEN=22), DIMENSION (4,n_sw_fields), PARAMETER ::  &
        sw_field_specs = RESHAPE ( (/ &
        "NoUnits               ", "nXtrack,nTimes,nLevels", "OMI-Specific          ","r8                    ",   &
-       "hPa                   ", "nXtrack,nTimes,nLevels", "OMI-Specific          ","r8                    ",   &
+       "hPa                   ", "nXtrack,nTimes        ", "OMI-Specific          ","r8                    ",   &
        "molecules cm-2        ", "nXtrack,nTimes,nLevels", "OMI-Specific          ","r8                    ",   &
        "NoUnits               ", "nXtrack,nTimes        ", "OMI-Specific          ","r8                    "/), &
        (/ 4, n_sw_fields /) )
@@ -712,7 +712,7 @@ MODULE OMSAO_he5_module
        sw_valids = RESHAPE ( (/                              &
        valid_min_r8,         valid_max_r8,                   &  ! Scattering Weights
        valid_min_r8,         valid_max_r8,                   &  ! Gas Profile
-       valid_min_r8,         valid_max_r8,                   &  ! Climatology Levels (hPa)
+       valid_min_r8,         valid_max_r8,                   &  ! Surface Pressure (hPa)
        valid_min_r8,         valid_max_r8/),                 &  ! Albedo
        (/2, n_sw_fields/) )
 

@@ -256,7 +256,7 @@ CONTAINS
        ! -------------------------------------
        ! Write the climatology to the he5 file
        ! -------------------------------------
-       IF (yn_write) CALL write_climatology_he5 (climatology, cli_heights, nt, nx, CmETA, locerrstat)
+       IF (yn_write) CALL write_climatology_he5 (climatology, cli_psurface, nt, nx, CmETA, locerrstat)
 
        ! ------------------------------------------------------------------
        ! Read VLIDORT look up table. Variables are declared at module level
@@ -389,7 +389,6 @@ CONTAINS
           idx_lat = MINVAL(MINLOC(ABS(latvals(1:Cmlat) - lat(ixtrack,itimes) )))
           idx_lon = MINVAL(MINLOC(ABS(lonvals(1:Cmlon) - lon(ixtrack,itimes) )))
 
-!!$          climatology(ixtrack,itimes,1:CmETA)       = Gas_profiles(idx_lon,idx_lat,1:CmETA)
           local_temperature(ixtrack,itimes,1:CmETA) = Temperature(idx_lon,idx_lat,1:CmETA)
           ltmp(1:CmETA)                             = Temperature(idx_lon,idx_lat,1:CmETA)
           local_psurf(ixtrack,itimes)               = Psurface(idx_lon,idx_lat)
@@ -2534,7 +2533,7 @@ CONTAINS
     
   END SUBROUTINE write_albedo_he5
 
-  SUBROUTINE write_climatology_he5(climatology, cli_heights, nt, nx, nl, errstat)
+  SUBROUTINE write_climatology_he5(climatology, cli_psurface, nt, nx, nl, errstat)
 
     ! ===============================================================
     ! This routines writes the Target Gas Profiles from the GEOS-Chem
@@ -2548,7 +2547,8 @@ CONTAINS
     ! Input variables
     ! ---------------
     INTEGER (KIND=i4),                              INTENT (IN) :: nt, nx, nl
-    REAL    (KIND=r8), DIMENSION(1:nx,0:nt-1,1:nl), INTENT (IN) :: climatology, cli_heights
+    REAL    (KIND=r8), DIMENSION(1:nx,0:nt-1)     , INTENT (IN) :: cli_psurface
+    REAL    (KIND=r8), DIMENSION(1:nx,0:nt-1,1:nl), INTENT (IN) :: climatology
 
     ! ------------------
     ! Modified variables
@@ -2564,31 +2564,34 @@ CONTAINS
     ! Local variables
     ! ---------------
     INTEGER (KIND=i4)                               :: locerrstat
-    REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1,1:nl) :: colloc
+    REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1)      :: colloc_2d
+    REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1,1:nl) :: colloc_3d
 
     locerrstat = pge_errstat_ok
+
+    he5_start_2d  = (/ 0, 0   /)
+    he5_stride_2d = (/ 1, 1   /)
+    he5_edge_2d   = (/ nx, nt /)      
+
+    colloc_2d = cli_psurface
+    CALL roundoff_2darr_r8 ( n_roff_dig, nx, nt, colloc_2d(1:nx,0:nt-1) )
+    locerrstat = HE5_SWWRFLD ( pge_swath_id,                            &
+                               TRIM(ADJUSTL(surfacepre_field)),         &
+                               he5_start_2d, he5_stride_2d, he5_edge_2d,&
+                               colloc_2d(1:nx,0:nt-1) )
+    errstat = MAX ( errstat, locerrstat )
 
     he5_start_3d  = (/ 0, 0, 0 /)
     he5_stride_3d = (/ 1, 1, 1 /)
     he5_edge_3d   = (/ nx, nt, nl /)      
 
-
-    colloc = climatology
-    CALL roundoff_3darr_r8 ( n_roff_dig, nx, nt, nl, colloc(1:nx,0:nt-1,1:nl) )
+    colloc_3d = climatology
+    CALL roundoff_3darr_r8 ( n_roff_dig, nx, nt, nl, colloc_3d(1:nx,0:nt-1,1:nl) )
     locerrstat = HE5_SWWRFLD ( pge_swath_id,                            &
                                TRIM(ADJUSTL(gasprofile_field)),         &
                                he5_start_3d, he5_stride_3d, he5_edge_3d,&
-                               colloc(1:nx,0:nt-1,1:nl) )
-    errstat = MAX ( errstat, locerrstat )
-
-    colloc = cli_heights
-    CALL roundoff_3darr_r8 ( n_roff_dig, nx, nt, nl, colloc(1:nx,0:nt-1,1:nl) )
-    locerrstat = HE5_SWWRFLD ( pge_swath_id,                            &
-                               TRIM(ADJUSTL(clialtgrid_field)),         &
-                               he5_start_3d, he5_stride_3d, he5_edge_3d,&
-                               colloc(1:nx,0:nt-1,1:nl) )
-    errstat = MAX ( errstat, locerrstat )
-    
+                               colloc_3d(1:nx,0:nt-1,1:nl) )
+    errstat = MAX ( errstat, locerrstat )  
     
   END SUBROUTINE write_climatology_he5
 
