@@ -25,7 +25,7 @@ MODULE OMSAO_wfamf_module
   ! ---------------------------------------
   REAL(KIND=r4), DIMENSION(:),     ALLOCATABLE :: latvals, lonvals, Ap, Bp
   REAL(KIND=r4), DIMENSION(:,:),   ALLOCATABLE :: Psurface
-  REAL(KIND=r4), DIMENSION(:,:,:), ALLOCATABLE :: Temperature, Gas_profiles !, Heights
+  REAL(KIND=r4), DIMENSION(:,:,:), ALLOCATABLE :: Temperature, Gas_profiles, H2O_profiles
 
   ! ---------------------------------------
   ! Data obtained from Vlidort lookup table
@@ -345,24 +345,21 @@ CONTAINS
     ! Local variables
     ! ---------------
     INTEGER (KIND=i4) :: itimes, ixtrack, spix, epix, idx_lat, idx_lon, ilevel, n, n1
-    REAL    (KIND=r8)                      :: rho1, rho2, grad, aircolumn
-    REAL    (KIND=r8), DIMENSION (0:CmETA) :: lhgt, lpre, ltmp
+    REAL    (KIND=r8)                      :: rho, lhgt, aircolumn
+    REAL    (KIND=r8), DIMENSION (0:CmETA) :: lpre, level_press
+    REAL    (KIND=r8), DIMENSION (1:CmETA) :: ltmp, layer_press
+    REAL    (KIND=r8) :: thish2omxr, Mwet, Rwet, detlnp
 
     ! -----------------------
     ! Some physical constants
     ! -----------------------
-    REAL (KIND=r8), PARAMETER ::                &
-         rho_stand = 2.6867773e+19_r8,          & ! Loschmidt, in [cm^-3]
-         pzero     = 1013.25_r8,                & ! P0 in [mb]
-         tzero     = 273.15_r8,                 &
-         rho_zero  = rho_stand * tzero / pzero, &
-         du_to_cm2 = 2.6867773e+16_r8
-
-    ! -------------------------------
-    ! Air density conversion constant
-    ! -------------------------------
-    REAL (KIND=r8), PARAMETER :: km2cm  = 1.0E+05_r8
-    
+    REAL (KIND=r8), PARAMETER ::  &
+         Mdry = 0.02896,   &
+         Mh2o = 0.018,     &
+         Rstar = 8.314,    &
+         Navogadro = 6.02214e+23, &
+         gplanet = 9.806    
+ 
     ! ------------------------------
     ! Name of this module/subroutine
     ! ------------------------------
@@ -392,75 +389,65 @@ CONTAINS
           idx_lat = MINVAL(MINLOC(ABS(latvals(1:Cmlat) - lat(ixtrack,itimes) )))
           idx_lon = MINVAL(MINLOC(ABS(lonvals(1:Cmlon) - lon(ixtrack,itimes) )))
 
-          climatology(ixtrack,itimes,1:CmETA)       = Gas_profiles(idx_lon,idx_lat,1:CmETA)
+!!$          climatology(ixtrack,itimes,1:CmETA)       = Gas_profiles(idx_lon,idx_lat,1:CmETA)
           local_temperature(ixtrack,itimes,1:CmETA) = Temperature(idx_lon,idx_lat,1:CmETA)
+          ltmp(1:CmETA)                             = Temperature(idx_lon,idx_lat,1:CmETA)
           local_psurf(ixtrack,itimes)               = Psurface(idx_lon,idx_lat)
-          DO ilevel = 1, CmETA
-             local_heights(ixtrack,itimes,ilevel)   = ( ( Ap(ilevel) + ( local_psurf(ixtrack,itimes) * Bp(ilevel)   ) ) + &
-                                                      ( Ap(ilevel+1) + ( local_psurf(ixtrack,itimes) * Bp(ilevel+1) ) ) ) / 2 !(in hPa)
+          
+          ! lpre(0:CmETA) is pressure at layer boundaries, same unit as
+          ! local_surf, convert from hPa to Pa, it is a CmETA+1 = CmEp1 array
+          ! Ap(1:CmEp1) & Bp(1:CmEp1) are coeff at layer boundary for pressure
+          ! calculation
+          DO ilevel = 0, CmETA
+             lpre(ilevel) = (Ap(ilevel+1) + local_psurf(ixtrack,itimes) * Bp(ilevel+1))*1.E2 ! Pa
+          END DO
+
+
+          ! layer_press(1:CmETA) are pressure at layer centers in Pa
+          ! local_heights are pressures in hPa at layer centers (I should get rid of this variable)
+          DO ilevel = 1, CmETA ! for layer center
+             layer_press(ilevel) = (lpre(ilevel-1) + lpre(ilevel))/2.0 ! Pa
+             local_heights(ixtrack,itimes,ilevel)   = layer_press(ilevel)/1.E2 ! hPa
           END DO
 
           ! -------------------
           ! Develop air density
           ! -------------------
-          ! --------------------------------------------------------
-          ! Some notes on Units
-          ! -------------------
-          ! Values from the atmospheric profile now have these units:
-          !   pressures:    hPa = mb
-          !   temperatures: K
-          !   heights       km
-          !
-          ! CONST: 10^-1 K m^-3 hPa^-1
-          !
-          ! ==> aircolumns: 10^4 m^-2  or 10^10 km^-2  or  cm^-2
-          ! --------------------------------------------------------
-          lhgt              = 0.0_r8
-          lpre              = 0.0_r8
-          ltmp              = 0.0_r8
-          grad              = 0.0_r8
-
-          DO n = 0, CmETA-1
-             lhgt(n) = -16.0_r8 * log10(local_heights(ixtrack,itimes,n+1) / 1013.0_r8)
-          END DO
-
-          ! Create a fake top of atmos 1 km above top altitude of the
-          ! climatology
-          lhgt(CmETA)     = local_heights(ixtrack,itimes,CmETA) / 1000.0_r8 + 1.0_r8
-          lpre(0:CmETA-1) = local_heights(ixtrack,itimes,1:CmETA)
-          ltmp(0:CmETA-1) = local_temperature(ixtrack,itimes,1:CmETA)
-
-          ! --------------------------------------------
-          ! extrapolated temperature and pressure at TOA
-          ! --------------------------------------------
-          grad        =  LOG ( lpre(CmETA-2)/lpre(CmETA-1) ) / (lhgt(CmETA-2) - lhgt(CmETA-1))
-          lpre(CmETA) = EXP( LOG( lpre(CmETA-1)) + grad * (lhgt(CmETA) - lhgt(CmETA-1) ) )
-          grad        = (ltmp(CmETA-2) - ltmp(CmETA-1)) / (lhgt(CmETA-2) - lhgt(CmETA-1))
-          ltmp(CmETA) = ltmp(CmETA-1) + grad*(lhgt(CmETA) - lhgt(CmETA-1))
           
           DO n = 1, CmETA
 
-             rho1              = 0.0_r8
-             rho2              = 0.0_r8
-             aircolumn         = 0.0_r8
+             rho       = 0.0_r8
+             aircolumn = 0.0_r8
+             lhgt      = 0.0_r8
+             
+             ! Convert input water vapor mixing ratio from PPB to unitless
+             thish2omxr = H2O_profiles(idx_lon,idx_lat,n) / 1.0E9
 
+             ! Calculate mean molecular weight of wet air 
+             Mwet = (1.0_r8 - thish2omxr)*Mdry + thish2omxr*Mh2o
+             
+             ! Calculate gas constant for wet air
+             Rwet = Rstar / Mwet
+             
+             ! Calculate layer thickness using the following
+             ! dz = -(R*T/g) * dlnP
              n1                   = n - 1
-             rho1                 = lpre(n1) / ltmp(n1)
-             rho2                 = lpre(n)  / ltmp(n)
-             aircolumn            = 0.5_r8*rho_zero*(rho1+rho2)*(lhgt(n)-lhgt(n1))*km2cm
-
+             detlnp = log(lpre(n1)) - log(lpre(n))
+             lhgt = Rwet * ltmp(n) * detlnp / gplanet ! meter
+             
+             rho                = layer_press(n) / ltmp(n) / Rstar 
+             aircolumn          = rho*lhgt*Navogadro*1.0E-4 ! # air/cm^2
+             
              ! -------------------------------------------------------------
-             ! Divided by 1E09 to convert from ppb in the climatology to VMR
-             ! -------------------------------------------------------------
-             climatology(ixtrack,itimes,n) = aircolumn * climatology(ixtrack,itimes,n) / 1.0E09
-
+             climatology(ixtrack,itimes,n) = aircolumn * Gas_profiles(idx_lon,idx_lat,n) /1.0E9 ! [GAS]/cm^2
+             
           END DO
-
+          
           !  Set non-physical entries to zero.
           WHERE ( climatology(ixtrack,itimes,1:CmETA) < 0.0_r8 )
              climatology(ixtrack,itimes,1:CmETA) = 0.0_r8
           END WHERE
-
+          
        END DO
     END DO
 
@@ -488,10 +475,10 @@ CONTAINS
     ! Local variables
     ! ---------------
     INTEGER   (KIND=i4)         :: nswath, locerrstat, swath_id, swath_file_id, swlen, he5stat, &
-                                   ismonth, ndatafields
+                                   ismonth, ndatafields, h2o_cli_idx
     INTEGER   (KIND=i4), DIMENSION(10) :: datafield_rank, datafield_type
-    INTEGER   (KIND=C_LONG)     :: nswathcl, swlencl, Cmlatcl, Cmloncl, CmETAcl, CmEp1cl
-    CHARACTER (LEN=   maxchlen) :: swath_file, locswathname, voc_str, gasdatafieldname, datafield_name
+    INTEGER   (KIND=C_LONG)     :: nswathcl, Cmlatcl, Cmloncl, CmETAcl, CmEp1cl
+    CHARACTER (LEN=   maxchlen) :: swath_file, locswathname, gasdatafieldname, datafield_name
     CHARACTER (LEN=10*maxchlen) :: swath_name
 
     CHARACTER (LEN= 9), PARAMETER :: cli_lat_field         = 'Latitudes'
@@ -502,7 +489,7 @@ CONTAINS
     CHARACTER (LEN=18), PARAMETER :: cli_Temperature_field = 'TemperatureProfile'
 
     REAL      (KIND=r4) :: scale_lat, scale_lon, scale_Ap, scale_Bp, scale_gas, scale_Psurf, &
-                           scale_temperature !, scale_Height
+                           scale_temperature, scale_H2O
 
     ! ------------------------
     ! Error handling variables
@@ -519,8 +506,11 @@ CONTAINS
     ! ----------------------
     locerrstat = pge_errstat_ok
     
-    swath_file = TRIM(ADJUSTL(OMSAO_climatology_filename))
-    ismonth    = granule_month
+    swath_file  = TRIM(ADJUSTL(OMSAO_climatology_filename))
+    ismonth     = granule_month
+
+    ! Index to read H2O water vapor using sao_molecule_names
+    h2o_cli_idx = 18
 
     ! --------------------------------------------------------------
     ! Open he5 OMI climatology and check SWATH_FILE_ID (-1 if error)
@@ -702,12 +692,46 @@ CONTAINS
     he5stat = HE5_SWrdlattr ( swath_id, TRIM(ADJUSTL(gasdatafieldname)),&
               "ScaleFactor", scale_gas       )
 
+    ! -------------------------------------------------------------------
+    ! Finding out the data field for water vapor (to compute air density)
+    ! -------------------------------------------------------------------
+    ndatafields = HE5_swinqdflds(swath_id, datafield_name, datafield_rank, datafield_type)
+    CALL extract_swathname(nswath, TRIM(ADJUSTL(datafield_name)), &
+         TRIM(ADJUSTL(sao_molecule_names(h2o_cli_idx))), gasdatafieldname)
+
+    ! ---------------------------------------------------------------------------
+    ! Check if we found the correct swath name. If not, report an error and exit.
+    ! ---------------------------------------------------------------------------
+    IF ( INDEX (TRIM(ADJUSTL(gasdatafieldname)),TRIM(ADJUSTL(sao_molecule_names(pge_idx)))) == 0 ) THEN
+       CALL error_check ( &
+            0, 1, pge_errstat_error, OMSAO_E_HE5SWLOCATE, modulename, &
+            vb_lev_default, locerrstat )
+       WRITE(*,*) "Climatology file does not contain data for ", sao_molecule_names(h2o_cli_idx)
+       errstat = MAX ( errstat, locerrstat )
+       RETURN
+    END IF
+
+    ! -----------------------------
+    ! Read data from this datafield
+    ! -----------------------------
+    he5stat = HE5_SWrdfld (                                &
+         swath_id, TRIM(ADJUSTL(gasdatafieldname)),        &
+         he5_start_3d, he5_stride_3d, he5_edge_3d,         &
+         H2O_profiles(1:Cmlon,1:Cmlat,1:CmETA) )
+
+    ! -----------------------------------------
+    ! Read gas datafield scale factor attribute
+    ! -----------------------------------------
+    he5stat = HE5_SWrdlattr ( swath_id, TRIM(ADJUSTL(gasdatafieldname)),&
+              "ScaleFactor", scale_H2O       )
+
     ! ------------------------------------
     ! Apply scaling factors to data fields
     ! ------------------------------------
     Temperature  = Temperature  * scale_Temperature
     Psurface     = Psurface     * scale_Psurf
     Gas_profiles = Gas_profiles * scale_gas
+    H2O_profiles = H2O_profiles * scale_H2O
 
   END SUBROUTINE omi_read_climatology
 
@@ -1170,6 +1194,7 @@ CONTAINS
        ALLOCATE (Bp      (CmEp1),                 STAT=estat ) ; errstat = MAX ( errstat, estat )
        ALLOCATE (Temperature (Cmlon, Cmlat, CmETA), STAT=estat ) ; errstat = MAX ( errstat, estat )
        ALLOCATE (Gas_profiles(Cmlon, Cmlat, CmETA), STAT=estat ) ; errstat = MAX ( errstat, estat )
+       ALLOCATE (H2O_profiles(Cmlon, Cmlat, CmETA), STAT=estat ) ; errstat = MAX ( errstat, estat )
        ALLOCATE (Psurface(Cmlon,Cmlat),            STAT=estat ) ; errstat = MAX ( errstat, estat )
     CASE ('d')
        IF ( ALLOCATED ( latvals      ) )  DEALLOCATE ( latvals      )
@@ -1178,6 +1203,7 @@ CONTAINS
        IF ( ALLOCATED ( Bp           ) )  DEALLOCATE ( Bp           )
        IF ( ALLOCATED ( Temperature  ) )  DEALLOCATE ( Temperature  )
        IF ( ALLOCATED ( Gas_profiles ) )  DEALLOCATE ( Gas_profiles )
+       IF ( ALLOCATED ( H2O_profiles ) )  DEALLOCATE ( H2O_profiles )
        IF ( ALLOCATED ( Psurface     ) )  DEALLOCATE ( Psurface     )
     CASE DEFAULT
        ! Whatever. Nothing to be done here
