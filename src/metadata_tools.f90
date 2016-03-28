@@ -283,7 +283,7 @@ SUBROUTINE init_metadata ( errstat )
   ! Initialize MetaData STRING fields special for OMH2O same that for OMHCHO (not completely true)
   ! ----------------------------------------------------------------------------------------------
   CASE ( pge_h2o_idx)
-     DO imd = 1, n_mdata_omhcho
+     DO imd = 1, n_mdata_voc
         version = 1
         mdata_voc_values(imd) = str_missval
         
