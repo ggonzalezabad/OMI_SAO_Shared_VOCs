@@ -1940,7 +1940,7 @@ FUNCTION he5_close_output_file ( pge_idx ) RESULT ( he5stat )
   USE OMSAO_variables_module,  ONLY: verb_thresh_lev
   USE OMSAO_he5_module
   USE OMSAO_errstat_module
-  USE OMSAO_AMF_module,        ONLY: &
+  USE OMSAO_wfamf_module,        ONLY: &
        amf_swath_names, amf_swath_ids, amf_swath_file_ids
 
   IMPLICIT NONE

@@ -128,7 +128,6 @@ SUBROUTINE omi_fitting (                                  &
   USE OMSAO_omidata_module
   USE OMSAO_he5_module,       ONLY:  pge_swath_name
   USE OMSAO_he5_datafields_module
-  USE OMSAO_amf_module
   USE OMSAO_solar_wavcal_module
   USE OMSAO_radiance_ref_module
   USE OMSAO_destriping_module, ONLY: ctr_maxcol
