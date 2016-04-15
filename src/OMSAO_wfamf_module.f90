@@ -130,7 +130,7 @@ MODULE OMSAO_wfamf_module
 
 CONTAINS
 
-  SUBROUTINE amf_calculation_bis (            &
+  SUBROUTINE amf_calculation (            &
        pge_idx, nt, nx, lat, lon, sza, vza,   &
        snow, glint, xtrange, yn_szoom,        &
        saocol, saodco, saoamf, terrain_height,&
@@ -315,7 +315,7 @@ CONTAINS
     
     errstat = MAX ( errstat, locerrstat )
     
-  END SUBROUTINE amf_calculation_bis
+  END SUBROUTINE amf_calculation
   
   SUBROUTINE omi_climatology (climatology, local_heights, local_psurf, local_temperature, &
                               lat, lon, nt, nx, xtrange, locerrstat)

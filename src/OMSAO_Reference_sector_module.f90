@@ -313,7 +313,7 @@ MODULE OMSAO_Reference_sector_module
     SUBROUTINE Reference_Sector_radref_retrieval_and_median(nTimesRadRR,   &
          nXTrackRadRR, nWvlCCDrr, pge_idx, n_max_rspec, errstat)
 
-      USE OMSAO_wfamf_module,     ONLY: amf_calculation_bis
+      USE OMSAO_wfamf_module,     ONLY: amf_calculation
       USE OMSAO_variables_module, ONLY: OMSAO_refseccor_cld_filename, voc_amf_filenames
       USE OMSAO_indices_module,   ONLY: voc_omicld_idx
 
@@ -480,7 +480,7 @@ MODULE OMSAO_Reference_sector_module
       ! --------------------------------------------------------
       voc_amf_filenames(voc_omicld_idx) = TRIM(ADJUSTL(OMSAO_refseccor_cld_filename))
 
-      CALL amf_calculation_bis (                                            &
+      CALL amf_calculation (                                            &
            pge_idx, nTimesRadRR, nXtrackRadRR, mem_latitude, mem_longitude, &
            mem_sza, mem_vza, mem_snow, mem_glint, omi_xtrpix_range_rr,      &
            yn_szoom_rs, mem_column_amount, mem_column_uncertainty, mem_amf, &

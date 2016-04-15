@@ -21,7 +21,7 @@ SUBROUTINE omi_pge_postprocessing ( &
   USE OMSAO_indices_module, ONLY: pge_hcho_idx
   USE OMSAO_Reference_sector_module
   USE OMSAO_radiance_ref_module, ONLY: yn_radiance_reference
-  USE OMSAO_wfamf_module, ONLY: amf_calculation_bis, climatology_allocate, Cmlat, Cmlon, CmETA, CmEp1
+  USE OMSAO_wfamf_module, ONLY: amf_calculation, climatology_allocate, Cmlat, Cmlon, CmETA, CmEp1
 
   IMPLICIT NONE
 
@@ -92,7 +92,7 @@ SUBROUTINE omi_pge_postprocessing ( &
   ! Comnpute AMF bis
   ! ----------------
   yn_write = .TRUE.
-  CALL amf_calculation_bis (                             &
+  CALL amf_calculation (                             &
        pge_idx, ntimes, nxtrack, lat, lon, sza, vza,     &
        snow_ice_flg, glint_flg, xtrange, yn_szoom,       &
        saocol, saodco, saoamf, thg, yn_write, &
