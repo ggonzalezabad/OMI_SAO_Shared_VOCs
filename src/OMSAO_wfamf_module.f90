@@ -65,6 +65,22 @@ MODULE OMSAO_wfamf_module
   ! -------------------
   INTEGER(KIND=i4) :: vl_nozo, vl_ncld, vl_nsza, vl_nvza, vl_nwav, vl_nalt
   
+  ! -----------------------
+  ! Look up table variables
+  ! -----------------------
+  ! To hold data:
+  REAL(KIND=r4),    DIMENSION(:),         ALLOCATABLE :: lut_albedo, lut_clp, lut_sza, &
+       lut_vza, lut_wavelength
+  CHARACTER(LEN=5), DIMENSION(:),         ALLOCATABLE :: lut_toms
+  REAL(KIND=r4),    DIMENSION(:),         ALLOCATABLE :: lut_alt_lay, lut_alt_lev, lut_pre_lay, lut_pre_lev
+  REAL(KIND=r4),    DIMENSION(:,:),       ALLOCATABLE :: lut_air, lut_ozo, lut_tem
+  REAL(KIND=r4),    DIMENSION(:),         ALLOCATABLE :: lut_Sb_clr
+  REAL(KIND=r4),    DIMENSION(:,:),       ALLOCATABLE :: lut_Sb_cld
+  REAL(KIND=r4),    DIMENSION(:,:,:),     ALLOCATABLE :: lut_I0_clr, lut_I1_clr, lut_I2_clr, lut_Ir_clr
+  REAL(KIND=r4),    DIMENSION(:,:,:,:),   ALLOCATABLE :: lut_I0_cld, lut_I1_cld, lut_I2_cld, lut_Ir_cld
+  REAL(KIND=r4),    DIMENSION(:,:,:,:,:), ALLOCATABLE :: lut_dI0_clr, lut_dI1_clr, lut_dI2_clr, &
+       lut_dI0_cld, lut_dI1_cld, lut_dI2_cld
+
   ! ---------
   ! PCF stuff
   ! ---------
@@ -1930,8 +1946,9 @@ CONTAINS
   SUBROUTINE amf_diagnostic ( &
        nt, nx, lat, lon, sza, vza, snow, glint, xtrange, ctpmin, ctpmax, l2cfr, l2ctp, amfdiag )
 
-    USE OMSAO_omidata_module,   ONLY: omi_oobview_amf, omi_glint_add, omi_height, omi_geo_amf, omi_bigsza_amf, &
-                                      omi_cfr_addmiss, omi_ctp_addmiss
+    USE OMSAO_omidata_module,   ONLY: omi_oobview_amf, omi_glint_add, omi_height, &
+         omi_geo_amf, omi_bigsza_amf, omi_cfr_addmiss, omi_ctp_addmiss, &
+         omi_oob_cfr, omi_oob_ctp
     USE OMSAO_variables_module, ONLY: winwav_min, winwav_max
     
     IMPLICIT NONE
@@ -2037,16 +2054,23 @@ CONTAINS
              ENDIF
           END DO
        END IF
-       
-       ! -------------------------------------------------
-       ! Out of bounds clouds (to high over land), make it
+     
+       ! ---------------------------------------------------
+       ! Out of bounds clouds (too high or too low), make it
        ! the highest possible value in the look up table.
-       ! Ask Xiong...
        ! -------------------------------------------------
        WHERE ( &
-            ( l2ctp(spix:epix,it)   < MINVAL(vl_pre(1:vl_ncld))*1013.0_r8 ) .AND. &
-            ( amfdiag(spix:epix,it) >                   omi_oobview_amf ) )
-          l2ctp(spix:epix,it) = MINVAL(vl_pre(1:vl_ncld))*1013.0_r8
+            ( l2ctp(spix:epix,it)   <  MINVAL(lut_clp) ) .AND. &
+            ( amfdiag(spix:epix,it) >  omi_oobview_amf ) )
+          l2ctp(spix:epix,it) = MINVAL(lut_clp)
+          amfdiag(spix:epix,it) = amfdiag(spix:epix,it) + omi_oob_ctp
+       END WHERE
+
+       WHERE ( &
+            ( l2ctp(spix:epix,it)   >  MAXVAL(lut_clp) ) .AND. &
+            ( amfdiag(spix:epix,it) >  omi_oobview_amf ) )
+          l2ctp(spix:epix,it) = MAXVAL(lut_clp)
+          amfdiag(spix:epix,it) = amfdiag(spix:epix,it) + omi_oob_ctp
        END WHERE
 
        ! -------------------------------------------------------
