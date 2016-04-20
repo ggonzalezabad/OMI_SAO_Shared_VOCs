@@ -312,4 +312,11 @@ MODULE OMSAO_variables_module
   LOGICAL                  :: yn_sw
   CHARACTER (LEN=maxchlen) :: OMSAO_OMLER_filename
 
+  ! ---------------------------------------------
+  ! Variables to hold ozone index information for
+  ! AMF calculation
+  ! ---------------------------------------------
+  INTEGER (KIND=i4) :: ozone_idx
+  LOGICAL           :: ozone_log = .TRUE.
+
 END MODULE OMSAO_variables_module

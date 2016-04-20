@@ -321,6 +321,12 @@ SUBROUTINE omi_fitting (                                  &
   ! vels of the reported scattering weights.
   ! ---------------------------------------------------------------
   CALL omi_read_climatology ( errstat )
+
+  ! ---------------------------
+  ! Initialize omi_ozone_amount
+  ! ---------------------------
+  ALLOCATE (omi_ozone_amount(1:nXtrackRad,0:nTimesRad-1))
+  omi_ozone_amount = r8_missval
   
   ! ----------------------------------------
   ! Initialization of HE5 output data fields
@@ -656,6 +662,11 @@ SUBROUTINE omi_fitting (                                  &
        l1b_rad_filename, pge_idx, nTimesRad, nXtrackRad,                    &
        yn_radfit_range(0:nTimesRad-1), omi_xtrpix_range(0:nTimesRad-1,1:2), &
        omi_yn_szoom(0:nTimesRad-1), n_max_rspec, errstat                 )
+
+  ! ---------------------------
+  ! Deallocate omi_ozone_amount
+  ! ---------------------------
+  IF (ALLOCATED ( omi_ozone_amount ) ) DEALLOCATE ( omi_ozone_amount )
 
   ! ---------------------
   ! Write some attributes

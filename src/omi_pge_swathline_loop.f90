@@ -15,7 +15,7 @@ SUBROUTINE omi_pge_swathline_loop ( &
        omi_itnum_flag, omi_fitconv_flag, omi_column_amount, &
        omi_column_uncert, omi_time_utc, omi_time, omi_latitude, omi_fit_rms,  &
        omi_radiance_errstat, omi_nwav_radref, omi_radref_spec, omi_radref_wavl, &
-       n_comm_wvl
+       n_comm_wvl, omi_iline
   USE OMSAO_destriping_module, ONLY: ctr_maxcol
   USE OMSAO_prefitcol_module
   USE OMSAO_errstat_module
@@ -138,6 +138,7 @@ SUBROUTINE omi_pge_swathline_loop ( &
      ! -----------------------------------------------
      ScanLineBlock: DO iloop = 0, nblock-1
 
+        omi_iline = iline+iloop !(to save ozone column)
         ! --------------------------------------------------------------------
         ! Further down, in deeper layers of the algorithm, we require both the
         ! current line in the data block and the absolute swath line number.

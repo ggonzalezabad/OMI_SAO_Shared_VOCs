@@ -669,7 +669,7 @@ SUBROUTINE find_radiance_fitting_variables ( errstat )
   USE OMSAO_variables_module,    ONLY: &
        n_fitvar_rad, all_radfit_idx, mask_fitvar_rad, fitvar_rad_init,         &
        lo_radbnd, up_radbnd, n_fincol_idx, n_mol_fit, fitcol_idx, fincol_idx,  &
-       yn_common_iter, common_fitpos
+       yn_common_iter, common_fitpos, ozone_idx, ozone_log
   USE OMSAO_prefitcol_module, ONLY:                                            &
        o3_prefit_fitidx, bro_prefit_fitidx, yn_bro_prefit, yn_o3_prefit,       &
        n_prefit_vars
@@ -697,8 +697,8 @@ SUBROUTINE find_radiance_fitting_variables ( errstat )
 
   CHARACTER (LEN=maxchlen), EXTERNAL :: int2string
 
-	! CCM Fit Lineshape for every spectrum
-	LOGICAL :: yn_fit_itf = .TRUE.
+  ! CCM Fit Lineshape for every spectrum
+  LOGICAL :: yn_fit_itf = .TRUE.
 
   locerrstat = pge_errstat_ok
 
@@ -787,6 +787,15 @@ SUBROUTINE find_radiance_fitting_variables ( errstat )
                  EXIT getfincol
               END IF
            END DO getfincol
+           ! ----------------------------------------------------------------
+           ! To select which TOMS profile is to be used in AMF calculation we
+           ! need an idea of O3 column
+           ! ----------------------------------------------------------------
+           IF ( i .EQ. o3_t1_idx .OR. i .EQ. o3_t2_idx .OR. i .EQ. o3_t1_idx &
+                .AND. ozone_log )  THEN
+              ozone_idx = n_fitvar_rad
+              ozone_log = .FALSE.
+           ENDIF
 
         END IF
 
@@ -838,6 +847,12 @@ SUBROUTINE find_radiance_fitting_variables ( errstat )
      END IF
 
   END DO
+
+  ! -------------------------------------------------
+  ! Find out which indices hold information for ozone
+  ! -------------------------------------------------
+  IF (ozone_log)       ozone_log = .FALSE.
+  IF (.NOT. ozone_log) ozone_log = .TRUE.
 
   ! ------------------------------------------------------------------------------------
   ! Concatinate the names of fitting elements that will appear in the correlation matrix

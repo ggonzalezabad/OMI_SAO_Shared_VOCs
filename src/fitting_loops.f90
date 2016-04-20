@@ -327,7 +327,7 @@ SUBROUTINE xtrack_radiance_fitting_loop (                             &
        database, curr_sol_spec, n_rad_wvl, curr_rad_spec, sol_wav_avg, hw1e, e_asym,     &
        verb_thresh_lev, fitvar_rad_saved, fitvar_rad_init, n_database_wvl, &
        fitvar_rad, rad_wght_wavcal, n_fitres_loop, fitres_range, refspecs_original,      &
-       yn_solar_comp, max_itnum_rad, szamax, n_fincol_idx
+       yn_solar_comp, max_itnum_rad, szamax, n_fincol_idx, ozone_idx, ozone_log
   USE OMSAO_radiance_ref_module, ONLY: yn_radiance_reference, yn_reference_fit
   USE OMSAO_slitfunction_module, ONLY: saved_shift, saved_squeeze
   USE OMSAO_prefitcol_module, ONLY: &
@@ -514,12 +514,15 @@ SUBROUTINE xtrack_radiance_fitting_loop (                             &
      omi_fit_rms      (ipix,iloop) = rms
      omi_column_amount(ipix,iloop) = fitcol
      omi_column_uncert(ipix,iloop) = dfitcol
+     IF (ozone_log) THEN
+        omi_ozone_amount(ipix,omi_iline)  = allfit_cols(ozone_idx,ipix)
+     ENDIF
 
-		 ! CCM assign fit residual
-		 fitspc_out(1:n_rad_wvl,ipix,1) = fitspc(1:n_rad_wvl)
-		 fitspc_out(1:n_rad_wvl,ipix,2) = curr_rad_spec(spc_idx,1:n_rad_wvl)
-		 fitspc_out(1:n_rad_wvl,ipix,3) = curr_rad_spec(wvl_idx,1:n_rad_wvl)
-		 fitspc_out(1:n_rad_wvl,ipix,4) = curr_rad_spec(sig_idx,1:n_rad_wvl)
+     ! CCM assign fit residual
+     fitspc_out(1:n_rad_wvl,ipix,1) = fitspc(1:n_rad_wvl)
+     fitspc_out(1:n_rad_wvl,ipix,2) = curr_rad_spec(spc_idx,1:n_rad_wvl)
+     fitspc_out(1:n_rad_wvl,ipix,3) = curr_rad_spec(wvl_idx,1:n_rad_wvl)
+     fitspc_out(1:n_rad_wvl,ipix,4) = curr_rad_spec(sig_idx,1:n_rad_wvl)
 
      IF ( pge_idx == pge_o3_idx ) THEN
         omi_o3_amount(o3_t1_idx:o3_t3_idx,ipix,iloop) = o3fit_cols (o3_t1_idx:o3_t3_idx)

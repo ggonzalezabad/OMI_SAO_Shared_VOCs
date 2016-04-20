@@ -93,8 +93,8 @@ MODULE OMSAO_omidata_module
   INTEGER (KIND=i4), DIMENSION (nxtrack_max)                :: common_cnt
   REAL    (KIND=r8), DIMENSION (nxtrack_max,max_spec_pts)   :: common_spc, common_wvl
   REAL    (KIND=r8), DIMENSION (nxtrack_max,0:nlines_max-1) :: &
-       omi_column_amount, omi_column_uncert, &
-       omi_fit_rms, omi_radfit_chisq
+       omi_column_amount, omi_column_uncert, omi_fit_rms, omi_radfit_chisq
+  REAL    (KIND=r8), ALLOCATABLE, DIMENSION(:,:)            :: omi_ozone_amount
   REAL    (KIND=r4), DIMENSION (nxtrack_max,0:nlines_max-1) :: omi_razimuth
   INTEGER (KIND=i2), DIMENSION (nxtrack_max,0:nlines_max-1) :: omi_fitconv_flag
   INTEGER (KIND=i2), DIMENSION (nxtrack_max,0:nlines_max-1) :: omi_itnum_flag
@@ -208,4 +208,8 @@ MODULE OMSAO_omidata_module
 
   INTEGER (KIND=i4) :: omi_l1b_idx
 
+  ! -----------------------------------------
+  ! Index to keep track of the line we are in
+  ! -----------------------------------------
+  INTEGER (KIND=i4) :: omi_iline
 END MODULE OMSAO_omidata_module
