@@ -10,6 +10,7 @@ MODULE OMSAO_wfamf_module
   USE OMSAO_errstat_module
   USE OMSAO_he5_module
   USE OMSAO_indices_module, ONLY: n_voc_amf_luns
+  USE HDF5
 
   IMPLICIT NONE
 
@@ -80,6 +81,22 @@ MODULE OMSAO_wfamf_module
   REAL(KIND=r4),    DIMENSION(:,:,:,:),   ALLOCATABLE :: lut_I0_cld, lut_I1_cld, lut_I2_cld, lut_Ir_cld
   REAL(KIND=r4),    DIMENSION(:,:,:,:,:), ALLOCATABLE :: lut_dI0_clr, lut_dI1_clr, lut_dI2_clr, &
        lut_dI0_cld, lut_dI1_cld, lut_dI2_cld
+  ! To read the data:
+  INTEGER(HSIZE_T), DIMENSION(1) :: alb_dim, alb_maxdim, &
+       clp_dim, clp_maxdim, &
+       sza_dim, sza_maxdim, &
+       toz_dim, toz_maxdim, &
+       vza_dim, vza_maxdim, &
+       wav_dim, wav_maxdim, &
+       alt_lev_dim, alt_lev_maxdim, &
+       alt_lay_dim, alt_lay_maxdim, &
+       Sb_clr_dim, Sb_clr_maxdim
+  INTEGER(HSIZE_T), DIMENSION(2) :: Sb_cld_dim, Sb_cld_maxdim, &
+       air_dim, air_maxdim, tem_dim, tem_maxdim
+  INTEGER(HSIZE_T), DIMENSION(3) :: I0_clr_dim,  I0_clr_maxdim
+  INTEGER(HSIZE_T), DIMENSION(4) :: I0_cld_dim,  I0_cld_maxdim
+  INTEGER(HSIZE_T), DIMENSION(5) :: dI0_clr_dim,  dI0_clr_maxdim, &
+       dI0_cld_dim, dI0_cld_maxdim
 
   ! ---------
   ! PCF stuff
@@ -277,7 +294,7 @@ CONTAINS
        ! ------------------------------------------------------------------
        ! Read VLIDORT look up table. Variables are declared at module level
        ! ------------------------------------------------------------------
-       CALL read_vlidort (locerrstat)
+       CALL read_lookup_table (locerrstat)
        
        ! ----------------------------------------------------------------------
        ! amfdiag is used to keep track of the pixels were enough information is
@@ -298,7 +315,9 @@ CONTAINS
        ! ----------------------------
        ! Deallocate Vlidort variables
        ! ----------------------------
-       CALL vlidort_allocate ("d", vl_nozo, vl_ncld, vl_nsza, vl_nvza, vl_nwav, vl_nalt, errstat)
+       CALL vlidort_allocate ("d", INT(toz_dim(1)),INT(clp_dim(1)),INT(alb_dim(1)), &
+            INT(sza_dim(1)),INT(vza_dim(1)),INT(wav_dim(1)), &
+            INT(alt_lay_dim(1)),INT(alt_lev_dim(1)),errstat)
 
        ! -----------------------------------------------------------------
        ! Work out the AMF using the scattering weights and the climatology
@@ -1227,7 +1246,7 @@ CONTAINS
     RETURN
   END SUBROUTINE climatology_allocate
 
-  SUBROUTINE vlidort_allocate ( ad, anozo, ancld, ansza, anvza, anwav, analt, errstat )
+  SUBROUTINE vlidort_allocate ( ad, anozo, ancld, analb, ansza, anvza, anwav, anlay, anlev, errstat )
 
     USE OMSAO_casestring_module, ONLY: lower_case
     IMPLICIT NONE
@@ -1236,7 +1255,7 @@ CONTAINS
     ! Input variables
     ! ---------------
     CHARACTER (LEN=1), INTENT (IN) :: ad
-    INTEGER (KIND=i4), INTENT (IN) :: anozo, ancld, ansza, anvza, anwav, analt
+    INTEGER (KIND=i4), INTENT (IN) :: anozo, ancld, analb, ansza, anvza, anwav, anlay, anlev
 
     ! ------------------
     ! Modified variables
@@ -1259,59 +1278,78 @@ CONTAINS
 
     SELECT CASE ( adlow )
     CASE ('a')
-       ALLOCATE (vl_OzC0(anwav), STAT=estat ) ; errstat = MAX ( errstat, estat )
-       ALLOCATE (vl_OzC1(anwav), STAT=estat ) ; errstat = MAX ( errstat, estat )
-       ALLOCATE (vl_OzC2(anwav), STAT=estat ) ; errstat = MAX ( errstat, estat )
 
-       ALLOCATE (vl_pre(ancld), STAT=estat )  ; errstat = MAX ( errstat, estat )
-       ALLOCATE (vl_sza(ansza), STAT=estat )  ; errstat = MAX ( errstat, estat )
-       ALLOCATE (vl_vza(anvza), STAT=estat )  ; errstat = MAX ( errstat, estat )
-       ALLOCATE (vl_wav(anwav), STAT=estat )  ; errstat = MAX ( errstat, estat )
-       ALLOCATE (vl_toms(anozo), STAT=estat ) ; errstat = MAX ( errstat, estat )
-
-       ALLOCATE (vl_air(anozo,ancld,analt), STAT=estat ) ; errstat = MAX ( errstat, estat )
-       ALLOCATE (vl_alt(anozo,ancld,analt), STAT=estat ) ; errstat = MAX ( errstat, estat )
-       ALLOCATE (vl_ozo(anozo,ancld,analt), STAT=estat ) ; errstat = MAX ( errstat, estat )
-       ALLOCATE (vl_tem(anozo,ancld,analt), STAT=estat ) ; errstat = MAX ( errstat, estat )
-
-       ALLOCATE (vl_I0(anozo,ancld,ansza,anvza,anwav), STAT=estat ) ; errstat = MAX ( errstat, estat )
-       ALLOCATE (vl_I1(anozo,ancld,ansza,anvza,anwav), STAT=estat ) ; errstat = MAX ( errstat, estat )
-       ALLOCATE (vl_I2(anozo,ancld,ansza,anvza,anwav), STAT=estat ) ; errstat = MAX ( errstat, estat )
-       ALLOCATE (vl_Ir(anozo,ancld,ansza,anvza,anwav), STAT=estat ) ; errstat = MAX ( errstat, estat )
-       ALLOCATE (vl_Sb(anozo,ancld,anwav), STAT=estat )             ; errstat = MAX ( errstat, estat )
-
-       ALLOCATE (vl_dI0(anozo,ancld,ansza,anvza,anwav,analt), STAT=estat ) ; errstat = MAX ( errstat, estat )
-       ALLOCATE (vl_dI1(anozo,ancld,ansza,anvza,anwav,analt), STAT=estat ) ; errstat = MAX ( errstat, estat )
-       ALLOCATE (vl_dI2(anozo,ancld,ansza,anvza,anwav,analt), STAT=estat ) ; errstat = MAX ( errstat, estat )
-       ALLOCATE (vl_dIr(anozo,ancld,ansza,anvza,anwav,analt), STAT=estat ) ; errstat = MAX ( errstat, estat )
+       ALLOCATE (lut_albedo(analb),     STAT=estat)
+       ALLOCATE (lut_clp(ancld),        STAT=estat)
+       ALLOCATE (lut_sza(ansza),        STAT=estat)
+       ALLOCATE (lut_vza(anvza),        STAT=estat)
+       ALLOCATE (lut_wavelength(anwav), STAT=estat)
+       ALLOCATE (lut_toms(anozo),       STAT=estat)
+       
+       ALLOCATE (lut_air(anozo,anlay), STAT=estat)
+       ALLOCATE (lut_alt_lay(anlay),     STAT=estat)
+       ALLOCATE (lut_alt_lev(anlev),     STAT=estat)
+       ALLOCATE (lut_ozo(anozo,anlay), STAT=estat)
+       ALLOCATE (lut_pre_lay(anlay),     STAT=estat)
+       ALLOCATE (lut_pre_lev(anlev),     STAT=estat)
+       ALLOCATE (lut_tem(anozo,anlev), STAT=estat)
+       
+       ALLOCATE (lut_I0_clr(anozo,anvza,ansza), STAT=estat)
+       ALLOCATE (lut_I1_clr(anozo,anvza,ansza), STAT=estat)
+       ALLOCATE (lut_I2_clr(anozo,anvza,ansza), STAT=estat)
+       ALLOCATE (lut_Ir_clr(anozo,anvza,ansza), STAT=estat)
+       ALLOCATE (lut_Sb_clr(anozo),                 STAT=estat)
+       
+       ALLOCATE (lut_I0_cld(anozo,ancld,anvza,ansza), STAT=estat)
+       ALLOCATE (lut_I1_cld(anozo,ancld,anvza,ansza), STAT=estat)
+       ALLOCATE (lut_I2_cld(anozo,ancld,anvza,ansza), STAT=estat)
+       ALLOCATE (lut_Ir_cld(anozo,ancld,anvza,ansza), STAT=estat)
+       ALLOCATE (lut_Sb_cld(anozo,ancld),                 STAT=estat)
+       
+       ALLOCATE (lut_dI0_clr(anozo,anlay,analb,anvza,ansza), STAT=estat)
+       ALLOCATE (lut_dI1_clr(anozo,anlay,analb,anvza,ansza), STAT=estat)
+       ALLOCATE (lut_dI2_clr(anozo,anlay,analb,anvza,ansza), STAT=estat)
+       
+       ALLOCATE (lut_dI0_cld(anozo,anlay,ancld,anvza,ansza), STAT=estat)
+       ALLOCATE (lut_dI1_cld(anozo,anlay,ancld,anvza,ansza), STAT=estat)
+       ALLOCATE (lut_dI2_cld(anozo,anlay,ancld,anvza,ansza), STAT=estat)    
 
     CASE ('d')
 
-       IF ( ALLOCATED ( vl_OzC0 ) )  DEALLOCATE ( vl_OzC0 )
-       IF ( ALLOCATED ( vl_OzC1 ) )  DEALLOCATE ( vl_OzC1 )
-       IF ( ALLOCATED ( vl_OzC2 ) )  DEALLOCATE ( vl_OzC2 )
-
-       IF ( ALLOCATED ( vl_pre  ) )  DEALLOCATE ( vl_pre  )
-       IF ( ALLOCATED ( vl_sza  ) )  DEALLOCATE ( vl_sza  )
-       IF ( ALLOCATED ( vl_vza  ) )  DEALLOCATE ( vl_vza  )
-       IF ( ALLOCATED ( vl_wav  ) )  DEALLOCATE ( vl_wav  )
-       IF ( ALLOCATED ( vl_toms ) )  DEALLOCATE ( vl_toms )
-
-       IF ( ALLOCATED ( vl_air ) )  DEALLOCATE ( vl_air )
-       IF ( ALLOCATED ( vl_alt ) )  DEALLOCATE ( vl_alt )
-       IF ( ALLOCATED ( vl_ozo ) )  DEALLOCATE ( vl_ozo )
-       IF ( ALLOCATED ( vl_tem ) )  DEALLOCATE ( vl_tem )
-
-       IF ( ALLOCATED ( vl_I0 ) )  DEALLOCATE ( vl_I0 )
-       IF ( ALLOCATED ( vl_I1 ) )  DEALLOCATE ( vl_I1 )
-       IF ( ALLOCATED ( vl_I2 ) )  DEALLOCATE ( vl_I2 )
-       IF ( ALLOCATED ( vl_Ir ) )  DEALLOCATE ( vl_Ir )
-       IF ( ALLOCATED ( vl_Sb ) )  DEALLOCATE ( vl_Sb )
-
-       IF ( ALLOCATED ( vl_dI0 ) )  DEALLOCATE ( vl_dI0 )
-       IF ( ALLOCATED ( vl_dI1 ) )  DEALLOCATE ( vl_dI1 )
-       IF ( ALLOCATED ( vl_dI2 ) )  DEALLOCATE ( vl_dI2 )
-       IF ( ALLOCATED ( vl_dIr ) )  DEALLOCATE ( vl_dIr )
+       IF ( ALLOCATED ( lut_albedo ) ) DEALLOCATE ( lut_albedo )
+       IF ( ALLOCATED ( lut_clp ) ) DEALLOCATE ( lut_clp )
+       IF ( ALLOCATED ( lut_sza ) ) DEALLOCATE ( lut_sza )
+       IF ( ALLOCATED ( lut_vza ) ) DEALLOCATE ( lut_vza )
+       IF ( ALLOCATED ( lut_wavelength ) ) DEALLOCATE ( lut_wavelength )
+       IF ( ALLOCATED ( lut_toms ) ) DEALLOCATE ( lut_toms )
+       
+       IF ( ALLOCATED ( lut_air ) ) DEALLOCATE ( lut_air )
+       IF ( ALLOCATED ( lut_alt_lev ) ) DEALLOCATE ( lut_alt_lev )
+       IF ( ALLOCATED ( lut_alt_lay ) ) DEALLOCATE ( lut_alt_lay )
+       IF ( ALLOCATED ( lut_ozo ) ) DEALLOCATE ( lut_ozo )
+       IF ( ALLOCATED ( lut_pre_lev ) ) DEALLOCATE ( lut_pre_lev )
+       IF ( ALLOCATED ( lut_pre_lay ) ) DEALLOCATE ( lut_pre_lay )
+       IF ( ALLOCATED ( lut_tem ) ) DEALLOCATE ( lut_tem )
+       
+       IF ( ALLOCATED ( lut_I0_clr ) ) DEALLOCATE ( lut_I0_clr )
+       IF ( ALLOCATED ( lut_I1_clr ) ) DEALLOCATE ( lut_I1_clr )
+       IF ( ALLOCATED ( lut_I2_clr ) ) DEALLOCATE ( lut_I2_clr )
+       IF ( ALLOCATED ( lut_Ir_clr ) ) DEALLOCATE ( lut_Ir_clr )
+       IF ( ALLOCATED ( lut_Sb_clr ) ) DEALLOCATE ( lut_Sb_clr )
+       
+       IF ( ALLOCATED ( lut_I0_cld ) ) DEALLOCATE ( lut_I0_cld )
+       IF ( ALLOCATED ( lut_I1_cld ) ) DEALLOCATE ( lut_I1_cld )
+       IF ( ALLOCATED ( lut_I2_cld ) ) DEALLOCATE ( lut_I2_cld )
+       IF ( ALLOCATED ( lut_Ir_cld ) ) DEALLOCATE ( lut_Ir_cld )
+       IF ( ALLOCATED ( lut_Sb_cld ) ) DEALLOCATE ( lut_Sb_cld )
+       
+       IF ( ALLOCATED ( lut_dI0_clr ) ) DEALLOCATE ( lut_dI0_clr ) 
+       IF ( ALLOCATED ( lut_dI1_clr ) ) DEALLOCATE ( lut_dI1_clr ) 
+       IF ( ALLOCATED ( lut_dI2_clr ) ) DEALLOCATE ( lut_dI2_clr ) 
+       
+       IF ( ALLOCATED ( lut_dI0_cld ) ) DEALLOCATE ( lut_dI0_cld ) 
+       IF ( ALLOCATED ( lut_dI1_cld ) ) DEALLOCATE ( lut_dI1_cld ) 
+       IF ( ALLOCATED ( lut_dI2_cld ) ) DEALLOCATE ( lut_dI2_cld ) 
 
     CASE DEFAULT
        ! Whatever. Nothing to be done here
@@ -1377,250 +1415,6 @@ CONTAINS
 
     RETURN
   END SUBROUTINE compute_geometric_amf
-
-  SUBROUTINE read_vlidort (errstat)
-
-    ! ====================================================
-    ! This subroutine reads in the VLIDORT calculations to
-    ! compute the Scattering Weights.
-    ! It should check if the fitting window is included in
-    ! the file, if not a warning should be printed and all
-    ! the AMF diagnostic set to non computed.
-    ! ====================================================
-
-    USE HDF5
-
-    IMPLICIT NONE    
-
-    ! ------------------
-    ! Modified variables
-    ! ------------------
-    INTEGER (KIND=i4), INTENT (INOUT) :: errstat
-
-    ! ---------------
-    ! Local variables
-    ! ---------------
-    INTEGER :: hdferr
-
-    INTEGER(HID_T) :: input_file_id                                  ! File identifier
-    INTEGER(HID_T) :: OzC0_did, OzC1_did, OzC2_did,                & ! Dataset identifiers
-                      llp_did, sza_did, toz_did, vza_did, wav_did, &
-                      I0_did, I1_did, I2_did, Ir_did, Sb_did,      &
-                      dI0_did, dI1_did, dI2_did, dIr_did, Fac_did, & 
-                      air_did, alt_did, ozo_did, tem_did, dspace,  &
-                      Tozo_datatype_id
-
-    INTEGER(HSIZE_T), DIMENSION(1) :: hllp_dim, hllp_maxdim, &
-                                      hsza_dim, hsza_maxdim, &
-                                      htoz_dim, htoz_maxdim, &
-                                      hvza_dim, hvza_maxdim, &
-                                      hwav_dim, hwav_maxdim, &
-                                      hfac_dim, hfac_maxdim
-    INTEGER(HSIZE_T), DIMENSION(3) :: halt_dim, halt_maxdim, &
-                                      hSb_dim,  hSb_maxdim
-    INTEGER(HSIZE_T), DIMENSION(5) :: hI0_dim,  hI0_maxdim
-    INTEGER(HSIZE_T), DIMENSION(6) :: hdI0_dim, hdI0_maxdim
-
-    INTEGER(SIZE_T)                :: size
-    LOGICAL, SAVE :: h5inited = .FALSE.
-
-    ! ------------------------------
-    ! Name of this module/subroutine
-    ! ------------------------------
-    CHARACTER (LEN=26), PARAMETER :: modulename = 'read_vlidort' 
-
-    ! ----------------------
-    ! Subroutine starts here
-    ! ----------------------
-    errstat = pge_errstat_ok
-
-    ! ---------------------------------
-    ! Initialize hdf5 FORTRAN Interface
-    ! ---------------------------------
-    if (.NOT.h5inited) then
-      CALL h5open_f(hdferr)
-      h5inited = .TRUE.
-    endif 
-
-    ! ------------------
-    ! Dataset data types
-    ! ------------------
-    size = 4
-    CALL h5tcopy_f(H5T_NATIVE_CHARACTER, Tozo_datatype_id, hdferr)
-    CALL h5tset_size_f(Tozo_datatype_id, size, hdferr)
-
-    ! ******************************************
-    ! Find out the dimensions of the input file:
-    !  # of pressure levels
-    !  # of SZA
-    !  # of Ozone profiles
-    !  # of VZA
-    !  # of wavelenghts
-    !  # of altitude levels  
-    ! ******************************************
-    ! -------------------
-    ! Opening input TABLE
-    ! -------------------
-    CALL h5fopen_f(TRIM(ADJUSTL(OMSAO_wfamf_table_filename)), H5F_ACC_RDONLY_F, &
-                   input_file_id, hdferr)
-    IF (hdferr .eq. -1) THEN
-       WRITE(*,100) 'ERROR: Opening '//TRIM(ADJUSTL(OMSAO_wfamf_table_filename))
-    END IF
-
-    ! --------------------------------------------------------------------------
-    ! Open ozone cross sections, grid, intensity, jacobians and profile datasets
-    ! --------------------------------------------------------------------------
-    CALL h5dopen_f(input_file_id,'/Cross sections/Ozone C0', OzC0_did, hdferr)
-    CALL h5dopen_f(input_file_id,'/Cross sections/Ozone C1', OzC1_did, hdferr)
-    CALL h5dopen_f(input_file_id,'/Cross sections/Ozone C2', OzC2_did, hdferr)
-
-    CALL h5dopen_f(input_file_id,'/Grid/Lower level pressure', llp_did, hdferr)
-    CALL h5dopen_f(input_file_id,'/Grid/SZA', sza_did, hdferr)
-    CALL h5dopen_f(input_file_id,'/Grid/TOMS ozone', toz_did, hdferr)
-    CALL h5dopen_f(input_file_id,'/Grid/VZA', vza_did, hdferr)
-    CALL h5dopen_f(input_file_id,'/Grid/Wavelength', wav_did,hdferr)
-    
-    CALL h5dopen_f(input_file_id,'/Intensity/I0', I0_did, hdferr)
-    CALL h5dopen_f(input_file_id,'/Intensity/I1', I1_did, hdferr)
-    CALL h5dopen_f(input_file_id,'/Intensity/I2', I2_did, hdferr)
-    CALL h5dopen_f(input_file_id,'/Intensity/Ir', Ir_did, hdferr)
-    CALL h5dopen_f(input_file_id,'/Intensity/Sb', Sb_did, hdferr)
-    
-    CALL h5dopen_f(input_file_id,'/Jacobians/Factor', Fac_did, hdferr)
-    CALL h5dopen_f(input_file_id,'/Jacobians/dI0', dI0_did, hdferr)
-    CALL h5dopen_f(input_file_id,'/Jacobians/dI1', dI1_did, hdferr)
-    CALL h5dopen_f(input_file_id,'/Jacobians/dI2', dI2_did, hdferr)
-    CALL h5dopen_f(input_file_id,'/Jacobians/dIr', dIr_did, hdferr)
-    
-    CALL h5dopen_f(input_file_id,'/Profiles/Air profile', air_did, hdferr)
-    CALL h5dopen_f(input_file_id,'/Profiles/Altitude', alt_did, hdferr)
-    CALL h5dopen_f(input_file_id,'/Profiles/Ozone profile', ozo_did, hdferr)
-    CALL h5dopen_f(input_file_id,'/Profiles/Temperature profile', tem_did, hdferr)
-    
-    ! -----------------------
-    ! Find out the dimensions
-    ! -----------------------
-    CALL h5dget_space_f(llp_did,dspace,hdferr)
-    CALL h5sget_simple_extent_dims_f (dspace, hllp_dim, hllp_maxdim, hdferr)
-    CALL h5dget_space_f(sza_did,dspace,hdferr)
-    CALL h5sget_simple_extent_dims_f (dspace, hsza_dim, hsza_maxdim, hdferr)
-    CALL h5dget_space_f(toz_did,dspace,hdferr)
-    CALL h5sget_simple_extent_dims_f (dspace, htoz_dim, htoz_maxdim, hdferr)
-    CALL h5dget_space_f(vza_did,dspace,hdferr)
-    CALL h5sget_simple_extent_dims_f (dspace, hvza_dim, hvza_maxdim, hdferr)
-    CALL h5dget_space_f(wav_did,dspace,hdferr)
-    CALL h5sget_simple_extent_dims_f (dspace, hwav_dim, hwav_maxdim, hdferr)
-    CALL h5dget_space_f(I0_did,dspace,hdferr)
-    CALL h5sget_simple_extent_dims_f (dspace, hI0_dim, hI0_maxdim, hdferr)
-    CALL h5dget_space_f(Sb_did,dspace,hdferr)
-    CALL h5sget_simple_extent_dims_f (dspace, hSb_dim, hSb_maxdim, hdferr)
-    CALL h5dget_space_f(Fac_did,dspace,hdferr)
-    CALL h5sget_simple_extent_dims_f (dspace, hfac_dim, hfac_maxdim, hdferr)
-    CALL h5dget_space_f(dI0_did,dspace,hdferr)
-    CALL h5sget_simple_extent_dims_f (dspace, hdI0_dim, hdI0_maxdim, hdferr)
-    CALL h5dget_space_f(alt_did,dspace,hdferr)
-    CALL h5sget_simple_extent_dims_f (dspace, halt_dim, halt_maxdim, hdferr)
-    
-    ! ---------------------------------------------------------------
-    ! Allocate & initialize variables now that we have the dimensions
-    ! ---------------------------------------------------------------
-    vl_nozo = hdI0_dim(1)
-    vl_ncld = hdI0_dim(2)
-    vl_nsza = hdI0_dim(3)
-    vl_nvza = hdI0_dim(4)
-    vl_nwav = hdI0_dim(5)
-    vl_nalt = hdI0_dim(6)
-
-    CALL vlidort_allocate ("a", vl_nozo, vl_ncld, vl_nsza, vl_nvza, vl_nwav, vl_nalt, errstat)
-  
-    ! ----------------------------------------------------
-    ! Read from the h5 file all these small size variables
-    ! ----------------------------------------------------
-    CALL h5dread_f(OzC0_did, H5T_NATIVE_REAL, vl_OzC0(1:vl_nwav), hwav_dim, hdferr)
-    CALL h5dread_f(OzC1_did, H5T_NATIVE_REAL, vl_OzC1(1:vl_nwav), hwav_dim, hdferr)
-    CALL h5dread_f(OzC2_did, H5T_NATIVE_REAL, vl_OzC2(1:vl_nwav), hwav_dim, hdferr)
-
-    CALL h5dread_f(llp_did, H5T_NATIVE_REAL,  vl_pre(1:vl_ncld),  hllp_dim, hdferr)
-    CALL h5dread_f(sza_did, H5T_NATIVE_REAL,  vl_sza(1:vl_nsza),  hsza_dim, hdferr)
-    CALL h5dread_f(toz_did, Tozo_datatype_id, vl_toms(1:vl_nozo), htoz_dim, hdferr)
-    CALL h5dread_f(vza_did, H5T_NATIVE_REAL,  vl_vza(1:vl_nvza),  hvza_dim, hdferr)
-    CALL h5dread_f(wav_did, H5T_NATIVE_REAL,  vl_wav(1:vl_nwav),  hwav_dim, hdferr)
-    
-    CALL h5dread_f(I0_did, H5T_NATIVE_REAL,  &
-         vl_I0(1:vl_nozo,1:vl_ncld,1:vl_nsza,1:vl_nvza,1:vl_nwav),  &
-         hI0_dim, hdferr)
-    CALL h5dread_f(I1_did, H5T_NATIVE_REAL,  &
-         vl_I1(1:vl_nozo,1:vl_ncld,1:vl_nsza,1:vl_nvza,1:vl_nwav),  &
-         hI0_dim, hdferr)
-    CALL h5dread_f(I2_did, H5T_NATIVE_REAL,  &
-         vl_I2(1:vl_nozo,1:vl_ncld,1:vl_nsza,1:vl_nvza,1:vl_nwav),  &
-         hI0_dim, hdferr)
-    CALL h5dread_f(Ir_did, H5T_NATIVE_REAL,  &
-         vl_Ir(1:vl_nozo,1:vl_ncld,1:vl_nsza,1:vl_nvza,1:vl_nwav),  &
-         hI0_dim, hdferr)
-    CALL h5dread_f(Sb_did, H5T_NATIVE_REAL,  &
-         vl_Sb(1:vl_nozo,1:vl_ncld,1:vl_nwav),  &
-         hSb_dim, hdferr)
-    
-    CALL h5dread_f(Fac_did, H5T_NATIVE_REAL,  vl_Factor, hfac_dim, hdferr)
-    CALL h5dread_f(dI0_did, H5T_NATIVE_REAL,  &
-         vl_dI0(1:vl_nozo,1:vl_ncld,1:vl_nsza,1:vl_nvza,1:vl_nwav,1:vl_nalt), &
-         hdI0_dim, hdferr)
-    CALL h5dread_f(dI1_did, H5T_NATIVE_REAL,  &
-         vl_dI1(1:vl_nozo,1:vl_ncld,1:vl_nsza,1:vl_nvza,1:vl_nwav,1:vl_nalt), &
-         hdI0_dim, hdferr)
-    CALL h5dread_f(dI2_did, H5T_NATIVE_REAL,  &
-         vl_dI2(1:vl_nozo,1:vl_ncld,1:vl_nsza,1:vl_nvza,1:vl_nwav,1:vl_nalt), &
-         hdI0_dim, hdferr)
-    CALL h5dread_f(dIr_did, H5T_NATIVE_REAL,  &
-         vl_dIr(1:vl_nozo,1:vl_ncld,1:vl_nsza,1:vl_nvza,1:vl_nwav,1:vl_nalt), &
-         hdI0_dim, hdferr)
-    
-    CALL h5dread_f(air_did, H5T_NATIVE_REAL,  vl_air(1:vl_nozo,1:vl_ncld,1:vl_nalt),  halt_dim, hdferr)
-    CALL h5dread_f(alt_did, H5T_NATIVE_REAL,  vl_alt(1:vl_nozo,1:vl_ncld,1:vl_nalt),  halt_dim, hdferr)
-    CALL h5dread_f(ozo_did, H5T_NATIVE_REAL,  vl_ozo(1:vl_nozo,1:vl_ncld,1:vl_nalt),  halt_dim, hdferr)
-    CALL h5dread_f(tem_did, H5T_NATIVE_REAL,  vl_tem(1:vl_nozo,1:vl_ncld,1:vl_nalt),  halt_dim, hdferr)
-    
-    ! --------------
-    ! Close datasets
-    ! --------------
-    CALL h5dclose_f (OzC0_did, hdferr)
-    CALL h5dclose_f (OzC1_did, hdferr)
-    CALL h5dclose_f (OzC2_did, hdferr)
-    
-    CALL h5dclose_f (llp_did, hdferr)
-    CALL h5dclose_f (sza_did, hdferr)
-    CALL h5dclose_f (toz_did, hdferr)
-    CALL h5dclose_f (vza_did, hdferr)
-    CALL h5dclose_f (wav_did, hdferr)
-    
-    CALL h5dclose_f(I0_did, hdferr)
-    CALL h5dclose_f(I1_did, hdferr)
-    CALL h5dclose_f(I2_did, hdferr)
-    CALL h5dclose_f(Ir_did, hdferr)
-    CALL h5dclose_f(Sb_did, hdferr)
-    
-    CALL h5dclose_f(Fac_did, hdferr)
-    CALL h5dclose_f(dI0_did, hdferr)
-    CALL h5dclose_f(dI1_did, hdferr)
-    CALL h5dclose_f(dI2_did, hdferr)
-    CALL h5dclose_f(dIr_did, hdferr)
-    
-    CALL h5dclose_f (air_did, hdferr)
-    CALL h5dclose_f (alt_did, hdferr)
-    CALL h5dclose_f (ozo_did, hdferr)
-    CALL h5dclose_f (tem_did, hdferr)
-    
-    ! ----------
-    ! Close file
-    ! ----------
-    CALL h5fclose_f(input_file_id, hdferr)
-
-    errstat = hdferr
-    
-100 FORMAT (A)
-
-  END SUBROUTINE read_vlidort
 
   SUBROUTINE amf_read_omiclouds ( nt, nx, yn_szoom, l2cfr, l2ctp, errstat )
 
@@ -2786,6 +2580,257 @@ SUBROUTINE he5_amf_write ( &
 
   RETURN
 END SUBROUTINE he5_amf_write
+
+SUBROUTINE read_lookup_table (errstat)
+
+    ! ====================================================
+    ! This subroutine reads in the VLIDORT calculations to
+    ! compute the Scattering Weights.
+    ! ====================================================
+
+    IMPLICIT NONE    
+
+    ! ------------------
+    ! Modified variables
+    ! ------------------
+    INTEGER (KIND=4), INTENT (INOUT) :: errstat
+
+    ! ---------------
+    ! Local variables
+    ! ---------------
+    INTEGER :: hdferr
+
+    INTEGER(HID_T) :: input_file_id                                  ! File identifier
+    INTEGER(HID_T) :: alb_did, clp_did, sza_did, toz_did, vza_did, wav_did, & ! Dataset identifiers
+         I0_clr_did, I1_clr_did, I2_clr_did, Ir_clr_did, Sb_clr_did,        &
+         I0_cld_did, I1_cld_did, I2_cld_did, Ir_cld_did, Sb_cld_did,        &
+         dI0_clr_did, dI1_clr_did, dI2_clr_did, & 
+         dI0_cld_did, dI1_cld_did, dI2_cld_did, & 
+         air_did, alt_lev_did, alt_lay_did, pre_lev_did, pre_lay_did, ozo_did, tem_did, &
+         dspace, toms_datatype_id
+
+    INTEGER(SIZE_T)                :: size
+    LOGICAL, SAVE :: h5inited = .FALSE.
+  
+    ! ------------------------------
+    ! Name of this module/subroutine
+    ! ------------------------------
+    CHARACTER (LEN=26), PARAMETER :: modulename = 'read_lookup_table' 
+
+    ! ----------------------
+    ! Subroutine starts here
+    ! ----------------------
+    errstat = pge_errstat_ok
+
+    ! ---------------------------------
+    ! Initialize hdf5 FORTRAN Interface
+    ! ---------------------------------
+    if (.NOT.h5inited) then
+      CALL h5open_f(hdferr)
+      h5inited = .TRUE.
+    endif 
+
+    ! ------------------
+    ! Dataset data types
+    ! ------------------
+    size = 5
+    CALL h5tcopy_f(H5T_NATIVE_CHARACTER, toms_datatype_id, hdferr)
+    CALL h5tset_size_f(toms_datatype_id, size, hdferr)
+
+    ! ******************************************
+    ! Find out the dimensions of the input file:
+    !  # of pressure levels
+    !  # of SZA
+    !  # of Ozone profiles
+    !  # of VZA
+    !  # of wavelenghts
+    !  # of altitude levels  
+    ! ******************************************
+    ! -------------------
+    ! Opening input TABLE
+    ! -------------------
+    CALL h5fopen_f(TRIM(ADJUSTL(OMSAO_wfamf_table_filename)), H5F_ACC_RDONLY_F, &
+                   input_file_id, hdferr)
+    IF (hdferr .eq. -1) THEN
+       WRITE(*,100) 'ERROR: Opening '//TRIM(ADJUSTL(OMSAO_wfamf_table_filename))
+    END IF
+
+    ! --------------------------------------------------------------------------
+    ! Open grid, intensity, scattering weights and profile datasets
+    ! --------------------------------------------------------------------------
+    CALL h5dopen_f(input_file_id,'/Grid/Albedo', alb_did, hdferr)
+    CALL h5dopen_f(input_file_id,'/Grid/Cloud Pressure', clp_did, hdferr)
+    CALL h5dopen_f(input_file_id,'/Grid/SZA', sza_did, hdferr)
+    CALL h5dopen_f(input_file_id,'/Grid/TOMS', toz_did, hdferr)
+    CALL h5dopen_f(input_file_id,'/Grid/VZA', vza_did, hdferr)
+    CALL h5dopen_f(input_file_id,'/Grid/Wavelength', wav_did,hdferr)
+    
+    CALL h5dopen_f(input_file_id,'/Intensity/Clear Sky/I0', I0_clr_did, hdferr)
+    CALL h5dopen_f(input_file_id,'/Intensity/Clear Sky/I1', I1_clr_did, hdferr)
+    CALL h5dopen_f(input_file_id,'/Intensity/Clear Sky/I2', I2_clr_did, hdferr)
+    CALL h5dopen_f(input_file_id,'/Intensity/Clear Sky/Ir', Ir_clr_did, hdferr)
+    CALL h5dopen_f(input_file_id,'/Intensity/Clear Sky/Sb', Sb_clr_did, hdferr)
+    CALL h5dopen_f(input_file_id,'/Intensity/Cloud Sky/I0', I0_cld_did, hdferr)
+    CALL h5dopen_f(input_file_id,'/Intensity/Cloud Sky/I1', I1_cld_did, hdferr)
+    CALL h5dopen_f(input_file_id,'/Intensity/Cloud Sky/I2', I2_cld_did, hdferr)
+    CALL h5dopen_f(input_file_id,'/Intensity/Cloud Sky/Ir', Ir_cld_did, hdferr)
+    CALL h5dopen_f(input_file_id,'/Intensity/Cloud Sky/Sb', Sb_cld_did, hdferr)
+    
+    
+    CALL h5dopen_f(input_file_id,'/Profiles/Air Column Layer', air_did, hdferr)
+    CALL h5dopen_f(input_file_id,'/Profiles/Altitude Level', alt_lev_did, hdferr)
+    CALL h5dopen_f(input_file_id,'/Profiles/Altitude Layer', alt_lay_did, hdferr)
+    CALL h5dopen_f(input_file_id,'/Profiles/Pressure Level', pre_lev_did, hdferr)
+    CALL h5dopen_f(input_file_id,'/Profiles/Pressure Layer', pre_lay_did, hdferr)
+    CALL h5dopen_f(input_file_id,'/Profiles/Ozone Column Layer', ozo_did, hdferr)
+    CALL h5dopen_f(input_file_id,'/Profiles/Temperature Level', tem_did, hdferr)
+
+    CALL h5dopen_f(input_file_id,'/Scattering Weights/Clear Sky/dI0', dI0_clr_did, hdferr)
+    CALL h5dopen_f(input_file_id,'/Scattering Weights/Clear Sky/dI1', dI1_clr_did, hdferr)
+    CALL h5dopen_f(input_file_id,'/Scattering Weights/Clear Sky/dI2', dI2_clr_did, hdferr)
+    CALL h5dopen_f(input_file_id,'/Scattering Weights/Cloud Sky/dI0', dI0_cld_did, hdferr)
+    CALL h5dopen_f(input_file_id,'/Scattering Weights/Cloud Sky/dI1', dI1_cld_did, hdferr)
+    CALL h5dopen_f(input_file_id,'/Scattering Weights/Cloud Sky/dI2', dI2_cld_did, hdferr)
+    
+    ! -----------------------
+    ! Find out the dimensions
+    ! -----------------------
+    CALL h5dget_space_f(alb_did,dspace,hdferr)
+    CALL h5sget_simple_extent_dims_f (dspace, alb_dim, alb_maxdim, hdferr)
+    CALL h5dget_space_f(clp_did,dspace,hdferr)
+    CALL h5sget_simple_extent_dims_f (dspace, clp_dim, clp_maxdim, hdferr)
+    CALL h5dget_space_f(sza_did,dspace,hdferr)
+    CALL h5sget_simple_extent_dims_f (dspace, sza_dim, sza_maxdim, hdferr)
+    CALL h5dget_space_f(toz_did,dspace,hdferr)
+    CALL h5sget_simple_extent_dims_f (dspace, toz_dim, toz_maxdim, hdferr)
+    CALL h5dget_space_f(vza_did,dspace,hdferr)
+    CALL h5sget_simple_extent_dims_f (dspace, vza_dim, vza_maxdim, hdferr)
+    CALL h5dget_space_f(wav_did,dspace,hdferr)
+    CALL h5sget_simple_extent_dims_f (dspace, wav_dim, wav_maxdim, hdferr)
+    CALL h5dget_space_f(I0_clr_did,dspace,hdferr)
+    CALL h5sget_simple_extent_dims_f (dspace, I0_clr_dim, I0_clr_maxdim, hdferr)
+    CALL h5dget_space_f(I0_cld_did,dspace,hdferr)
+    CALL h5sget_simple_extent_dims_f (dspace, I0_cld_dim, I0_cld_maxdim, hdferr)
+    CALL h5dget_space_f(Sb_clr_did,dspace,hdferr)
+    CALL h5sget_simple_extent_dims_f (dspace, Sb_clr_dim, Sb_clr_maxdim, hdferr)
+    CALL h5dget_space_f(Sb_cld_did,dspace,hdferr)
+    CALL h5sget_simple_extent_dims_f (dspace, Sb_cld_dim, Sb_cld_maxdim, hdferr)
+    CALL h5dget_space_f(dI0_clr_did,dspace,hdferr)
+    CALL h5sget_simple_extent_dims_f (dspace, dI0_clr_dim, dI0_clr_maxdim, hdferr)
+    CALL h5dget_space_f(dI0_cld_did,dspace,hdferr)
+    CALL h5sget_simple_extent_dims_f (dspace, dI0_cld_dim, dI0_cld_maxdim, hdferr)
+    CALL h5dget_space_f(alt_lev_did,dspace,hdferr)
+    CALL h5sget_simple_extent_dims_f (dspace, alt_lev_dim, alt_lev_maxdim, hdferr)
+    CALL h5dget_space_f(alt_lay_did,dspace,hdferr)
+    CALL h5sget_simple_extent_dims_f (dspace, alt_lay_dim, alt_lay_maxdim, hdferr)
+    CALL h5dget_space_f(air_did,dspace,hdferr)
+    CALL h5sget_simple_extent_dims_f (dspace, air_dim, air_maxdim, hdferr)
+    CALL h5dget_space_f(tem_did,dspace,hdferr)
+    CALL h5sget_simple_extent_dims_f (dspace, tem_dim, tem_maxdim, hdferr)
+    
+    ! ---------------------------------------------------------------
+    ! Allocate & initialize variables now that we have the dimensions
+    ! ---------------------------------------------------------------
+    CALL vlidort_allocate('a', INT(toz_dim(1)),INT(clp_dim(1)),INT(alb_dim(1)), &
+         INT(sza_dim(1)),INT(vza_dim(1)),INT(wav_dim(1)), &
+         INT(alt_lay_dim(1)),INT(alt_lev_dim(1)),errstat)
+    
+    ! ----------------------------------------------------
+    ! Read from the h5 file all these small size variables
+    ! ----------------------------------------------------
+    CALL h5dread_f(alb_did, H5T_NATIVE_REAL,  lut_albedo(1:alb_dim(1)),  alb_dim, hdferr)
+    CALL h5dread_f(clp_did, H5T_NATIVE_REAL,  lut_clp(1:clp_dim(1)),  clp_dim, hdferr)
+    CALL h5dread_f(sza_did, H5T_NATIVE_REAL,  lut_sza(1:sza_dim(1)),  sza_dim, hdferr)
+    CALL h5dread_f(toz_did, toms_datatype_id, lut_toms(1:toz_dim(1)), toz_dim, hdferr)
+    CALL h5dread_f(vza_did, H5T_NATIVE_REAL,  lut_vza(1:vza_dim(1)),  vza_dim, hdferr)
+    CALL h5dread_f(wav_did, H5T_NATIVE_REAL,  lut_wavelength(1:wav_dim(1)),  wav_dim, hdferr)
+    
+    CALL h5dread_f(I0_clr_did, H5T_NATIVE_REAL, &
+         lut_I0_clr(1:toz_dim(1),1:vza_dim(1),1:vza_dim(1)), I0_clr_dim, hdferr)
+    CALL h5dread_f(I1_clr_did, H5T_NATIVE_REAL, &
+         lut_I1_clr(1:toz_dim(1),1:vza_dim(1),1:vza_dim(1)), I0_clr_dim, hdferr)
+    CALL h5dread_f(I2_clr_did, H5T_NATIVE_REAL, &
+         lut_I2_clr(1:toz_dim(1),1:vza_dim(1),1:vza_dim(1)), I0_clr_dim, hdferr)
+    CALL h5dread_f(Ir_clr_did, H5T_NATIVE_REAL, &
+         lut_Ir_clr(1:toz_dim(1),1:vza_dim(1),1:vza_dim(1)), I0_clr_dim, hdferr)
+    CALL h5dread_f(Sb_clr_did, H5T_NATIVE_REAL, &
+         lut_Sb_clr(1:toz_dim(1)), Sb_clr_dim, hdferr)
+
+    CALL h5dread_f(I0_cld_did, H5T_NATIVE_REAL, &
+         lut_I0_cld(1:toz_dim(1),1:clp_dim(1),1:vza_dim(1),1:sza_dim(1)), I0_cld_dim, hdferr)
+    CALL h5dread_f(I1_cld_did, H5T_NATIVE_REAL, &
+         lut_I1_cld(1:toz_dim(1),1:clp_dim(1),1:vza_dim(1),1:sza_dim(1)), I0_cld_dim, hdferr)
+    CALL h5dread_f(I2_cld_did, H5T_NATIVE_REAL, &
+         lut_I2_cld(1:toz_dim(1),1:clp_dim(1),1:vza_dim(1),1:sza_dim(1)), I0_cld_dim, hdferr)
+    CALL h5dread_f(Ir_cld_did, H5T_NATIVE_REAL, &
+         lut_Ir_cld(1:toz_dim(1),1:clp_dim(1),1:vza_dim(1),1:sza_dim(1)), I0_cld_dim, hdferr)
+    CALL h5dread_f(Sb_cld_did, H5T_NATIVE_REAL, &
+         lut_Sb_cld(1:toz_dim(1),1:clp_dim(1)), Sb_cld_dim, hdferr)
+
+    CALL h5dread_f(dI0_clr_did, H5T_NATIVE_REAL,  &
+         lut_dI0_clr(1:toz_dim(1),1:alt_lay_dim(1),1:alb_dim(1),1:vza_dim(1),1:sza_dim(1)), &
+         dI0_clr_dim, hdferr)
+    CALL h5dread_f(dI1_clr_did, H5T_NATIVE_REAL,  &
+         lut_dI1_clr(1:toz_dim(1),1:alt_lay_dim(1),1:alb_dim(1),1:vza_dim(1),1:sza_dim(1)), &
+         dI0_clr_dim, hdferr)
+    CALL h5dread_f(dI2_clr_did, H5T_NATIVE_REAL,  &
+         lut_dI2_clr(1:toz_dim(1),1:alt_lay_dim(1),1:alb_dim(1),1:vza_dim(1),1:sza_dim(1)), &
+         dI0_clr_dim, hdferr)
+
+    CALL h5dread_f(dI0_cld_did, H5T_NATIVE_REAL,  &
+         lut_dI0_cld(1:toz_dim(1),1:alt_lay_dim(1),1:clp_dim(1),1:vza_dim(1),1:sza_dim(1)), &
+         dI0_cld_dim, hdferr)
+    CALL h5dread_f(dI1_cld_did, H5T_NATIVE_REAL,  &
+         lut_dI1_cld(1:toz_dim(1),1:alt_lay_dim(1),1:clp_dim(1),1:vza_dim(1),1:sza_dim(1)), &
+         dI0_cld_dim, hdferr)
+    CALL h5dread_f(dI2_cld_did, H5T_NATIVE_REAL,  &
+         lut_dI2_cld(1:toz_dim(1),1:alt_lay_dim(1),1:clp_dim(1),1:vza_dim(1),1:sza_dim(1)), &
+         dI0_cld_dim, hdferr)
+    
+    CALL h5dread_f(air_did,     H5T_NATIVE_REAL, lut_air(1:toz_dim(1),1:alt_lay_dim(1)), air_dim, hdferr)
+    CALL h5dread_f(alt_lev_did, H5T_NATIVE_REAL, lut_alt_lev(1:alt_lev_dim(1)),   alt_lev_dim, hdferr)
+    CALL h5dread_f(alt_lay_did, H5T_NATIVE_REAL, lut_alt_lay(1:alt_lay_dim(1)),   alt_lay_dim, hdferr)
+    CALL h5dread_f(pre_lev_did, H5T_NATIVE_REAL, lut_pre_lev(1:alt_lev_dim(1)),   alt_lev_dim, hdferr)
+    CALL h5dread_f(pre_lay_did, H5T_NATIVE_REAL, lut_pre_lay(1:alt_lay_dim(1)),   alt_lay_dim, hdferr)
+    CALL h5dread_f(ozo_did,     H5T_NATIVE_REAL, lut_ozo(1:toz_dim(1),1:alt_lay_dim(1)),     air_dim, hdferr)
+    CALL h5dread_f(tem_did,     H5T_NATIVE_REAL, lut_tem(1:toz_dim(1),1:alt_lev_dim(1)), tem_dim, hdferr)
+    
+    ! --------------
+    ! Close datasets
+    ! --------------    
+    CALL h5dclose_f(alb_did, hdferr)
+    CALL h5dclose_f(clp_did, hdferr)
+    CALL h5dclose_f(sza_did, hdferr)
+    CALL h5dclose_f(toz_did, hdferr)
+    CALL h5dclose_f(vza_did, hdferr)
+    CALL h5dclose_f(wav_did, hdferr)
+    
+    CALL h5dclose_f(I0_clr_did, hdferr); CALL h5dclose_f(I0_cld_did, hdferr)
+    CALL h5dclose_f(I1_clr_did, hdferr); CALL h5dclose_f(I1_cld_did, hdferr)
+    CALL h5dclose_f(I2_clr_did, hdferr); CALL h5dclose_f(I2_cld_did, hdferr)
+    CALL h5dclose_f(Ir_clr_did, hdferr); CALL h5dclose_f(Ir_cld_did, hdferr)
+    CALL h5dclose_f(Sb_clr_did, hdferr); CALL h5dclose_f(Sb_cld_did, hdferr)
+    
+    CALL h5dclose_f(dI0_clr_did, hdferr); CALL h5dclose_f(dI0_cld_did, hdferr)
+    CALL h5dclose_f(dI1_clr_did, hdferr); CALL h5dclose_f(dI1_cld_did, hdferr)
+    CALL h5dclose_f(dI2_clr_did, hdferr); CALL h5dclose_f(dI2_cld_did, hdferr)
+    
+    CALL h5dclose_f(air_did, hdferr)
+    CALL h5dclose_f(alt_lay_did, hdferr); CALL h5dclose_f(alt_lev_did, hdferr)
+    CALL h5dclose_f(pre_lay_did, hdferr); CALL h5dclose_f(pre_lev_did, hdferr)
+    CALL h5dclose_f(ozo_did, hdferr)
+    CALL h5dclose_f(tem_did, hdferr)
+    
+    ! ----------
+    ! Close file
+    ! ----------
+    CALL h5fclose_f(input_file_id, hdferr)
+
+    errstat = hdferr
+
+100 FORMAT (A)
+
+END SUBROUTINE read_lookup_table
 
 END MODULE OMSAO_wfamf_module
 
