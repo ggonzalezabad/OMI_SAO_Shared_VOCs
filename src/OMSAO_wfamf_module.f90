@@ -302,16 +302,17 @@ CONTAINS
        ! ----------------------------------------------------------------------
        CALL amf_diagnostic (                                                   &
             nt, nx, lat, lon, sza, vza, snow, glint, xtrange,                  &
-            MINVAL(vl_pre(1:vl_ncld)), MAXVAL(vl_pre(1:vl_ncld)), l2cfr, l2ctp,&
+            MINVAL(lut_clp), MAXVAL(lut_clp), l2cfr, l2ctp,&
             amfdiag  )
 
        ! --------------------------------------------------------
        ! Compute Scattering weights in the look up table grid but
        ! with the correct albedo. amfdiag is used to skip pixel
        ! ---------------------------------------------------------
-       CALL compute_scatt ( nt, nx, albedo, sza, vza, l2ctp, l2cfr, terrain_height, cli_heights, amfdiag, &
+       CALL compute_scatt ( nt, nx, albedo, lat, sza, vza, l2ctp, l2cfr, terrain_height, amfdiag, &
             scattw)
 
+       stop
        ! ----------------------------
        ! Deallocate Vlidort variables
        ! ----------------------------
@@ -1793,8 +1794,8 @@ CONTAINS
     ! suplied scattering weights file.
     ! ----------------------------------------------------------
     IF ( &
-         (amf_wvl  .LT. MINVAL(vl_wav) ) .OR. &
-         (amf_wvl2 .GT. MAXVAL(vl_wav) ) ) THEN
+         (amf_wvl  .LT. MINVAL(lut_wavelength) ) .OR. &
+         (amf_wvl2 .GT. MAXVAL(lut_wavelength) ) ) THEN
        RETURN
     END IF
 
@@ -1814,10 +1815,10 @@ CONTAINS
        ! Out-of-Bound SZA, VZA (but not missing!)
        ! ----------------------------------------
        WHERE ( &
-            ( sza(spix:epix,it) < MINVAL(vl_sza) ) .OR. &
-            ( sza(spix:epix,it) > MAXVAL(vl_sza) ) .OR. &
-            ( vza(spix:epix,it) < MINVAL(vl_vza) ) .OR. &
-            ( vza(spix:epix,it) > MAXVAL(vl_vza) )      )
+            ( sza(spix:epix,it) < MINVAL(lut_sza) ) .OR. &
+            ( sza(spix:epix,it) > MAXVAL(lut_sza) ) .OR. &
+            ( vza(spix:epix,it) < MINVAL(lut_vza) ) .OR. &
+            ( vza(spix:epix,it) > MAXVAL(lut_vza) )      )
           amfdiag(spix:epix,it) = omi_oobview_amf
        END WHERE
 
@@ -1919,11 +1920,12 @@ CONTAINS
     RETURN
   END SUBROUTINE amf_diagnostic
 
-  SUBROUTINE compute_scatt ( nt, nx, albedo, sza, vza, l2ctp, l2cfr, terrain_height, cli_heights, amfdiag, &
+  SUBROUTINE compute_scatt ( nt, nx, albedo, lat, sza, vza, l2ctp, l2cfr, terrain_height, amfdiag, &
                              scattw)
 
     USE OMSAO_lininterpolation_module
     USE OMSAO_variables_module, ONLY: verb_thresh_lev
+    USE OMSAO_omidata_module, ONLY: omi_ozone_amount
 
     IMPLICIT NONE
 
@@ -1932,13 +1934,13 @@ CONTAINS
     ! ---------------
     INTEGER (KIND=i4),                                INTENT (IN) :: nt, nx
     INTEGER (KIND=i2), DIMENSION (1:nx,0:nt-1),       INTENT (IN) :: amfdiag
-    REAL    (KIND=r4), DIMENSION (1:nx,0:nt-1),       INTENT (IN) :: sza, vza, terrain_height
+    REAL    (KIND=r4), DIMENSION (1:nx,0:nt-1),       INTENT (IN) :: lat, sza, vza, terrain_height
     REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1),       INTENT (IN) :: albedo, l2ctp, l2cfr
-    REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1,CmETA), INTENT (IN) :: cli_heights
+
     ! ------------------
     ! Modified variables
     ! ------------------
-    REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1,CmETA), INTENT (INOUT) :: scattw
+    REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1,alt_lay_dim(1)), INTENT (INOUT) :: scattw
 
     ! ---------------
     ! Local variables
@@ -1948,18 +1950,24 @@ CONTAINS
     REAL    (KIND=r8) :: temp, tempsquare, grad
     REAL    (KIND=r8) :: ozo_abs, Intensity, Jacobian, Oz_xs, Intensity_cld, Jacobian_cld
     REAL    (KIND=r8) :: crf, nwavs!, Icr, Icl ,cloud_scattw, clear_scattw
-    REAL    (KIND=r8), DIMENSION(vl_ncld, vl_nsza, vl_nvza, vl_nalt) :: scattwe, scattwe_cld
-    REAL    (KIND=r8), DIMENSION(vl_ncld, vl_nsza, vl_nvza)          :: Inte_clear, Inte_cloud
-    REAL    (KIND=r8), DIMENSION(vl_nalt) :: re_alt
-    REAL    (KIND=r8), DIMENSION(vl_ncld) :: re_pre
-    REAL    (KIND=r8), DIMENSION(vl_nsza) :: re_sza
-    REAL    (KIND=r8), DIMENSION(vl_nvza) :: re_vza
+    REAL    (KIND=r8), DIMENSION(clp_dim(1), sza_dim(1), vza_dim(1), alt_lay_dim(1)) :: scattwe, scattwe_cld
+    REAL    (KIND=r8), DIMENSION(clp_dim(1), sza_dim(1), vza_dim(1))          :: Inte_clear, Inte_cloud
+    REAL    (KIND=r8), DIMENSION(alt_lay_dim(1)) :: re_alt
+    REAL    (KIND=r8), DIMENSION(clp_dim(1)) :: re_pre
+    REAL    (KIND=r8), DIMENSION(sza_dim(1)) :: re_sza
+    REAL    (KIND=r8), DIMENSION(vza_dim(1)) :: re_vza
     REAL    (KIND=r8)                     :: local_alb, local_sza, local_vza, local_thg, local_cld, local_cfr
     REAL    (KIND=r8), DIMENSION(1)       :: ezlocal_sza, ezlocal_vza
     REAL    (KIND=r8), DIMENSION(1,1,1)   :: cloud_scattw, clear_scattw
     REAL    (KIND=r8), DIMENSION(1,1)     :: Icr, Icl
-    REAL    (KIND=r8), DIMENSION(CmETA)   :: local_chg
-    REAL    (kind=8),  PARAMETER :: d2r = 3.141592653589793d0/180.0  !! JED fix
+    REAL    (KIND=r8), DIMENSION(alt_lay_dim(1)) :: local_chg
+    REAL    (KIND=r8), PARAMETER :: d2r = 3.141592653589793d0/180.0  !! JED fix
+    REAL    (KIND=r8), PARAMETER :: du  = 2.69e16 ! molecules/cm^2
+    INTEGER (KIND=i4) :: toms_idx
+    REAL    (KIND=r8), DIMENSION(10), PARAMETER :: hxxx = (/125,175,225,275,325,375,425,475,523,575/)
+    REAL    (KIND=r8), DIMENSION(10), PARAMETER :: mxxx = (/125,175,225,275,325,375,425,475,523,575/)
+    REAL    (KIND=r8), DIMENSION(6),  PARAMETER :: lxxx = (/225,275,325,375,425,475/)
+
     ! -----------------------------------
     ! Find look up table wavelength index
     ! No interpolation, closest available
@@ -1976,17 +1984,17 @@ CONTAINS
     ! This should be moved to the program that creates the
     ! look up tables
     ! ------------------------------- ------------------------
-    DO issza = 1, vl_nsza
-       re_sza(issza) = cos(d2r*REAL(vl_sza(vl_nsza+1-issza), KIND = r8))  ! JED fix
+    DO issza = 1, sza_dim(1)
+       re_sza(issza) = cos(d2r*REAL(lut_sza(sza_dim(1)+1-issza), KIND = r8))  ! JED fix
     END DO
-    DO isvza = 1, vl_nvza
-       re_vza(isvza) = cos(d2r*REAL(vl_vza(vl_nvza+1-isvza), KIND = r8)) ! JED fix
+    DO isvza = 1, vza_dim(1)
+       re_vza(isvza) = cos(d2r*REAL(lut_vza(vza_dim(1)+1-isvza), KIND = r8)) ! JED fix
     END DO
-    DO ispre = 1, vl_ncld
-       re_pre(ispre) = REAL(vl_pre(ispre), KIND = r8) * 1013.0_r8
+    DO ispre = 1, clp_dim(1)
+       re_pre(ispre) = REAL(lut_clp(clp_dim(1)+1-ispre), KIND = r8)
     END DO
-    DO isalt = 1, vl_nalt
-       re_alt(isalt) = 1013.0_r8 * (10.0_r8 ** ( REAL(vl_alt(1,1,isalt), KIND = r8) / (-16.0_r8)))
+    DO isalt = 1, alt_lay_dim(1)
+       re_alt(isalt) = REAL(lut_pre_lay(isalt), KIND=8)
     END DO
 
     ! ---------------
@@ -1998,8 +2006,21 @@ CONTAINS
        ! --------------------------
        DO ixtrack = 1, nx
 
+          
           IF (amfdiag(ixtrack,itime) .LT. 0) CYCLE
 
+          ! -----------------------------------------
+          ! Find out which TOMS profile we should use
+          ! in function of latitude and ozone column.
+          ! -----------------------------------------        
+          IF ( ABS(lat(ixtrack,itime)) .GT. 60.0 ) THEN
+             toms_idx = MINLOC(ABS(hxxx-omi_ozone_amount(ixtrack,itime)/du)) + 0
+          ELSE IF ( ABS(lat(ixtrack,itime)) .GT. 30.0 .AND. ABS(lat(ixtrack,itime)) .LE. 60.0 ) THEN
+             toms_idx = MINLOC(ABS(mxxx-omi_ozone_amount(ixtrack,itime)/du)) + 17
+          ELSE IF ( ABS(lat(ixtrack,itime)) .LE. 30.0 ) THEN
+             toms_idx = MINLOC(ABS(lxxx-omi_ozone_amount(ixtrack,itime)/du)) + 11
+          ENDIF
+          
           ! ----------------------------------------------
           ! If this point is reached then scattw should be
           ! different from r8_missval and it needs to be
@@ -2023,7 +2044,6 @@ CONTAINS
           local_sza    = cos(d2r*REAL(sza(ixtrack,itime), KIND = r8))  ! JED fix
           local_vza    = cos(d2r*REAL(vza(ixtrack,itime), KIND = r8))  ! JED fix
           local_thg    = REAL(terrain_height(ixtrack,itime), KIND = r8)
-          local_chg(:) = cli_heights(ixtrack,itime,:)
 
           ! ----------------------------------------------
           ! Convert pixel terrain height to pressure using
