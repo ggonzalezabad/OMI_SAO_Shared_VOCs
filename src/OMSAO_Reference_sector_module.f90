@@ -317,7 +317,6 @@ MODULE OMSAO_Reference_sector_module
       USE OMSAO_variables_module, ONLY: OMSAO_refseccor_cld_filename, voc_amf_filenames
       USE OMSAO_indices_module,   ONLY: voc_omicld_idx
 
-
       IMPLICIT NONE
 
       ! ---------------
@@ -336,7 +335,7 @@ MODULE OMSAO_Reference_sector_module
       REAL    (KIND=r8), DIMENSION (nXtrackRadRR,0:nTimesRadRR-1) :: mem_column_amount, &
            mem_column_uncertainty, mem_amf, mem_rms
       REAL    (KIND=r4), DIMENSION (nXtrackRadRR,0:nTimesRadRR-1) :: mem_latitude, mem_longitude, &
-           mem_sza, mem_vza, mem_height
+           mem_sza, mem_vza, mem_height, mem_saa, mem_vaa
       INTEGER (KIND=i2), DIMENSION (nXtrackRadRR,0:nTimesRadRR-1) :: mem_xtrflg, mem_fit_flag
       INTEGER (KIND=i2), DIMENSION (nXtrackRadRR,0:nTimesRadRR-1) :: mem_snow, mem_glint
       LOGICAL,           DIMENSION (0:nTimesRadRR-1)              :: yn_szoom_rs, yn_common_range
@@ -377,6 +376,8 @@ MODULE OMSAO_Reference_sector_module
       mem_longitude          = r4_missval
       mem_sza                = r4_missval
       mem_vza                = r4_missval
+      mem_saa                = r4_missval
+      mem_vaa                = r4_missval
       mem_fit_flag           = i2_missval
       mem_xtrflg             = i2_missval
       mem_snow               = i2_missval
@@ -440,6 +441,8 @@ MODULE OMSAO_Reference_sector_module
            mem_longitude(1:nXtrackRadRR,0:nTimesRadRR-1),              &
            mem_sza(1:nXtrackRadRR,0:nTimesRadRR-1),                    &
            mem_vza(1:nXtrackRadRR,0:nTimesRadRR-1),                    &
+           mem_saa(1:nXtrackRadRR,0:nTimesRadRR-1),                    &
+           mem_vaa(1:nXtrackRadRR,0:nTimesRadRR-1),                    &
            mem_height(1:nXtrackRadRR,0:nTimesRadRR-1),                 &
            locerrstat)
 
@@ -482,7 +485,7 @@ MODULE OMSAO_Reference_sector_module
 
       CALL amf_calculation (                                            &
            pge_idx, nTimesRadRR, nXtrackRadRR, mem_latitude, mem_longitude, &
-           mem_sza, mem_vza, mem_snow, mem_glint, omi_xtrpix_range_rr,      &
+           mem_sza, mem_vza, mem_saa, mem_vaa, mem_snow, mem_glint, omi_xtrpix_range_rr,      &
            yn_szoom_rs, mem_column_amount, mem_column_uncertainty, mem_amf, &
            mem_height, yn_write, locerrstat )
 

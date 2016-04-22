@@ -3,7 +3,7 @@ SUBROUTINE omi_pge_swathline_loop_memory (                               &
      xtrange, yn_radiance_reference, yn_remove_target, ntargpol,         &
      yn_commit, mem_column_amount, mem_column_uncertainty, mem_rms,      &
      mem_fit_flag, mem_xtrflg, mem_latitude, mem_longitude, mem_sza,     &
-     mem_vza, mem_height, errstat)
+     mem_vza, mem_saa, mem_vaa, mem_height, errstat)
 
 
   USE OMSAO_precision_module,  ONLY: i4, r8
@@ -18,7 +18,8 @@ SUBROUTINE omi_pge_swathline_loop_memory (                               &
        omi_itnum_flag, omi_fitconv_flag, omi_column_amount,                     &
        omi_column_uncert, omi_time_utc, omi_time, omi_latitude, omi_fit_rms,    &
        omi_radiance_errstat, omi_nwav_radref, omi_radref_spec, omi_radref_wavl, &
-       omi_szenith, omi_vzenith, omi_longitude, omi_xtrflg, omi_height
+       omi_szenith, omi_vzenith, omi_longitude, omi_xtrflg, omi_height,         &
+       omi_sazimuth, omi_vazimuth
   USE OMSAO_destriping_module, ONLY: ctr_maxcol
   USE OMSAO_prefitcol_module ! brings in nxtrack_max, nlines_max, ...
   USE OMSAO_errstat_module
@@ -73,7 +74,7 @@ SUBROUTINE omi_pge_swathline_loop_memory (                               &
   REAL    (KIND=r8), DIMENSION (nx,0:nt-1), INTENT(INOUT) :: &
        mem_column_amount, mem_column_uncertainty, mem_rms
   REAL    (KIND=r4), DIMENSION (nx,0:nt-1), INTENT(INOUT) :: &
-       mem_latitude, mem_longitude, mem_sza, mem_vza, mem_height
+       mem_latitude, mem_longitude, mem_sza, mem_vza, mem_height, mem_saa, mem_vaa
   INTEGER (KIND=i2), DIMENSION (nx,0:nt-1), INTENT(INOUT) :: mem_fit_flag, mem_xtrflg
 
   locerrstat = pge_errstat_ok
@@ -95,6 +96,8 @@ SUBROUTINE omi_pge_swathline_loop_memory (                               &
   mem_longitude          = r4_missval
   mem_sza                = r4_missval
   mem_vza                = r4_missval
+  mem_saa                = r4_missval
+  mem_vaa                = r4_missval
   mem_fit_flag           = i2_missval
 
   IF ( yn_radiance_reference .AND. yn_remove_target ) THEN
@@ -240,6 +243,8 @@ SUBROUTINE omi_pge_swathline_loop_memory (                               &
            mem_longitude(fpix:lpix,omi_scanline_no)          = omi_longitude(fpix:lpix,iloop)
            mem_sza(fpix:lpix,omi_scanline_no)                = omi_szenith(fpix:lpix,iloop)
            mem_vza(fpix:lpix,omi_scanline_no)                = omi_vzenith(fpix:lpix,iloop)
+           mem_saa(fpix:lpix,omi_scanline_no)                = omi_sazimuth(fpix:lpix,iloop)
+           mem_vaa(fpix:lpix,omi_scanline_no)                = omi_vazimuth(fpix:lpix,iloop)
            mem_fit_flag(fpix:lpix,omi_scanline_no)           = omi_fitconv_flag(fpix:lpix,iloop)
            mem_xtrflg(fpix:lpix,omi_scanline_no)             = omi_xtrflg(fpix:lpix,iloop)
            mem_height(fpix:lpix,omi_scanline_no)             = REAL(omi_height(fpix:lpix,iloop), KIND = r4)

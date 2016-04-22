@@ -44,7 +44,7 @@ SUBROUTINE omi_pge_postprocessing ( &
   ! ----------------
   ! (1) OMI data
   ! ----------------
-  REAL    (KIND=r4), DIMENSION (1:nxtrack,0:ntimes-1) :: lat, lon, sza, vza, thg, extr
+  REAL    (KIND=r4), DIMENSION (1:nxtrack,0:ntimes-1) :: lat, lon, sza, vza, saa, vaa, thg, extr
   REAL    (KIND=r8), DIMENSION (1:nxtrack,0:ntimes-1) :: saocol, saodco, saorms, saoamf
   INTEGER (KIND=i2), DIMENSION (1:nxtrack,0:ntimes-1) :: saofcf, saomqf
   INTEGER (KIND=i2), DIMENSION (1:nxtrack,0:ntimes-1) :: glint_flg, snow_ice_flg
@@ -67,6 +67,8 @@ SUBROUTINE omi_pge_postprocessing ( &
   CALL  saopge_geofield_read ( ntimes, nxtrack, lon_field,  lon,  locerrstat )
   CALL  saopge_geofield_read ( ntimes, nxtrack, sza_field,  sza,  locerrstat )
   CALL  saopge_geofield_read ( ntimes, nxtrack, vza_field,  vza,  locerrstat )
+  CALL  saopge_geofield_read ( ntimes, nxtrack, saa_field,  saa,  locerrstat )
+  CALL  saopge_geofield_read ( ntimes, nxtrack, vaa_field,  vaa,  locerrstat )
   CALL  saopge_geofield_read ( ntimes, nxtrack, thgt_field, thg,  locerrstat )
   CALL  saopge_geofield_read ( ntimes, nxtrack, extr_field, extr, locerrstat )
  
@@ -92,8 +94,8 @@ SUBROUTINE omi_pge_postprocessing ( &
   ! Comnpute AMF bis
   ! ----------------
   yn_write = .TRUE.
-  CALL amf_calculation (                             &
-       pge_idx, ntimes, nxtrack, lat, lon, sza, vza,     &
+  CALL amf_calculation (                                       &
+       pge_idx, ntimes, nxtrack, lat, lon, sza, vza, saa, vaa, &
        snow_ice_flg, glint_flg, xtrange, yn_szoom,       &
        saocol, saodco, saoamf, thg, yn_write, &
        locerrstat              )

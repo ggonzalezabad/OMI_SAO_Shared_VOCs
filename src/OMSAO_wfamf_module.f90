@@ -163,10 +163,10 @@ MODULE OMSAO_wfamf_module
 
 CONTAINS
 
-  SUBROUTINE amf_calculation (            &
-       pge_idx, nt, nx, lat, lon, sza, vza,   &
-       snow, glint, xtrange, yn_szoom,        &
-       saocol, saodco, saoamf, terrain_height,&
+  SUBROUTINE amf_calculation (                   &
+       pge_idx, nt, nx, lat, lon, sza, vza,      &
+       saa, vaa, snow, glint, xtrange, yn_szoom, &
+       saocol, saodco, saoamf, terrain_height,   &
        yn_write, errstat                                )
 
     ! =================================================================
@@ -182,7 +182,8 @@ CONTAINS
     ! Input variables
     ! ---------------
     INTEGER (KIND=i4),                          INTENT (IN) :: nt, nx, pge_idx
-    REAL    (KIND=r4), DIMENSION (1:nx,0:nt-1), INTENT (IN) :: lat, lon, sza, vza, terrain_height
+    REAL    (KIND=r4), DIMENSION (1:nx,0:nt-1), INTENT (IN) :: lat, lon, sza, vza, saa, vaa, &
+         terrain_height
     INTEGER (KIND=i2), DIMENSION (1:nx,0:nt-1), INTENT (IN) :: snow, glint
     LOGICAL,           DIMENSION (     0:nt-1), INTENT (IN) :: yn_szoom
     LOGICAL                                                 :: yn_write
@@ -309,7 +310,7 @@ CONTAINS
        ! Compute Scattering weights in the look up table grid but
        ! with the correct albedo. amfdiag is used to skip pixel
        ! ---------------------------------------------------------
-       CALL compute_scatt ( nt, nx, albedo, lat, sza, vza, l2ctp, l2cfr, terrain_height, amfdiag, &
+       CALL compute_scatt ( nt, nx, albedo, lat, sza, vza, saa, vaa, l2ctp, l2cfr, terrain_height, amfdiag, &
             scattw)
 
        stop
@@ -1920,7 +1921,7 @@ CONTAINS
     RETURN
   END SUBROUTINE amf_diagnostic
 
-  SUBROUTINE compute_scatt ( nt, nx, albedo, lat, sza, vza, l2ctp, l2cfr, terrain_height, amfdiag, &
+  SUBROUTINE compute_scatt ( nt, nx, albedo, lat, sza, vza, saa, vaa, l2ctp, l2cfr, terrain_height, amfdiag, &
                              scattw)
 
     USE OMSAO_lininterpolation_module
@@ -1934,7 +1935,7 @@ CONTAINS
     ! ---------------
     INTEGER (KIND=i4),                                INTENT (IN) :: nt, nx
     INTEGER (KIND=i2), DIMENSION (1:nx,0:nt-1),       INTENT (IN) :: amfdiag
-    REAL    (KIND=r4), DIMENSION (1:nx,0:nt-1),       INTENT (IN) :: lat, sza, vza, terrain_height
+    REAL    (KIND=r4), DIMENSION (1:nx,0:nt-1),       INTENT (IN) :: lat, sza, vza, saa, vaa, terrain_height
     REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1),       INTENT (IN) :: albedo, l2ctp, l2cfr
 
     ! ------------------
@@ -1947,7 +1948,7 @@ CONTAINS
     ! ---------------
     INTEGER (KIND=i4) :: itime, ixtrack, ispre, isozo, isalt, iswav, issza, isvza, status, one
     INTEGER (KIND=i4), DIMENSION(1) :: iwavs, iwavf, index_thg, index_cld
-    REAL    (KIND=r8) :: temp, tempsquare, grad
+    REAL    (KIND=r8) :: temp, tempsquare, grad, raa, tmp_saa, tmp_vaa
     REAL    (KIND=r8) :: ozo_abs, Intensity, Jacobian, Oz_xs, Intensity_cld, Jacobian_cld
     REAL    (KIND=r8) :: crf, nwavs!, Icr, Icl ,cloud_scattw, clear_scattw
     REAL    (KIND=r8), DIMENSION(clp_dim(1), sza_dim(1), vza_dim(1), alt_lay_dim(1)) :: scattwe, scattwe_cld
@@ -1963,7 +1964,7 @@ CONTAINS
     REAL    (KIND=r8), DIMENSION(alt_lay_dim(1)) :: local_chg
     REAL    (KIND=r8), PARAMETER :: d2r = 3.141592653589793d0/180.0  !! JED fix
     REAL    (KIND=r8), PARAMETER :: du  = 2.69e16 ! molecules/cm^2
-    INTEGER (KIND=i4) :: toms_idx
+    INTEGER (KIND=i4)  :: toms_idx
     REAL    (KIND=r8), DIMENSION(10), PARAMETER :: hxxx = (/125,175,225,275,325,375,425,475,523,575/)
     REAL    (KIND=r8), DIMENSION(10), PARAMETER :: mxxx = (/125,175,225,275,325,375,425,475,523,575/)
     REAL    (KIND=r8), DIMENSION(6),  PARAMETER :: lxxx = (/225,275,325,375,425,475/)
@@ -2014,13 +2015,34 @@ CONTAINS
           ! in function of latitude and ozone column.
           ! -----------------------------------------        
           IF ( ABS(lat(ixtrack,itime)) .GT. 60.0 ) THEN
-             toms_idx = MINLOC(ABS(hxxx-omi_ozone_amount(ixtrack,itime)/du)) + 0
+             toms_idx = MINLOC(ABS(hxxx-omi_ozone_amount(ixtrack,itime)/du), 1) + 0
           ELSE IF ( ABS(lat(ixtrack,itime)) .GT. 30.0 .AND. ABS(lat(ixtrack,itime)) .LE. 60.0 ) THEN
-             toms_idx = MINLOC(ABS(mxxx-omi_ozone_amount(ixtrack,itime)/du)) + 17
+             toms_idx = MINLOC(ABS(mxxx-omi_ozone_amount(ixtrack,itime)/du), 1) + 17
           ELSE IF ( ABS(lat(ixtrack,itime)) .LE. 30.0 ) THEN
-             toms_idx = MINLOC(ABS(lxxx-omi_ozone_amount(ixtrack,itime)/du)) + 11
+             toms_idx = MINLOC(ABS(lxxx-omi_ozone_amount(ixtrack,itime)/du), 1) + 11
           ENDIF
-          
+         
+          ! ----------------------------------------------
+          ! Work out relative azimuth angle for this pixel
+          ! ----------------------------------------------
+          tmp_saa = saa(ixtrack,itime); tmp_vaa = vaa(ixtrack,itime)
+          ! (1) Map [-180, +180] to [0, 360]
+          IF ( tmp_saa .NE. r4_missval .AND. tmp_saa .LT. 0.0_r4 .AND. &
+               tmp_saa .GE. -180.0_r4 ) THEN
+             tmp_saa = 360.0_r4 + tmp_saa
+          ENDIF
+          IF ( tmp_vaa .NE. r4_missval .AND. tmp_vaa .LT. 0.0_r4 .AND. &
+               tmp_vaa .GE. -180.0_r4 ) THEN
+             tmp_vaa = 360.0_r4 + tmp_vaa
+          ENDIF
+          ! (2) Compute relative azimuth angle (RELATIVE means absolute value)
+          IF ( tmp_saa .GE. 0.0_r4 .AND. tmp_vaa .GE. 0.0_r4 ) THEN
+             raa = ABS( tmp_saa - tmp_vaa )
+          ENDIF
+          IF ( raa .GE. 180.0_r4 ) THEN
+             raa = 360.0_r4 - raa
+          ENDIF
+
           ! ----------------------------------------------
           ! If this point is reached then scattw should be
           ! different from r8_missval and it needs to be
