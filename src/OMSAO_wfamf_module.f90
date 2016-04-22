@@ -1946,21 +1946,23 @@ CONTAINS
     ! ---------------
     ! Local variables
     ! ---------------
-    INTEGER (KIND=i4) :: itime, ixtrack, ispre, isozo, isalt, iswav, issza, isvza, status, one
+    INTEGER (KIND=i4) :: itime, ixtrack, ispre, isozo, isalt, iswav, issza, isvza, status, one, &
+         isza, ivza, icld
     INTEGER (KIND=i4), DIMENSION(1) :: iwavs, iwavf, index_thg, index_cld
     REAL    (KIND=r8) :: temp, tempsquare, grad, raa, tmp_saa, tmp_vaa
     REAL    (KIND=r8) :: ozo_abs, Intensity, Jacobian, Oz_xs, Intensity_cld, Jacobian_cld
     REAL    (KIND=r8) :: crf, nwavs!, Icr, Icl ,cloud_scattw, clear_scattw
     REAL    (KIND=r8), DIMENSION(clp_dim(1), sza_dim(1), vza_dim(1), alt_lay_dim(1)) :: scattwe, scattwe_cld
-    REAL    (KIND=r8), DIMENSION(clp_dim(1), sza_dim(1), vza_dim(1))          :: Inte_clear, Inte_cloud
+    REAL    (KIND=r8), DIMENSION(vza_dim(1), sza_dim(1)) :: Inte_clear
+    REAL    (KIND=r8), DIMENSION(clp_dim(1), vza_dim(1), sza_dim(1)) ::  Inte_cloud
     REAL    (KIND=r8), DIMENSION(alt_lay_dim(1)) :: re_alt
     REAL    (KIND=r8), DIMENSION(clp_dim(1)) :: re_pre
     REAL    (KIND=r8), DIMENSION(sza_dim(1)) :: re_sza
     REAL    (KIND=r8), DIMENSION(vza_dim(1)) :: re_vza
-    REAL    (KIND=r8)                     :: local_alb, local_sza, local_vza, local_thg, local_cld, local_cfr
-    REAL    (KIND=r8), DIMENSION(1)       :: ezlocal_sza, ezlocal_vza
-    REAL    (KIND=r8), DIMENSION(1,1,1)   :: cloud_scattw, clear_scattw
-    REAL    (KIND=r8), DIMENSION(1,1)     :: Icr, Icl
+    REAL    (KIND=r8), DIMENSION(1)          :: local_alb, local_sza, local_vza, local_raa, &
+         local_thg, local_cld, local_cfr
+    REAL    (KIND=r8), DIMENSION(1,1,1)   :: cloud_scattw, clear_scattw, Icl
+    REAL    (KIND=r8), DIMENSION(1,1)     :: Icr
     REAL    (KIND=r8), DIMENSION(alt_lay_dim(1)) :: local_chg
     REAL    (KIND=r8), PARAMETER :: d2r = 3.141592653589793d0/180.0  !! JED fix
     REAL    (KIND=r8), PARAMETER :: du  = 2.69e16 ! molecules/cm^2
@@ -2054,42 +2056,96 @@ CONTAINS
           ! If sza > amf_max_sza set it for calculation to
           ! amf_max_sza
           ! ----------------------------------------------
-          local_sza = REAL(sza(ixtrack,itime), KIND = r8)
-          IF (local_sza .GT. amf_max_sza) local_sza = amf_max_sza
+          local_sza(1) = REAL(sza(ixtrack,itime), KIND = r8)
+          IF (local_sza(1) .GT. amf_max_sza) local_sza(1) = amf_max_sza
 
-          ! ---------------------
-          ! Albedo for this pixel
-          ! ---------------------
-          local_alb    = albedo(ixtrack,itime)
-          local_cld    = l2ctp(ixtrack,itime)
-          local_cfr    = l2cfr(ixtrack,itime)
-          local_sza    = cos(d2r*REAL(sza(ixtrack,itime), KIND = r8))  ! JED fix
-          local_vza    = cos(d2r*REAL(vza(ixtrack,itime), KIND = r8))  ! JED fix
-          local_thg    = REAL(terrain_height(ixtrack,itime), KIND = r8)
+          local_alb(1) = albedo(ixtrack,itime)
+          local_cld(1) = l2ctp(ixtrack,itime)
+          local_cfr(1) = l2cfr(ixtrack,itime)
+          local_sza(1) = cos(d2r*local_sza(1))  ! JED fix
+          local_vza(1) = cos(d2r*REAL(vza(ixtrack,itime), KIND = r8))  ! JED fix
+          local_raa(1) = d2r*REAL(raa,KIND = r8)
+          local_thg(1) = REAL(terrain_height(ixtrack,itime), KIND = r8)
 
           ! ----------------------------------------------
           ! Convert pixel terrain height to pressure using
           ! Xiong suggested to use pressure altitude:
           !  Z = -16 alog10 (P / Po) Z in km and P in hPa.
           ! ----------------------------------------------
-          local_thg = 1013.0_r8 * (10.0_r8 ** (local_thg / 1000.0_r8 / (-16.0_r8))) 
+          local_thg(1) = 1013.0_r8 * (10.0_r8 ** (local_thg(1) / 1000.0_r8 / (-16.0_r8))) 
 
           !Bringing it to the lowest available pressure if needed
-          IF (local_thg .GT. 1013.0) local_thg = 1013.0_r8
+          IF (local_thg(1) .GT. 1013.0) local_thg(1) = 1013.0_r8
           !Bringing clouds heights to lowest available pressure if needed. Weird yes, but just in case
-          IF (local_cld .GT. 1013.0) local_cld = 1013.0_r8
+          IF (local_cld(1) .GT. 1013.0) local_cld(1) = 1013.0_r8
 
+          ! --------------------------
+          ! Compute clear sky radiance
+          ! --------------------------
+          DO isza = 1, sza_dim(1)
+             DO ivza = 1, vza_dim(1)
+
+                ! For the intensity the TOMRAD formula work perfect so we need no albedo loop
+                Inte_clear(vza_dim(1)+1-ivza,sza_dim(1)+1-isza) = lut_I0_clr(toms_idx,ivza,isza)  +  &
+                     lut_I1_clr(toms_idx,ivza,isza) * cos(local_raa(1))      + &
+                     lut_I2_clr(toms_idx,ivza,isza) * cos(2_r8*local_raa(1)) + &
+                     lut_Ir_clr(toms_idx,ivza,isza) * local_alb(1) / (1 - local_alb(1) * lut_Sb_clr(toms_idx))
+                DO icld = 1, clp_dim(1)
+
+                   Inte_cloud(clp_dim(1)+1-icld,vza_dim(1)+1-ivza,sza_dim(1)+1-isza) = &
+                        lut_I0_cld(toms_idx,icld,ivza,isza)  +  &
+                        lut_I1_cld(toms_idx,icld,ivza,isza) * cos(local_raa(1))      + &
+                        lut_I2_cld(toms_idx,icld,ivza,isza) * cos(2_r8*local_raa(1)) + &
+                        lut_Ir_cld(toms_idx,icld,ivza,isza) * &
+                        amf_alb_cld / (1 - amf_alb_cld * lut_Sb_cld(toms_idx,icld))
+
+                ENDDO
+             ENDDO
+          ENDDO
+
+          ! -------------------------------------
+          ! Interpolate Inte_clear and Inte_cloud
+          ! to sza vza and cloud pressure.
+          ! -------------------------------------
+          Icr = 0.0_r8
+          CALL ezspline_2d_interpolation (INT(vza_dim(1),KIND=i4),INT(sza_dim(1),KIND=i4), &
+               re_vza,re_sza, &
+               Inte_clear(:,:), &
+               one,one, &
+               local_vza(1),local_sza(1), &
+               Icr(1,1), status)
+          Icl = 0.0_r8
+          CALL ezspline_3d_interpolation (INT(clp_dim(1),KIND=i4),INT(vza_dim(1),KIND=i4),INT(sza_dim(1),KIND=i4), &
+               re_pre,re_vza,re_sza, &
+               Inte_cloud(:,:,:), &
+               one,one,one, &
+               local_cld(1),local_vza(1),local_sza(1), &
+               Icl(1,1,1), status)
+          print*, Icr(1,1), Icl(1,1,1)
+          ! ---------------------------------------
+          ! Working out the cloud radiance fraction
+          ! See note below, Boersma et al. 2011 and
+          ! Martin et al. 2003 (crf used below)
+          ! ---------------------------------------                 
+          crf = 0.0_r8
+          crf = local_cfr(1) * Icl(1,1,1) / &
+               (local_cfr(1) * Icl(1,1,1) + (1 - local_cfr(1)) * Icr(1,1) )
+          ! ----------------------------------------
+          ! Work out scattering weight for clear sky
+          ! Interpolation on SZA, VZA, and albedo.
+          ! ----------------------------------------
+          ! Reconstruct Scattering weights an
           ! -----------------------------------------------
           ! Find the two closest cloud top levels from the
           ! scattering weights table suitable for local_thg
           ! and local_cld
           ! -----------------------------------------------
-          index_thg = MINLOC(ABS(re_pre - local_thg))
-          ! Be sure that we are below the level of the surface in the table
-          IF ( (local_thg .GT. re_pre(index_thg(1))) .AND. (index_thg(1) .GT. 1) ) index_thg = index_thg-1
-          index_cld = MINLOC(ABS(re_pre - local_cld))
-          ! Be sure that we are below the level of the cloud in the table
-          IF ( (local_cld .GT. re_pre(index_cld(1))) .AND. (index_cld(1) .GT. 1) ) index_cld = index_cld-1
+!!$          index_thg = MINLOC(ABS(re_pre - local_thg(1)))
+!!$          ! Be sure that we are below the level of the surface in the table
+!!$          IF ( (local_thg(1) .GT. re_pre(index_thg(1))) .AND. (index_thg(1) .GT. 1) ) index_thg = index_thg-1
+!!$          index_cld(1) = MINLOC(ABS(re_pre - local_cld(1)))
+!!$          ! Be sure that we are below the level of the cloud in the table
+!!$          IF ( (local_cld(1) .GT. re_pre(index_cld(1))) .AND. (index_cld(1) .GT. 1) ) index_cld = index_cld-1
 
           ! ----------------------------------------------------------
           ! First compute back from the parametrization the scattering
@@ -2168,8 +2224,8 @@ CONTAINS
                             ! ----------------------------------------------------
                             ! Intensities for the calculation of the cloudy pixels
                             ! ----------------------------------------------------
-                            Inte_clear(ispre, vl_nsza+1-issza, vl_nvza+1-isvza) = Intensity
-                            Inte_cloud(ispre, vl_nsza+1-issza, vl_nvza+1-isvza) = Intensity_cld
+!!$                            Inte_clear(ispre, vl_nsza+1-issza, vl_nvza+1-isvza) = Intensity
+!!$                            Inte_cloud(ispre, vl_nsza+1-issza, vl_nvza+1-isvza) = Intensity_cld
 
                             IF (Jacobian .NE. 0.0_r8 .AND. Intensity .NE. 0.0_r8 &
                                  .AND. ozo_abs .NE. 0.0_r8) THEN
@@ -2189,25 +2245,6 @@ CONTAINS
                    END DO ! End sza loop
                 END DO ! End pressure loop
 
-                ! ---------------------------------------
-                ! Working out the cloud radiance fraction
-                ! See note below, Boersma et al. 2011 and
-                ! Martin et al. 2003 (crf used below)
-                ! ---------------------------------------
-                ezlocal_sza = local_sza
-                ezlocal_vza = local_vza
-                 
-                Icr = 0.0_r8
-                CALL ezspline_2d_interpolation (vl_nsza,vl_nvza,re_sza,re_vza,Inte_clear(index_thg(1),:,:), &
-                     one,one,ezlocal_sza(one),ezlocal_vza(one),Icr(one,one), &
-                     status)
-                Icl = 0.0_r8
-                CALL ezspline_2d_interpolation (vl_nsza,vl_nvza,re_sza,re_vza,Inte_cloud(index_cld(1),:,:), &
-                     one,one,ezlocal_sza(one),ezlocal_vza(one),Icl(one,one), &
-                     status)
-                crf = 0.0_r8
-                crf = local_cfr * Icl(one,one) / &
-                     (local_cfr * Icl(one,one) + (1 - local_cfr) * Icr(one,one) )
                 
                 ! ----------------------------------
                 ! Interpolate for each altitude
@@ -2223,12 +2260,12 @@ CONTAINS
                    ! must be GT than 0.0. Only interpolate for values
                    ! above the cloud top.
                    ! --------------------------------------------------
-                   IF ( local_chg(isalt) .LE. local_cld .AND. local_cfr .GT. 0.0 ) THEN
+                   IF ( local_chg(isalt) .LE. local_cld(1) .AND. local_cfr(1) .GT. 0.0 ) THEN
                       cloud_scattw(one,one,one) =  linInterpol (              &
                            vl_nsza, vl_nvza, vl_nalt,                         &
                            re_sza,  re_vza,  re_alt,                          &
                            scattwe_cld(index_cld(1),:,:,:),                   &
-                           local_sza, local_vza, local_chg(isalt),            &
+                           local_sza(1), local_vza(1), local_chg(isalt),            &
                            status=status)
                    END IF
                    
@@ -2236,12 +2273,12 @@ CONTAINS
                    ! If we are below the level of the land, no need to
                    ! work out those scattering weights.
                    ! --------------------------------------------------
-                   IF ( local_chg(isalt) .LE. local_thg ) THEN
+                   IF ( local_chg(isalt) .LE. local_thg(1) ) THEN
                       clear_scattw(one,one,one) = linInterpol (           &
                            vl_nsza, vl_nvza, vl_nalt,                     &
                             re_sza,  re_vza,  re_alt,                     &
                            scattwe(index_thg(1),:,:,:),                   &
-                           local_sza, local_vza, local_chg(isalt),        &
+                           local_sza(1), local_vza(1), local_chg(isalt),        &
                            status=status)
                    END IF
 
