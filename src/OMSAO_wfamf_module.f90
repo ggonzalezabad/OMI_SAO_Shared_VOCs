@@ -19,7 +19,8 @@ MODULE OMSAO_wfamf_module
   ! ====================================================================
   LOGICAL                                      :: yn_amf_wfmod
   INTEGER                                      :: amf_wfmod_idx
-  REAL(KIND=r8)                                :: amf_alb_lnd, amf_alb_sno, amf_wvl, amf_wvl2, amf_alb_cld, amf_max_sza
+  REAL(KIND=r8)                                :: amf_alb_lnd, amf_alb_sno, amf_wvl, &
+       amf_wvl2, amf_alb_cld, amf_max_sza
 
   ! ---------------------------------------
   ! Data obtained from the climatology file
@@ -70,32 +71,33 @@ MODULE OMSAO_wfamf_module
   ! Look up table variables
   ! -----------------------
   ! To hold data:
-  REAL(KIND=r4),    DIMENSION(:),         ALLOCATABLE :: lut_albedo, lut_clp, lut_sza, &
-       lut_vza, lut_wavelength
-  CHARACTER(LEN=5), DIMENSION(:),         ALLOCATABLE :: lut_toms
-  REAL(KIND=r4),    DIMENSION(:),         ALLOCATABLE :: lut_alt_lay, lut_alt_lev, lut_pre_lay, lut_pre_lev
-  REAL(KIND=r4),    DIMENSION(:,:),       ALLOCATABLE :: lut_air, lut_ozo, lut_tem
-  REAL(KIND=r4),    DIMENSION(:),         ALLOCATABLE :: lut_Sb_clr
-  REAL(KIND=r4),    DIMENSION(:,:),       ALLOCATABLE :: lut_Sb_cld
-  REAL(KIND=r4),    DIMENSION(:,:,:),     ALLOCATABLE :: lut_I0_clr, lut_I1_clr, lut_I2_clr, lut_Ir_clr
-  REAL(KIND=r4),    DIMENSION(:,:,:,:),   ALLOCATABLE :: lut_I0_cld, lut_I1_cld, lut_I2_cld, lut_Ir_cld
-  REAL(KIND=r4),    DIMENSION(:,:,:,:,:), ALLOCATABLE :: lut_dI0_clr, lut_dI1_clr, lut_dI2_clr, &
+  REAL(KIND=r4),    DIMENSION(:),           ALLOCATABLE :: lut_albedo, lut_clp, lut_sza, &
+       lut_vza, lut_wavelength, lut_srf
+  CHARACTER(LEN=5), DIMENSION(:),           ALLOCATABLE :: lut_toms
+  REAL(KIND=r4),    DIMENSION(:,:),         ALLOCATABLE :: lut_alt_lay, lut_alt_lev, lut_pre_lay, lut_pre_lev
+  REAL(KIND=r4),    DIMENSION(:,:,:),       ALLOCATABLE :: lut_air, lut_ozo, lut_tem
+  REAL(KIND=r4),    DIMENSION(:,:),         ALLOCATABLE :: lut_Sb_clr
+  REAL(KIND=r4),    DIMENSION(:,:,:),       ALLOCATABLE :: lut_Sb_cld
+  REAL(KIND=r4),    DIMENSION(:,:,:,:),     ALLOCATABLE :: lut_I0_clr, lut_I1_clr, lut_I2_clr, lut_Ir_clr
+  REAL(KIND=r4),    DIMENSION(:,:,:,:,:),   ALLOCATABLE :: lut_I0_cld, lut_I1_cld, lut_I2_cld, lut_Ir_cld
+  REAL(KIND=r4),    DIMENSION(:,:,:,:,:,:), ALLOCATABLE :: lut_dI0_clr, lut_dI1_clr, lut_dI2_clr, &
        lut_dI0_cld, lut_dI1_cld, lut_dI2_cld
   ! To read the data:
   INTEGER(HSIZE_T), DIMENSION(1) :: alb_dim, alb_maxdim, &
        clp_dim, clp_maxdim, &
+       srf_dim, srf_maxdim, &
        sza_dim, sza_maxdim, &
        toz_dim, toz_maxdim, &
        vza_dim, vza_maxdim, &
-       wav_dim, wav_maxdim, &
+       wav_dim, wav_maxdim
+  INTEGER(HSIZE_T), DIMENSION(2) :: Sb_clr_dim, Sb_clr_maxdim, &
        alt_lev_dim, alt_lev_maxdim, &
-       alt_lay_dim, alt_lay_maxdim, &
-       Sb_clr_dim, Sb_clr_maxdim
-  INTEGER(HSIZE_T), DIMENSION(2) :: Sb_cld_dim, Sb_cld_maxdim, &
+       alt_lay_dim, alt_lay_maxdim
+  INTEGER(HSIZE_T), DIMENSION(3) :: Sb_cld_dim, Sb_cld_maxdim, &
        air_dim, air_maxdim, tem_dim, tem_maxdim
-  INTEGER(HSIZE_T), DIMENSION(3) :: I0_clr_dim,  I0_clr_maxdim
-  INTEGER(HSIZE_T), DIMENSION(4) :: I0_cld_dim,  I0_cld_maxdim
-  INTEGER(HSIZE_T), DIMENSION(5) :: dI0_clr_dim,  dI0_clr_maxdim, &
+  INTEGER(HSIZE_T), DIMENSION(4) :: I0_clr_dim,  I0_clr_maxdim
+  INTEGER(HSIZE_T), DIMENSION(5) :: I0_cld_dim,  I0_cld_maxdim
+  INTEGER(HSIZE_T), DIMENSION(6) :: dI0_clr_dim,  dI0_clr_maxdim, &
        dI0_cld_dim, dI0_cld_maxdim
 
   ! ---------
@@ -296,7 +298,7 @@ CONTAINS
        ! Read VLIDORT look up table. Variables are declared at module level
        ! ------------------------------------------------------------------
        CALL read_lookup_table (locerrstat)
-       
+
        ! ----------------------------------------------------------------------
        ! amfdiag is used to keep track of the pixels were enough information is
        ! available to carry on the AMFs calculation.
@@ -317,9 +319,9 @@ CONTAINS
        ! ----------------------------
        ! Deallocate Vlidort variables
        ! ----------------------------
-       CALL vlidort_allocate ("d", INT(toz_dim(1)),INT(clp_dim(1)),INT(alb_dim(1)), &
+       CALL vlidort_allocate ("d", INT(toz_dim(1)),INT(srf_dim(1)),INT(clp_dim(1)),INT(alb_dim(1)), &
             INT(sza_dim(1)),INT(vza_dim(1)),INT(wav_dim(1)), &
-            INT(alt_lay_dim(1)),INT(alt_lev_dim(1)),errstat)
+            INT(alt_lay_dim(2)),INT(alt_lev_dim(2)),errstat)
 
        ! -----------------------------------------------------------------
        ! Work out the AMF using the scattering weights and the climatology
@@ -1248,7 +1250,7 @@ CONTAINS
     RETURN
   END SUBROUTINE climatology_allocate
 
-  SUBROUTINE vlidort_allocate ( ad, anozo, ancld, analb, ansza, anvza, anwav, anlay, anlev, errstat )
+  SUBROUTINE vlidort_allocate ( ad, anozo, ansrf, ancld, analb, ansza, anvza, anwav, anlay, anlev, errstat )
 
     USE OMSAO_casestring_module, ONLY: lower_case
     IMPLICIT NONE
@@ -1257,7 +1259,7 @@ CONTAINS
     ! Input variables
     ! ---------------
     CHARACTER (LEN=1), INTENT (IN) :: ad
-    INTEGER (KIND=i4), INTENT (IN) :: anozo, ancld, analb, ansza, anvza, anwav, anlay, anlev
+    INTEGER (KIND=i4), INTENT (IN) :: anozo, ansrf, ancld, analb, ansza, anvza, anwav, anlay, anlev
 
     ! ------------------
     ! Modified variables
@@ -1282,43 +1284,45 @@ CONTAINS
     CASE ('a')
 
        ALLOCATE (lut_albedo(analb),     STAT=estat)
+       ALLOCATE (lut_srf(ansrf),        STAT=estat)
        ALLOCATE (lut_clp(ancld),        STAT=estat)
        ALLOCATE (lut_sza(ansza),        STAT=estat)
        ALLOCATE (lut_vza(anvza),        STAT=estat)
        ALLOCATE (lut_wavelength(anwav), STAT=estat)
        ALLOCATE (lut_toms(anozo),       STAT=estat)
        
-       ALLOCATE (lut_air(anozo,anlay), STAT=estat)
-       ALLOCATE (lut_alt_lay(anlay),     STAT=estat)
-       ALLOCATE (lut_alt_lev(anlev),     STAT=estat)
-       ALLOCATE (lut_ozo(anozo,anlay), STAT=estat)
-       ALLOCATE (lut_pre_lay(anlay),     STAT=estat)
-       ALLOCATE (lut_pre_lev(anlev),     STAT=estat)
-       ALLOCATE (lut_tem(anozo,anlev), STAT=estat)
+       ALLOCATE (lut_air(anozo,ansrf,anlay), STAT=estat)
+       ALLOCATE (lut_alt_lay(ansrf,anlay),   STAT=estat)
+       ALLOCATE (lut_alt_lev(ansrf,anlev),   STAT=estat)
+       ALLOCATE (lut_ozo(anozo,ansrf,anlay), STAT=estat)
+       ALLOCATE (lut_pre_lay(ansrf,anlay),   STAT=estat)
+       ALLOCATE (lut_pre_lev(ansrf,anlev),   STAT=estat)
+       ALLOCATE (lut_tem(anozo,ansrf,anlev), STAT=estat)
        
-       ALLOCATE (lut_I0_clr(anozo,anvza,ansza), STAT=estat)
-       ALLOCATE (lut_I1_clr(anozo,anvza,ansza), STAT=estat)
-       ALLOCATE (lut_I2_clr(anozo,anvza,ansza), STAT=estat)
-       ALLOCATE (lut_Ir_clr(anozo,anvza,ansza), STAT=estat)
-       ALLOCATE (lut_Sb_clr(anozo),                 STAT=estat)
+       ALLOCATE (lut_I0_clr(anozo,ansrf,anvza,ansza), STAT=estat)
+       ALLOCATE (lut_I1_clr(anozo,ansrf,anvza,ansza), STAT=estat)
+       ALLOCATE (lut_I2_clr(anozo,ansrf,anvza,ansza), STAT=estat)
+       ALLOCATE (lut_Ir_clr(anozo,ansrf,anvza,ansza), STAT=estat)
+       ALLOCATE (lut_Sb_clr(anozo,ansrf),             STAT=estat)
        
-       ALLOCATE (lut_I0_cld(anozo,ancld,anvza,ansza), STAT=estat)
-       ALLOCATE (lut_I1_cld(anozo,ancld,anvza,ansza), STAT=estat)
-       ALLOCATE (lut_I2_cld(anozo,ancld,anvza,ansza), STAT=estat)
-       ALLOCATE (lut_Ir_cld(anozo,ancld,anvza,ansza), STAT=estat)
-       ALLOCATE (lut_Sb_cld(anozo,ancld),                 STAT=estat)
+       ALLOCATE (lut_I0_cld(anozo,ansrf,ancld,anvza,ansza), STAT=estat)
+       ALLOCATE (lut_I1_cld(anozo,ansrf,ancld,anvza,ansza), STAT=estat)
+       ALLOCATE (lut_I2_cld(anozo,ansrf,ancld,anvza,ansza), STAT=estat)
+       ALLOCATE (lut_Ir_cld(anozo,ansrf,ancld,anvza,ansza), STAT=estat)
+       ALLOCATE (lut_Sb_cld(anozo,ansrf,ancld),             STAT=estat)
        
-       ALLOCATE (lut_dI0_clr(anozo,anlay,analb,anvza,ansza), STAT=estat)
-       ALLOCATE (lut_dI1_clr(anozo,anlay,analb,anvza,ansza), STAT=estat)
-       ALLOCATE (lut_dI2_clr(anozo,anlay,analb,anvza,ansza), STAT=estat)
+       ALLOCATE (lut_dI0_clr(anozo,ansrf,anlay,analb,anvza,ansza), STAT=estat)
+       ALLOCATE (lut_dI1_clr(anozo,ansrf,anlay,analb,anvza,ansza), STAT=estat)
+       ALLOCATE (lut_dI2_clr(anozo,ansrf,anlay,analb,anvza,ansza), STAT=estat)
        
-       ALLOCATE (lut_dI0_cld(anozo,anlay,ancld,anvza,ansza), STAT=estat)
-       ALLOCATE (lut_dI1_cld(anozo,anlay,ancld,anvza,ansza), STAT=estat)
-       ALLOCATE (lut_dI2_cld(anozo,anlay,ancld,anvza,ansza), STAT=estat)    
+       ALLOCATE (lut_dI0_cld(anozo,ansrf,anlay,ancld,anvza,ansza), STAT=estat)
+       ALLOCATE (lut_dI1_cld(anozo,ansrf,anlay,ancld,anvza,ansza), STAT=estat)
+       ALLOCATE (lut_dI2_cld(anozo,ansrf,anlay,ancld,anvza,ansza), STAT=estat)    
 
     CASE ('d')
 
        IF ( ALLOCATED ( lut_albedo ) ) DEALLOCATE ( lut_albedo )
+       IF ( ALLOCATED ( lut_srf ) ) DEALLOCATE ( lut_srf )
        IF ( ALLOCATED ( lut_clp ) ) DEALLOCATE ( lut_clp )
        IF ( ALLOCATED ( lut_sza ) ) DEALLOCATE ( lut_sza )
        IF ( ALLOCATED ( lut_vza ) ) DEALLOCATE ( lut_vza )
@@ -1941,29 +1945,37 @@ CONTAINS
     ! ------------------
     ! Modified variables
     ! ------------------
-    REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1,alt_lay_dim(1)), INTENT (INOUT) :: scattw
+    REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1,alt_lay_dim(2)), INTENT (INOUT) :: scattw
 
     ! ---------------
     ! Local variables
     ! ---------------
-    INTEGER (KIND=i4) :: itime, ixtrack, ispre, isozo, isalt, iswav, issza, isvza, status, one, &
-         isza, ivza, icld
+    INTEGER (KIND=i4) :: itime, ixtrack, status, one, &
+         iozo, iwav, isza, ivza, icld, isrf, ipre, ialt
     INTEGER (KIND=i4), DIMENSION(1) :: iwavs, iwavf, index_thg, index_cld
     REAL    (KIND=r8) :: temp, tempsquare, grad, raa, tmp_saa, tmp_vaa
-    REAL    (KIND=r8) :: ozo_abs, Intensity, Jacobian, Oz_xs, Intensity_cld, Jacobian_cld
+    REAL    (KIND=r8) :: ozo_abs, Jacobian, Oz_xs, Jacobian_cld
     REAL    (KIND=r8) :: crf, nwavs!, Icr, Icl ,cloud_scattw, clear_scattw
-    REAL    (KIND=r8), DIMENSION(clp_dim(1), sza_dim(1), vza_dim(1), alt_lay_dim(1)) :: scattwe, scattwe_cld
-    REAL    (KIND=r8), DIMENSION(vza_dim(1), sza_dim(1)) :: Inte_clear
-    REAL    (KIND=r8), DIMENSION(clp_dim(1), vza_dim(1), sza_dim(1)) ::  Inte_cloud
-    REAL    (KIND=r8), DIMENSION(alt_lay_dim(1)) :: re_alt
-    REAL    (KIND=r8), DIMENSION(clp_dim(1)) :: re_pre
-    REAL    (KIND=r8), DIMENSION(sza_dim(1)) :: re_sza
-    REAL    (KIND=r8), DIMENSION(vza_dim(1)) :: re_vza
-    REAL    (KIND=r8), DIMENSION(1)          :: local_alb, local_sza, local_vza, local_raa, &
-         local_thg, local_cld, local_cfr
+    REAL    (KIND=r8), DIMENSION(clp_dim(1), sza_dim(1), vza_dim(1), alt_lay_dim(2)) :: scattwe, scattwe_cld
+    REAL    (KIND=r8), DIMENSION(srf_dim(1), vza_dim(1), sza_dim(1)) :: Inte_clear_3D
+    REAL    (KIND=r8), DIMENSION(vza_dim(1), sza_dim(1))             :: Inte_clear_2D
+    REAL    (KIND=r8), DIMENSION(sza_dim(1))                         :: Inte_clear_1D
+    REAL    (KIND=r8), DIMENSION(1)                                  :: Radiance_clr
+    REAL    (KIND=r8), DIMENSION(srf_dim(1), clp_dim(1), vza_dim(1), sza_dim(1)) :: Inte_cloud_4D
+    REAL    (KIND=r8), DIMENSION(srf_dim(1), vza_dim(1), sza_dim(1))             :: Inte_cloud_3D
+    REAL    (KIND=r8), DIMENSION(vza_dim(1), sza_dim(1))                         :: Inte_cloud_2D
+    REAL    (KIND=r8), DIMENSION(sza_dim(1))                                     :: Inte_cloud_1D
+    REAL    (KIND=r8), DIMENSION(1)                                              :: Radiance_cld 
+    REAL    (KIND=r8), DIMENSION(alt_lay_dim(2)) :: re_alt
+    REAL    (KIND=r8), DIMENSION(srf_dim(1))     :: re_srf
+    REAL    (KIND=r8), DIMENSION(clp_dim(1))     :: re_pre
+    REAL    (KIND=r8), DIMENSION(sza_dim(1))     :: re_sza
+    REAL    (KIND=r8), DIMENSION(vza_dim(1))     :: re_vza
+    REAL    (KIND=r8), DIMENSION(1)              :: local_alb, local_sza, local_vza, local_raa, &
+         local_srf, local_cld, local_cfr
     REAL    (KIND=r8), DIMENSION(1,1,1)   :: cloud_scattw, clear_scattw, Icl
     REAL    (KIND=r8), DIMENSION(1,1)     :: Icr
-    REAL    (KIND=r8), DIMENSION(alt_lay_dim(1)) :: local_chg
+    REAL    (KIND=r8), DIMENSION(alt_lay_dim(2)) :: local_chg
     REAL    (KIND=r8), PARAMETER :: d2r = 3.141592653589793d0/180.0  !! JED fix
     REAL    (KIND=r8), PARAMETER :: du  = 2.69e16 ! molecules/cm^2
     INTEGER (KIND=i4)  :: toms_idx
@@ -1987,17 +1999,17 @@ CONTAINS
     ! This should be moved to the program that creates the
     ! look up tables
     ! ------------------------------- ------------------------
-    DO issza = 1, sza_dim(1)
-       re_sza(issza) = cos(d2r*REAL(lut_sza(sza_dim(1)+1-issza), KIND = r8))  ! JED fix
+    DO isza = 1, sza_dim(1)
+       re_sza(isza) = cos(d2r*REAL(lut_sza(sza_dim(1)+1-isza), KIND = r8))  ! JED fix
     END DO
-    DO isvza = 1, vza_dim(1)
-       re_vza(isvza) = cos(d2r*REAL(lut_vza(vza_dim(1)+1-isvza), KIND = r8)) ! JED fix
+    DO ivza = 1, vza_dim(1)
+       re_vza(ivza) = cos(d2r*REAL(lut_vza(vza_dim(1)+1-ivza), KIND = r8)) ! JED fix
     END DO
-    DO ispre = 1, clp_dim(1)
-       re_pre(ispre) = REAL(lut_clp(clp_dim(1)+1-ispre), KIND = r8)
+    DO isrf = 1, srf_dim(1)
+       re_srf(isrf) = REAL(lut_srf(srf_dim(1)+1-isrf), KIND = r8)
     END DO
-    DO isalt = 1, alt_lay_dim(1)
-       re_alt(isalt) = REAL(lut_pre_lay(isalt), KIND=8)
+    DO ipre = 1, clp_dim(1)
+       re_pre(ipre) = REAL(lut_clp(clp_dim(1)+1-ipre), KIND = r8)
     END DO
 
     ! ---------------
@@ -2023,26 +2035,25 @@ CONTAINS
           ELSE IF ( ABS(lat(ixtrack,itime)) .LE. 30.0 ) THEN
              toms_idx = MINLOC(ABS(lxxx-omi_ozone_amount(ixtrack,itime)/du), 1) + 11
           ENDIF
-         
           ! ----------------------------------------------
           ! Work out relative azimuth angle for this pixel
           ! ----------------------------------------------
-          tmp_saa = saa(ixtrack,itime); tmp_vaa = vaa(ixtrack,itime)
+          tmp_saa = REAL(saa(ixtrack,itime),KIND=r8); tmp_vaa = REAL(vaa(ixtrack,itime),KIND=r8)
           ! (1) Map [-180, +180] to [0, 360]
-          IF ( tmp_saa .NE. r4_missval .AND. tmp_saa .LT. 0.0_r4 .AND. &
-               tmp_saa .GE. -180.0_r4 ) THEN
+          IF ( tmp_saa .NE. r8_missval .AND. tmp_saa .LT. 0.0_r8 .AND. &
+               tmp_saa .GE. -180.0_r8 ) THEN
              tmp_saa = 360.0_r4 + tmp_saa
           ENDIF
-          IF ( tmp_vaa .NE. r4_missval .AND. tmp_vaa .LT. 0.0_r4 .AND. &
-               tmp_vaa .GE. -180.0_r4 ) THEN
-             tmp_vaa = 360.0_r4 + tmp_vaa
+          IF ( tmp_vaa .NE. r8_missval .AND. tmp_vaa .LT. 0.0_r8 .AND. &
+               tmp_vaa .GE. -180.0_r8 ) THEN
+             tmp_vaa = 360.0_r8 + tmp_vaa
           ENDIF
           ! (2) Compute relative azimuth angle (RELATIVE means absolute value)
-          IF ( tmp_saa .GE. 0.0_r4 .AND. tmp_vaa .GE. 0.0_r4 ) THEN
+          IF ( tmp_saa .GE. 0.0_r8 .AND. tmp_vaa .GE. 0.0_r8 ) THEN
              raa = ABS( tmp_saa - tmp_vaa )
           ENDIF
-          IF ( raa .GE. 180.0_r4 ) THEN
-             raa = 360.0_r4 - raa
+          IF ( raa .GE. 180.0_r8 ) THEN
+             raa = 360.0_r8 - raa
           ENDIF
 
           ! ----------------------------------------------
@@ -2050,7 +2061,12 @@ CONTAINS
           ! different from r8_missval and it needs to be
           ! initialized to 0.0 to work out the average
           ! ----------------------------------------------
+          ! Initialize variables
+          ! --------------------
           scattw(ixtrack,itime,:) = 0.0_r8
+          Inte_clear_3D = 0.0_r8; Inte_clear_2D = 0.0_r8; Inte_clear_1D = 0.0_r8; Radiance_clr = 0.0_r8
+          Inte_cloud_4D = 0.0_r8; Inte_cloud_3D = 0.0_r8; Inte_cloud_2D = 0.0_r8
+          Inte_cloud_1D = 0.0_r8; Radiance_cld = 0.0_r8
 
           ! ----------------------------------------------
           ! If sza > amf_max_sza set it for calculation to
@@ -2059,77 +2075,116 @@ CONTAINS
           local_sza(1) = REAL(sza(ixtrack,itime), KIND = r8)
           IF (local_sza(1) .GT. amf_max_sza) local_sza(1) = amf_max_sza
 
-          local_alb(1) = albedo(ixtrack,itime)
-          local_cld(1) = l2ctp(ixtrack,itime)
-          local_cfr(1) = l2cfr(ixtrack,itime)
+          local_alb(1) = REAL(albedo(ixtrack,itime), KIND=r8)
+          local_cld(1) = REAL(l2ctp(ixtrack,itime), KIND=r8)
+          local_cfr(1) = REAL(l2cfr(ixtrack,itime), KIND=r8)
           local_sza(1) = cos(d2r*local_sza(1))  ! JED fix
           local_vza(1) = cos(d2r*REAL(vza(ixtrack,itime), KIND = r8))  ! JED fix
           local_raa(1) = d2r*REAL(raa,KIND = r8)
-          local_thg(1) = REAL(terrain_height(ixtrack,itime), KIND = r8)
+          local_srf(1) = REAL(terrain_height(ixtrack,itime), KIND = r8)
 
           ! ----------------------------------------------
           ! Convert pixel terrain height to pressure using
           ! Xiong suggested to use pressure altitude:
           !  Z = -16 alog10 (P / Po) Z in km and P in hPa.
           ! ----------------------------------------------
-          local_thg(1) = 1013.0_r8 * (10.0_r8 ** (local_thg(1) / 1000.0_r8 / (-16.0_r8))) 
+          local_srf(1) = 1013.0_r8 * (10.0_r8 ** (local_srf(1) / 1000.0_r8 / (-16.0_r8))) 
 
-          !Bringing it to the lowest available pressure if needed
-          IF (local_thg(1) .GT. 1013.0) local_thg(1) = 1013.0_r8
-          !Bringing clouds heights to lowest available pressure if needed. Weird yes, but just in case
-          IF (local_cld(1) .GT. 1013.0) local_cld(1) = 1013.0_r8
+          !Bringing surface pressure to highest available in lookup table if needed
+          !Current highest surface pressure is 1030 hPa.
+          IF (local_srf(1) .GT. MAXVAL(re_srf)) local_srf(1) = MAXVAL(re_srf)
+          !Bringing clouds heights to highest available pressure if needed. We avoid extrapolation
+          !Current highest cloud pressure is 1000 hPa.
+          IF ( local_cld(1) .GT. MAXVAL(re_pre) ) local_cld(1) = MAXVAL(re_pre)
+          !Be sure that clouds are above or at the surface.
+          IF ( local_cld(1) .GT. local_srf(1) ) local_cld(1) = local_srf(1)
 
           ! --------------------------
           ! Compute clear sky radiance
           ! --------------------------
           DO isza = 1, sza_dim(1)
              DO ivza = 1, vza_dim(1)
+                DO isrf = 1, srf_dim(1)
 
-                ! For the intensity the TOMRAD formula work perfect so we need no albedo loop
-                Inte_clear(vza_dim(1)+1-ivza,sza_dim(1)+1-isza) = lut_I0_clr(toms_idx,ivza,isza)  +  &
-                     lut_I1_clr(toms_idx,ivza,isza) * cos(local_raa(1))      + &
-                     lut_I2_clr(toms_idx,ivza,isza) * cos(2_r8*local_raa(1)) + &
-                     lut_Ir_clr(toms_idx,ivza,isza) * local_alb(1) / (1 - local_alb(1) * lut_Sb_clr(toms_idx))
-                DO icld = 1, clp_dim(1)
+                   ! For the intensity the TOMRAD formula works perfect so we need no albedo loop
+                   Inte_clear_3D(srf_dim(1)+1-isrf,vza_dim(1)+1-ivza,sza_dim(1)+1-isza) = &
+                        REAL(lut_I0_clr(toms_idx,isrf,ivza,isza), KIND=r8)  +  &
+                        REAL(lut_I1_clr(toms_idx,isrf,ivza,isza), KIND=r8) * cos(local_raa(1))      + &
+                        REAL(lut_I2_clr(toms_idx,isrf,ivza,isza), KIND=r8) * cos(2.0_r8*local_raa(1)) + &
+                        REAL(lut_Ir_clr(toms_idx,isrf,ivza,isza), KIND=r8) * local_alb(1) / &
+                        (1 - local_alb(1) * REAL(lut_Sb_clr(toms_idx,isrf), KIND=r8) )
+                   DO icld = 1, clp_dim(1)
+                      
+                      Inte_cloud_4D(srf_dim(1)+1-isrf,clp_dim(1)+1-icld,vza_dim(1)+1-ivza,sza_dim(1)+1-isza) = &
+                           REAL(lut_I0_cld(toms_idx,isrf,icld,ivza,isza), KIND=r8)  +  &
+                           REAL(lut_I1_cld(toms_idx,isrf,icld,ivza,isza), KIND=r8) * cos(local_raa(1))      + &
+                           REAL(lut_I2_cld(toms_idx,isrf,icld,ivza,isza), KIND=r8) * cos(2_r8*local_raa(1)) + &
+                           REAL(lut_Ir_cld(toms_idx,isrf,icld,ivza,isza), KIND=r8) * &
+                           amf_alb_cld / (1 - amf_alb_cld * REAL(lut_Sb_cld(toms_idx,isrf,icld), KIND=r8) )
+                      
+                   ENDDO ! End cloud loop
+                   ! ----------------------------------------------------------------
+                   ! For the cloud part of the radiance interpolate to cloud pressure
+                   ! Enough to use linear interpolation. If cloud is below surface
+                   ! force cloud radiance to be cero.
+                   ! ----------------------------------------------------------------
+                   Inte_cloud_3D(srf_dim(1)+1-isrf,vza_dim(1)+1-ivza,sza_dim(1)+1-isza) = &
+                        linInterpol(INT(clp_dim(1),KIND=i4), re_pre, &
+                        Inte_cloud_4D(srf_dim(1)+1-isrf,1:clp_dim(1),vza_dim(1)+1-ivza,sza_dim(1)+1-isza), &
+                        local_cld(1), status=status)
+                   IF ( local_cld(1) .GT. re_srf(srf_dim(1)+1-isrf) ) &
+                        Inte_cloud_3D(srf_dim(1)+1-isrf,vza_dim(1)+1-ivza,sza_dim(1)+1-isza) = 0.0_r8
+                ENDDO ! End surface pressure loop
+                ! -------------------------------
+                ! Interpolate to surface pressure
+                ! -------------------------------
+                CALL ezspline_1d_interpolation (INT(srf_dim(1),KIND=i4), re_srf, &
+                     Inte_clear_3D(1:srf_dim(1),vza_dim(1)+1-ivza,sza_dim(1)+1-isza), &
+                     one, local_srf(1), &
+                     Inte_clear_2D(vza_dim(1)+1-ivza,sza_dim(1)+1-isza), status)
+                CALL ezspline_1d_interpolation (INT(srf_dim(1),KIND=i4), re_srf, &
+                     Inte_cloud_3D(1:srf_dim(1),vza_dim(1)+1-ivza,sza_dim(1)+1-isza), &
+                     one, local_srf(1), &
+                     Inte_cloud_2D(vza_dim(1)+1-ivza,sza_dim(1)+1-isza), status)
+             ENDDO ! End VZA loop
+             ! ------------------
+             ! Interpolate to VZA
+             ! ------------------
+             CALL ezspline_1d_interpolation (INT(vza_dim(1),KIND=i4), re_vza, &
+                  Inte_clear_2D(1:vza_dim(1),sza_dim(1)+1-isza), &
+                  one, local_vza(1), &
+                  Inte_clear_1D(sza_dim(1)+1-isza), status)
+             CALL ezspline_1d_interpolation (INT(vza_dim(1),KIND=i4), re_vza, &
+                  Inte_cloud_2D(1:vza_dim(1),sza_dim(1)+1-isza), &
+                  one, local_vza(1), &
+                  Inte_cloud_1D(sza_dim(1)+1-isza), status)
+          ENDDO ! End SZA loop
+          Radiance_clr(1) = 0.0_r8
+          Radiance_cld(1) = 0.0_r8
+          ! ------------------
+          ! Interpolate to SZA
+          ! ------------------
+          CALL ezspline_1d_interpolation (INT(sza_dim(1),KIND=i4), re_sza, &
+               Inte_clear_1D(1:sza_dim(1)), &
+               one, local_sza(1), &
+               Radiance_clr(1), status)
+          CALL ezspline_1d_interpolation (INT(sza_dim(1),KIND=i4), re_sza, &
+               Inte_cloud_1D(1:sza_dim(1)), &
+               one, local_sza(1), &
+               Radiance_cld(1), status)
 
-                   Inte_cloud(clp_dim(1)+1-icld,vza_dim(1)+1-ivza,sza_dim(1)+1-isza) = &
-                        lut_I0_cld(toms_idx,icld,ivza,isza)  +  &
-                        lut_I1_cld(toms_idx,icld,ivza,isza) * cos(local_raa(1))      + &
-                        lut_I2_cld(toms_idx,icld,ivza,isza) * cos(2_r8*local_raa(1)) + &
-                        lut_Ir_cld(toms_idx,icld,ivza,isza) * &
-                        amf_alb_cld / (1 - amf_alb_cld * lut_Sb_cld(toms_idx,icld))
-
-                ENDDO
-             ENDDO
-          ENDDO
-
-          ! -------------------------------------
-          ! Interpolate Inte_clear and Inte_cloud
-          ! to sza vza and cloud pressure.
-          ! -------------------------------------
-          Icr = 0.0_r8
-          CALL ezspline_2d_interpolation (INT(vza_dim(1),KIND=i4),INT(sza_dim(1),KIND=i4), &
-               re_vza,re_sza, &
-               Inte_clear(:,:), &
-               one,one, &
-               local_vza(1),local_sza(1), &
-               Icr(1,1), status)
-          Icl = 0.0_r8
-          CALL ezspline_3d_interpolation (INT(clp_dim(1),KIND=i4),INT(vza_dim(1),KIND=i4),INT(sza_dim(1),KIND=i4), &
-               re_pre,re_vza,re_sza, &
-               Inte_cloud(:,:,:), &
-               one,one,one, &
-               local_cld(1),local_vza(1),local_sza(1), &
-               Icl(1,1,1), status)
-          print*, Icr(1,1), Icl(1,1,1)
           ! ---------------------------------------
           ! Working out the cloud radiance fraction
           ! See note below, Boersma et al. 2011 and
           ! Martin et al. 2003 (crf used below)
           ! ---------------------------------------                 
           crf = 0.0_r8
-          crf = local_cfr(1) * Icl(1,1,1) / &
-               (local_cfr(1) * Icl(1,1,1) + (1 - local_cfr(1)) * Icr(1,1) )
+          crf = local_cfr(1) * Radiance_cld(1) / &
+               ( local_cfr(1) * Radiance_cld(1) + &
+               (1.0_r8 - local_cfr(1)) * Radiance_clr(1) )
+          print*, crf
+          print*, Radiance_clr(1), Radiance_cld(1), local_sza(1), local_vza(1), local_srf(1), local_cld(1), local_cfr(1)
+          stop
           ! ----------------------------------------
           ! Work out scattering weight for clear sky
           ! Interpolation on SZA, VZA, and albedo.
@@ -2151,8 +2206,8 @@ CONTAINS
           ! First compute back from the parametrization the scattering
           ! weights for the given wavelength and albedo.
           ! ----------------------------------------------------------          
-          DO isozo = 1, 1
-             DO iswav = iwavs(1), iwavf(1) !vl_nwav
+          DO iozo = 1, 1
+             DO iwav = iwavs(1), iwavf(1) !vl_nwav
 
                 ! ---------------------------
                 ! Initialize scattwe to zeros
@@ -2160,85 +2215,53 @@ CONTAINS
                 scattwe      = 0.0_r8
                 scattwe_cld  = 0.0_r8
 
-                DO ispre = 1, vl_ncld 
-                   DO issza = 1, vl_nsza
-                      DO isvza = 1, vl_nvza
+                DO ipre = 1, vl_ncld 
+                   DO isza = 1, vl_nsza
+                      DO ivza = 1, vl_nvza
 
-                         IF (ISNAN(vl_Ir(isozo,ispre,issza,isvza,iswav))) THEN
-                            vl_Ir(isozo,ispre,issza,isvza,iswav) = 0.0
+                         IF (ISNAN(vl_Ir(iozo,ipre,isza,ivza,iwav))) THEN
+                            vl_Ir(iozo,ipre,isza,ivza,iwav) = 0.0
                          END IF
 
-                         Intensity = &
-                              REAL(vl_I0(isozo,ispre,issza,isvza,iswav), KIND = r8)      + &
-                              REAL(vl_I1(isozo,ispre,issza,isvza,iswav), KIND = r8)      + &
-                              REAL(vl_I2(isozo,ispre,issza,isvza,iswav), KIND = r8)      + &
-                              ( (albedo(ixtrack, itime)                                  * &
-                              REAL(vl_Ir(isozo,ispre,issza,isvza,iswav), KIND = r8) ) / &
-                              (1.0_r8 - (albedo(ixtrack,itime)                        * &
-                              REAL(vl_Sb(isozo,ispre,iswav), KIND = r8))) )
-                         
-                         Intensity_cld = &
-                              REAL(vl_I0(isozo,ispre,issza,isvza,iswav), KIND = r8)      + &
-                              REAL(vl_I1(isozo,ispre,issza,isvza,iswav), KIND = r8)      + &
-                              REAL(vl_I2(isozo,ispre,issza,isvza,iswav), KIND = r8)      + &
-                              ( (amf_alb_cld                                             * &
-                              REAL(vl_Ir(isozo,ispre,issza,isvza,iswav), KIND = r8) ) / &
-                              (1.0_r8 - (amf_alb_cld                                  * &
-                              REAL(vl_Sb(isozo,ispre,iswav), KIND = r8))) )
-                         
-                         DO isalt = 1, vl_nalt
+                        
+                         DO ialt = 1, vl_nalt
 
 
-                            Temp       = REAL(vl_tem(isozo,ispre,isalt), KIND = r8) - 273.15_r8
+                            Temp       = REAL(vl_tem(iozo,ipre,ialt), KIND = r8) - 273.15_r8
                             TempSquare = Temp * Temp
 
-                            Oz_xs = REAL(vl_OzC0(iswav), KIND = r8) + &
-                                    REAL(vl_OzC1(iswav), KIND = r8) * Temp + &
-                                    REAL(vl_OzC2(iswav), KIND = r8) * TempSquare
+                            Oz_xs = REAL(vl_OzC0(iwav), KIND = r8) + &
+                                    REAL(vl_OzC1(iwav), KIND = r8) * Temp + &
+                                    REAL(vl_OzC2(iwav), KIND = r8) * TempSquare
 
-                            ozo_abs = Oz_xs * REAL(vl_ozo(isozo,ispre,isalt), KIND = r8)
+                            ozo_abs = Oz_xs * REAL(vl_ozo(iozo,ipre,ialt), KIND = r8)
 
                             Jacobian = ( &
-                                 REAL(vl_dI0(isozo,ispre,issza,isvza,iswav,isalt), KIND = r8)  + &
-                                 REAL(vl_dI1(isozo,ispre,issza,isvza,iswav,isalt), KIND = r8)  + &
-                                 REAL(vl_dI2(isozo,ispre,issza,isvza,iswav,isalt), KIND = r8)  + &
+                                 REAL(vl_dI0(iozo,ipre,isza,ivza,iwav,ialt), KIND = r8)  + &
+                                 REAL(vl_dI1(iozo,ipre,isza,ivza,iwav,ialt), KIND = r8)  + &
+                                 REAL(vl_dI2(iozo,ipre,isza,ivza,iwav,ialt), KIND = r8)  + &
                                  ( (albedo(ixtrack,itime)                                      * &
-                                 REAL(vl_dIr(isozo,ispre,issza,isvza,iswav,isalt), KIND = r8)) / &
+                                 REAL(vl_dIr(iozo,ipre,isza,ivza,iwav,ialt), KIND = r8)) / &
                                  (1.0_r8 - (albedo(ixtrack,itime)                              * &
-                                 REAL(vl_Sb(isozo,ispre,iswav), KIND = r8))) )  )                &
+                                 REAL(vl_Sb(iozo,ipre,iwav), KIND = r8))) )  )                &
                                  / REAL(vl_Factor, KIND = r8)
 
                             Jacobian_cld = ( &
-                                 REAL(vl_dI0(isozo,ispre,issza,isvza,iswav,isalt), KIND = r8)  + &
-                                 REAL(vl_dI1(isozo,ispre,issza,isvza,iswav,isalt), KIND = r8)  + &
-                                 REAL(vl_dI2(isozo,ispre,issza,isvza,iswav,isalt), KIND = r8)  + &
+                                 REAL(vl_dI0(iozo,ipre,isza,ivza,iwav,ialt), KIND = r8)  + &
+                                 REAL(vl_dI1(iozo,ipre,isza,ivza,iwav,ialt), KIND = r8)  + &
+                                 REAL(vl_dI2(iozo,ipre,isza,ivza,iwav,ialt), KIND = r8)  + &
                                  ( (amf_alb_cld                                                * &
-                                 REAL(vl_dIr(isozo,ispre,issza,isvza,iswav,isalt), KIND = r8)) / &
+                                 REAL(vl_dIr(iozo,ipre,isza,ivza,iwav,ialt), KIND = r8)) / &
                                  (1.0_r8 - (amf_alb_cld                                        * &
-                                 REAL(vl_Sb(isozo,ispre,iswav), KIND = r8))) )  )                &
+                                 REAL(vl_Sb(iozo,ipre,iwav), KIND = r8))) )  )                &
                                  / REAL(vl_Factor, KIND = r8)
 
                             ! -----------------------------------------
-                            ! vl_ncld+1-ispre & vl_nalt+1-isalt to have
+                            ! vl_ncld+1-ipre & vl_nalt+1-ialt to have
                             ! ascending orden for the interpolation
                             ! ----------------------------------------------------
                             ! Intensities for the calculation of the cloudy pixels
                             ! ----------------------------------------------------
-!!$                            Inte_clear(ispre, vl_nsza+1-issza, vl_nvza+1-isvza) = Intensity
-!!$                            Inte_cloud(ispre, vl_nsza+1-issza, vl_nvza+1-isvza) = Intensity_cld
-
-                            IF (Jacobian .NE. 0.0_r8 .AND. Intensity .NE. 0.0_r8 &
-                                 .AND. ozo_abs .NE. 0.0_r8) THEN
-                               scattwe(ispre, vl_nsza+1-issza, vl_nvza+1-isvza, isalt) = &
-                                    -Jacobian / Intensity / ozo_abs
-
-                            END IF
-                            IF (Jacobian_cld .NE. 0.0_r8 .AND. Intensity_cld .NE. 0.0_r8 &
-                                 .AND. ozo_abs .NE. 0.0_r8) THEN ! .AND.                         &
-                               scattwe_cld(ispre, vl_nsza+1-issza, vl_nvza+1-isvza, isalt) = &
-                                    -Jacobian_cld / Intensity_cld / ozo_abs
-
-                            END IF
                             
                          END DO ! End altitudes (scattering look up tables)
                       END DO ! End vza loop
@@ -2250,7 +2273,7 @@ CONTAINS
                 ! Interpolate for each altitude
                 ! to the given sza, vza and pressure
                 ! ----------------------------------
-                DO isalt = 1, CmETA ! Loop over altitudes, climatology
+                DO ialt = 1, CmETA ! Loop over altitudes, climatology
                    
                    cloud_scattw = 0.0_r8
                    clear_scattw = 0.0_r8
@@ -2260,12 +2283,12 @@ CONTAINS
                    ! must be GT than 0.0. Only interpolate for values
                    ! above the cloud top.
                    ! --------------------------------------------------
-                   IF ( local_chg(isalt) .LE. local_cld(1) .AND. local_cfr(1) .GT. 0.0 ) THEN
+                   IF ( local_chg(ialt) .LE. local_cld(1) .AND. local_cfr(1) .GT. 0.0 ) THEN
                       cloud_scattw(one,one,one) =  linInterpol (              &
                            vl_nsza, vl_nvza, vl_nalt,                         &
                            re_sza,  re_vza,  re_alt,                          &
                            scattwe_cld(index_cld(1),:,:,:),                   &
-                           local_sza(1), local_vza(1), local_chg(isalt),            &
+                           local_sza(1), local_vza(1), local_chg(ialt),            &
                            status=status)
                    END IF
                    
@@ -2273,12 +2296,12 @@ CONTAINS
                    ! If we are below the level of the land, no need to
                    ! work out those scattering weights.
                    ! --------------------------------------------------
-                   IF ( local_chg(isalt) .LE. local_thg(1) ) THEN
+                   IF ( local_chg(ialt) .LE. local_srf(1) ) THEN
                       clear_scattw(one,one,one) = linInterpol (           &
                            vl_nsza, vl_nvza, vl_nalt,                     &
                             re_sza,  re_vza,  re_alt,                     &
                            scattwe(index_thg(1),:,:,:),                   &
-                           local_sza(1), local_vza(1), local_chg(isalt),        &
+                           local_sza(1), local_vza(1), local_chg(ialt),        &
                            status=status)
                    END IF
 
@@ -2292,8 +2315,8 @@ CONTAINS
                    ! Now the scattering weights become w = crf * scatt_cloud + (1 - crf) * scatt_clear
                    !  We add the scattweights calculated in the previous wavelengths.
                    ! ---------------------------------------------------------------------------------
-                   scattw(ixtrack,itime,isalt) = (crf * cloud_scattw(one,one,one) + (1.0_r8 - crf) * clear_scattw(one,one,one)) &
-                                                 + scattw(ixtrack,itime,isalt)
+                   scattw(ixtrack,itime,ialt) = (crf * cloud_scattw(one,one,one) + (1.0_r8 - crf) * clear_scattw(one,one,one)) &
+                                                 + scattw(ixtrack,itime,ialt)
 
                 END DO ! End looop over altitudes
                 ! -------------------------------------------------------------------------------------------------
@@ -2680,7 +2703,7 @@ SUBROUTINE read_lookup_table (errstat)
     INTEGER :: hdferr
 
     INTEGER(HID_T) :: input_file_id                                  ! File identifier
-    INTEGER(HID_T) :: alb_did, clp_did, sza_did, toz_did, vza_did, wav_did, & ! Dataset identifiers
+    INTEGER(HID_T) :: alb_did, srf_did, clp_did, sza_did, toz_did, vza_did, wav_did, & ! Dataset identifiers
          I0_clr_did, I1_clr_did, I2_clr_did, Ir_clr_did, Sb_clr_did,        &
          I0_cld_did, I1_cld_did, I2_cld_did, Ir_cld_did, Sb_cld_did,        &
          dI0_clr_did, dI1_clr_did, dI2_clr_did, & 
@@ -2738,6 +2761,7 @@ SUBROUTINE read_lookup_table (errstat)
     ! Open grid, intensity, scattering weights and profile datasets
     ! --------------------------------------------------------------------------
     CALL h5dopen_f(input_file_id,'/Grid/Albedo', alb_did, hdferr)
+    CALL h5dopen_f(input_file_id,'/Grid/Surface Pressure', srf_did, hdferr)
     CALL h5dopen_f(input_file_id,'/Grid/Cloud Pressure', clp_did, hdferr)
     CALL h5dopen_f(input_file_id,'/Grid/SZA', sza_did, hdferr)
     CALL h5dopen_f(input_file_id,'/Grid/TOMS', toz_did, hdferr)
@@ -2776,6 +2800,8 @@ SUBROUTINE read_lookup_table (errstat)
     ! -----------------------
     CALL h5dget_space_f(alb_did,dspace,hdferr)
     CALL h5sget_simple_extent_dims_f (dspace, alb_dim, alb_maxdim, hdferr)
+    CALL h5dget_space_f(srf_did,dspace,hdferr)
+    CALL h5sget_simple_extent_dims_f (dspace, srf_dim, srf_maxdim, hdferr)
     CALL h5dget_space_f(clp_did,dspace,hdferr)
     CALL h5sget_simple_extent_dims_f (dspace, clp_dim, clp_maxdim, hdferr)
     CALL h5dget_space_f(sza_did,dspace,hdferr)
@@ -2810,14 +2836,15 @@ SUBROUTINE read_lookup_table (errstat)
     ! ---------------------------------------------------------------
     ! Allocate & initialize variables now that we have the dimensions
     ! ---------------------------------------------------------------
-    CALL vlidort_allocate('a', INT(toz_dim(1)),INT(clp_dim(1)),INT(alb_dim(1)), &
+    CALL vlidort_allocate('a', INT(toz_dim(1)),INT(srf_dim(1)),INT(clp_dim(1)),INT(alb_dim(1)), &
          INT(sza_dim(1)),INT(vza_dim(1)),INT(wav_dim(1)), &
-         INT(alt_lay_dim(1)),INT(alt_lev_dim(1)),errstat)
+         INT(alt_lay_dim(2)),INT(alt_lev_dim(2)),errstat)
     
     ! ----------------------------------------------------
     ! Read from the h5 file all these small size variables
     ! ----------------------------------------------------
     CALL h5dread_f(alb_did, H5T_NATIVE_REAL,  lut_albedo(1:alb_dim(1)),  alb_dim, hdferr)
+    CALL h5dread_f(srf_did, H5T_NATIVE_REAL,  lut_srf(1:srf_dim(1)),  srf_dim, hdferr)
     CALL h5dread_f(clp_did, H5T_NATIVE_REAL,  lut_clp(1:clp_dim(1)),  clp_dim, hdferr)
     CALL h5dread_f(sza_did, H5T_NATIVE_REAL,  lut_sza(1:sza_dim(1)),  sza_dim, hdferr)
     CALL h5dread_f(toz_did, toms_datatype_id, lut_toms(1:toz_dim(1)), toz_dim, hdferr)
@@ -2825,59 +2852,67 @@ SUBROUTINE read_lookup_table (errstat)
     CALL h5dread_f(wav_did, H5T_NATIVE_REAL,  lut_wavelength(1:wav_dim(1)),  wav_dim, hdferr)
     
     CALL h5dread_f(I0_clr_did, H5T_NATIVE_REAL, &
-         lut_I0_clr(1:toz_dim(1),1:vza_dim(1),1:vza_dim(1)), I0_clr_dim, hdferr)
+         lut_I0_clr(1:toz_dim(1),1:srf_dim(1),1:vza_dim(1),1:vza_dim(1)), I0_clr_dim, hdferr)
     CALL h5dread_f(I1_clr_did, H5T_NATIVE_REAL, &
-         lut_I1_clr(1:toz_dim(1),1:vza_dim(1),1:vza_dim(1)), I0_clr_dim, hdferr)
+         lut_I1_clr(1:toz_dim(1),1:srf_dim(1),1:vza_dim(1),1:vza_dim(1)), I0_clr_dim, hdferr)
     CALL h5dread_f(I2_clr_did, H5T_NATIVE_REAL, &
-         lut_I2_clr(1:toz_dim(1),1:vza_dim(1),1:vza_dim(1)), I0_clr_dim, hdferr)
+         lut_I2_clr(1:toz_dim(1),1:srf_dim(1),1:vza_dim(1),1:vza_dim(1)), I0_clr_dim, hdferr)
     CALL h5dread_f(Ir_clr_did, H5T_NATIVE_REAL, &
-         lut_Ir_clr(1:toz_dim(1),1:vza_dim(1),1:vza_dim(1)), I0_clr_dim, hdferr)
+         lut_Ir_clr(1:toz_dim(1),1:srf_dim(1),1:vza_dim(1),1:vza_dim(1)), I0_clr_dim, hdferr)
     CALL h5dread_f(Sb_clr_did, H5T_NATIVE_REAL, &
-         lut_Sb_clr(1:toz_dim(1)), Sb_clr_dim, hdferr)
+         lut_Sb_clr(1:toz_dim(1),1:srf_dim(1)), Sb_clr_dim, hdferr)
 
     CALL h5dread_f(I0_cld_did, H5T_NATIVE_REAL, &
-         lut_I0_cld(1:toz_dim(1),1:clp_dim(1),1:vza_dim(1),1:sza_dim(1)), I0_cld_dim, hdferr)
+         lut_I0_cld(1:toz_dim(1),1:srf_dim(1),1:clp_dim(1),1:vza_dim(1),1:sza_dim(1)), I0_cld_dim, hdferr)
     CALL h5dread_f(I1_cld_did, H5T_NATIVE_REAL, &
-         lut_I1_cld(1:toz_dim(1),1:clp_dim(1),1:vza_dim(1),1:sza_dim(1)), I0_cld_dim, hdferr)
+         lut_I1_cld(1:toz_dim(1),1:srf_dim(1),1:clp_dim(1),1:vza_dim(1),1:sza_dim(1)), I0_cld_dim, hdferr)
     CALL h5dread_f(I2_cld_did, H5T_NATIVE_REAL, &
-         lut_I2_cld(1:toz_dim(1),1:clp_dim(1),1:vza_dim(1),1:sza_dim(1)), I0_cld_dim, hdferr)
+         lut_I2_cld(1:toz_dim(1),1:srf_dim(1),1:clp_dim(1),1:vza_dim(1),1:sza_dim(1)), I0_cld_dim, hdferr)
     CALL h5dread_f(Ir_cld_did, H5T_NATIVE_REAL, &
-         lut_Ir_cld(1:toz_dim(1),1:clp_dim(1),1:vza_dim(1),1:sza_dim(1)), I0_cld_dim, hdferr)
+         lut_Ir_cld(1:toz_dim(1),1:srf_dim(1),1:clp_dim(1),1:vza_dim(1),1:sza_dim(1)), I0_cld_dim, hdferr)
     CALL h5dread_f(Sb_cld_did, H5T_NATIVE_REAL, &
-         lut_Sb_cld(1:toz_dim(1),1:clp_dim(1)), Sb_cld_dim, hdferr)
+         lut_Sb_cld(1:toz_dim(1),1:srf_dim(1),1:clp_dim(1)), Sb_cld_dim, hdferr)
 
     CALL h5dread_f(dI0_clr_did, H5T_NATIVE_REAL,  &
-         lut_dI0_clr(1:toz_dim(1),1:alt_lay_dim(1),1:alb_dim(1),1:vza_dim(1),1:sza_dim(1)), &
+         lut_dI0_clr(1:toz_dim(1),1:srf_dim(1),1:alt_lay_dim(2),1:alb_dim(1),1:vza_dim(1),1:sza_dim(1)), &
          dI0_clr_dim, hdferr)
     CALL h5dread_f(dI1_clr_did, H5T_NATIVE_REAL,  &
-         lut_dI1_clr(1:toz_dim(1),1:alt_lay_dim(1),1:alb_dim(1),1:vza_dim(1),1:sza_dim(1)), &
+         lut_dI1_clr(1:toz_dim(1),1:srf_dim(1),1:alt_lay_dim(2),1:alb_dim(1),1:vza_dim(1),1:sza_dim(1)), &
          dI0_clr_dim, hdferr)
     CALL h5dread_f(dI2_clr_did, H5T_NATIVE_REAL,  &
-         lut_dI2_clr(1:toz_dim(1),1:alt_lay_dim(1),1:alb_dim(1),1:vza_dim(1),1:sza_dim(1)), &
+         lut_dI2_clr(1:toz_dim(1),1:srf_dim(1),1:alt_lay_dim(2),1:alb_dim(1),1:vza_dim(1),1:sza_dim(1)), &
          dI0_clr_dim, hdferr)
 
     CALL h5dread_f(dI0_cld_did, H5T_NATIVE_REAL,  &
-         lut_dI0_cld(1:toz_dim(1),1:alt_lay_dim(1),1:clp_dim(1),1:vza_dim(1),1:sza_dim(1)), &
+         lut_dI0_cld(1:toz_dim(1),1:srf_dim(1),1:alt_lay_dim(2),1:clp_dim(1),1:vza_dim(1),1:sza_dim(1)), &
          dI0_cld_dim, hdferr)
     CALL h5dread_f(dI1_cld_did, H5T_NATIVE_REAL,  &
-         lut_dI1_cld(1:toz_dim(1),1:alt_lay_dim(1),1:clp_dim(1),1:vza_dim(1),1:sza_dim(1)), &
+         lut_dI1_cld(1:toz_dim(1),1:srf_dim(1),1:alt_lay_dim(2),1:clp_dim(1),1:vza_dim(1),1:sza_dim(1)), &
          dI0_cld_dim, hdferr)
     CALL h5dread_f(dI2_cld_did, H5T_NATIVE_REAL,  &
-         lut_dI2_cld(1:toz_dim(1),1:alt_lay_dim(1),1:clp_dim(1),1:vza_dim(1),1:sza_dim(1)), &
+         lut_dI2_cld(1:toz_dim(1),1:srf_dim(1),1:alt_lay_dim(2),1:clp_dim(1),1:vza_dim(1),1:sza_dim(1)), &
          dI0_cld_dim, hdferr)
     
-    CALL h5dread_f(air_did,     H5T_NATIVE_REAL, lut_air(1:toz_dim(1),1:alt_lay_dim(1)), air_dim, hdferr)
-    CALL h5dread_f(alt_lev_did, H5T_NATIVE_REAL, lut_alt_lev(1:alt_lev_dim(1)),   alt_lev_dim, hdferr)
-    CALL h5dread_f(alt_lay_did, H5T_NATIVE_REAL, lut_alt_lay(1:alt_lay_dim(1)),   alt_lay_dim, hdferr)
-    CALL h5dread_f(pre_lev_did, H5T_NATIVE_REAL, lut_pre_lev(1:alt_lev_dim(1)),   alt_lev_dim, hdferr)
-    CALL h5dread_f(pre_lay_did, H5T_NATIVE_REAL, lut_pre_lay(1:alt_lay_dim(1)),   alt_lay_dim, hdferr)
-    CALL h5dread_f(ozo_did,     H5T_NATIVE_REAL, lut_ozo(1:toz_dim(1),1:alt_lay_dim(1)),     air_dim, hdferr)
-    CALL h5dread_f(tem_did,     H5T_NATIVE_REAL, lut_tem(1:toz_dim(1),1:alt_lev_dim(1)), tem_dim, hdferr)
+    CALL h5dread_f(air_did,     H5T_NATIVE_REAL, lut_air(1:toz_dim(1),1:srf_dim(1),1:alt_lay_dim(2)), &
+         air_dim, hdferr)
+    CALL h5dread_f(alt_lev_did, H5T_NATIVE_REAL, lut_alt_lev(1:srf_dim(1),1:alt_lev_dim(2)), &
+         alt_lev_dim, hdferr)
+    CALL h5dread_f(alt_lay_did, H5T_NATIVE_REAL, lut_alt_lay(1:srf_dim(1),1:alt_lay_dim(2)), &
+         alt_lay_dim, hdferr)
+    CALL h5dread_f(pre_lev_did, H5T_NATIVE_REAL, lut_pre_lev(1:srf_dim(1),1:alt_lev_dim(2)), &
+         alt_lev_dim, hdferr)
+    CALL h5dread_f(pre_lay_did, H5T_NATIVE_REAL, lut_pre_lay(1:srf_dim(1),1:alt_lay_dim(2)), &
+         alt_lay_dim, hdferr)
+    CALL h5dread_f(ozo_did,     H5T_NATIVE_REAL, lut_ozo(1:toz_dim(1),1:srf_dim(1),1:alt_lay_dim(2)), &
+         air_dim, hdferr)
+    CALL h5dread_f(tem_did,     H5T_NATIVE_REAL, lut_tem(1:toz_dim(1),1:srf_dim(1),1:alt_lev_dim(2)), &
+         tem_dim, hdferr)
     
     ! --------------
     ! Close datasets
     ! --------------    
     CALL h5dclose_f(alb_did, hdferr)
+    CALL h5dclose_f(srf_did, hdferr)
     CALL h5dclose_f(clp_did, hdferr)
     CALL h5dclose_f(sza_did, hdferr)
     CALL h5dclose_f(toz_did, hdferr)
