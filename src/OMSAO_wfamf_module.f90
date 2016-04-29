@@ -22,10 +22,39 @@ MODULE OMSAO_wfamf_module
   REAL(KIND=r8)                                :: amf_alb_lnd, amf_alb_sno, amf_wvl, &
        amf_wvl2, amf_alb_cld, amf_max_sza
 
+  ! ---------------------------------
+  ! GMAO GEOS-5 hybrid grid Ap and Bp
+  ! ---------------------------------
+  REAL(KIND=r4), DIMENSION(48), PARAMETER :: Ap=(/0.000000E+00, 4.804826E-02, 6.593752E+00, 1.313480E+01, &
+       1.961311E+01, 2.609201E+01, 3.257081E+01, 3.898201E+01, &
+       4.533901E+01, 5.169611E+01, 5.805321E+01, 6.436264E+01, &
+       7.062198E+01, 7.883422E+01, 8.909992E+01, 9.936521E+01, &
+       1.091817E+02, 1.189586E+02, 1.286959E+02, 1.429100E+02, &
+       1.562600E+02, 1.696090E+02, 1.816190E+02, 1.930970E+02, &
+       2.032590E+02, 2.121500E+02, 2.187760E+02, 2.238980E+02, &
+       2.243630E+02, 2.168650E+02, 2.011920E+02, 1.769300E+02, &
+       1.503930E+02, 1.278370E+02, 1.086630E+02, 9.236572E+01, &
+       7.851231E+01, 5.638791E+01, 4.017541E+01, 2.836781E+01, &
+       1.979160E+01, 9.292942E+00, 4.076571E+00, 1.650790E+00, &
+       6.167791E-01, 2.113490E-01, 6.600001E-02, 1.000000E-02/)
+  REAL(KIND=r4), DIMENSION(48), PARAMETER :: Bp=(/1.000000E+00, 9.849520E-01, 9.634060E-01, 9.418650E-01, &
+       9.203870E-01, 8.989080E-01, 8.774290E-01, 8.560180E-01, &
+       8.346609E-01, 8.133039E-01, 7.919469E-01, 7.706375E-01, &
+       7.493782E-01, 7.211660E-01, 6.858999E-01, 6.506349E-01, &
+       6.158184E-01, 5.810415E-01, 5.463042E-01, 4.945902E-01, &
+       4.437402E-01, 3.928911E-01, 3.433811E-01, 2.944031E-01, &
+       2.467411E-01, 2.003501E-01, 1.562241E-01, 1.136021E-01, &
+       6.372006E-02, 2.801004E-02, 6.960025E-03, 8.175413E-09, &
+       0.000000E+00, 0.000000E+00, 0.000000E+00, 0.000000E+00, &
+       0.000000E+00, 0.000000E+00, 0.000000E+00, 0.000000E+00, &
+       0.000000E+00, 0.000000E+00, 0.000000E+00, 0.000000E+00, &
+       0.000000E+00, 0.000000E+00, 0.000000E+00, 0.000000E+00/)
+  INTEGER(KIND=i4), PARAMETER :: ngeos5 = 48
+
   ! ---------------------------------------
   ! Data obtained from the climatology file
   ! ---------------------------------------
-  REAL(KIND=r4), DIMENSION(:),     ALLOCATABLE :: latvals, lonvals, Ap, Bp
+  REAL(KIND=r4), DIMENSION(:),     ALLOCATABLE :: latvals, lonvals
   REAL(KIND=r4), DIMENSION(:,:),   ALLOCATABLE :: Psurface
   REAL(KIND=r4), DIMENSION(:,:,:), ALLOCATABLE :: Temperature, Gas_profiles, H2O_profiles
 
@@ -71,7 +100,7 @@ MODULE OMSAO_wfamf_module
   ! Look up table variables
   ! -----------------------
   ! To hold data:
-  REAL(KIND=r4),    DIMENSION(:),           ALLOCATABLE :: lut_albedo, lut_clp, lut_sza, &
+  REAL(KIND=r4),    DIMENSION(:),           ALLOCATABLE :: lut_alb, lut_clp, lut_sza, &
        lut_vza, lut_wavelength, lut_srf
   CHARACTER(LEN=5), DIMENSION(:),           ALLOCATABLE :: lut_toms
   REAL(KIND=r4),    DIMENSION(:,:),         ALLOCATABLE :: lut_alt_lay, lut_alt_lev, lut_pre_lay, lut_pre_lev
@@ -521,12 +550,10 @@ CONTAINS
 
     CHARACTER (LEN= 9), PARAMETER :: cli_lat_field         = 'Latitudes'
     CHARACTER (LEN=10), PARAMETER :: cli_lon_field         = 'Longitudes'
-    CHARACTER (LEN= 3), PARAMETER :: cli_Ap_field          = 'A_p'
-    CHARACTER (LEN= 3), PARAMETER :: cli_Bp_field          = 'B_p'
     CHARACTER (LEN=15), PARAMETER :: cli_Psurf_field       = 'SurfacePressure'
     CHARACTER (LEN=18), PARAMETER :: cli_Temperature_field = 'TemperatureProfile'
 
-    REAL      (KIND=r4) :: scale_lat, scale_lon, scale_Ap, scale_Bp, scale_gas, scale_Psurf, &
+    REAL      (KIND=r4) :: scale_lat, scale_lon, scale_gas, scale_Psurf, &
                            scale_temperature, scale_H2O
 
     ! ------------------------
@@ -641,10 +668,6 @@ CONTAINS
     he5stat = HE5_SWrdfld ( swath_id, cli_lon_field, &
          he5_start_1d, he5_stride_1d, he5_edge_1d, lonvals(1:Cmlon) )
     he5_start_1d = zerocl ; he5_stride_1d = onecl ; he5_edge_1d = CmEp1cl
-    he5stat = HE5_SWrdfld ( swath_id, cli_Ap_field, &
-         he5_start_1d, he5_stride_1d, he5_edge_1d, Ap(1:CmEp1) )
-    he5stat = HE5_SWrdfld ( swath_id, cli_Bp_field, &
-         he5_start_1d, he5_stride_1d, he5_edge_1d, Bp(1:CmEp1) )
     IF ( he5stat /= pge_errstat_ok ) &
          CALL error_check ( he5stat, OMI_S_SUCCESS, pge_errstat_error, OMSAO_E_PREFITCOL, &
          modulename//f_sep//'Climatology arrays access failed.', vb_lev_default, errstat )
@@ -654,8 +677,6 @@ CONTAINS
     ! -----------------------------------------------
     he5stat = HE5_SWrdlattr ( swath_id, cli_lat_field, "ScaleFactor", scale_lat )
     he5stat = HE5_SWrdlattr ( swath_id, cli_lon_field, "ScaleFactor", scale_lon )
-    he5stat = HE5_SWrdlattr ( swath_id, cli_Ap_field,  "ScaleFactor", scale_Ap )
-    he5stat = HE5_SWrdlattr ( swath_id, cli_Bp_field,  "ScaleFactor", scale_Bp )
     IF ( he5stat /= pge_errstat_ok ) &
          CALL error_check ( he5stat, OMI_S_SUCCESS, pge_errstat_error, OMSAO_E_PREFITCOL, &
          modulename//f_sep//'Climatology attributes access failed.', vb_lev_default, errstat )
@@ -665,8 +686,6 @@ CONTAINS
     ! -----------------------------------
     lonvals = lonvals * scale_lon
     latvals = latvals * scale_lat
-    Ap      = Ap      * scale_Ap
-    Bp      = Bp      * scale_Bp
 
     ! -----------------------------------------------
     ! Read the tables: Psurface, Heights, Temperature
@@ -1228,8 +1247,6 @@ CONTAINS
     CASE ('a')
        ALLOCATE (latvals (Cmlat),                 STAT=estat ) ; errstat = MAX ( errstat, estat )
        ALLOCATE (lonvals (Cmlon),                 STAT=estat ) ; errstat = MAX ( errstat, estat )
-       ALLOCATE (Ap      (CmEp1),                 STAT=estat ) ; errstat = MAX ( errstat, estat )
-       ALLOCATE (Bp      (CmEp1),                 STAT=estat ) ; errstat = MAX ( errstat, estat )
        ALLOCATE (Temperature (Cmlon, Cmlat, CmETA), STAT=estat ) ; errstat = MAX ( errstat, estat )
        ALLOCATE (Gas_profiles(Cmlon, Cmlat, CmETA), STAT=estat ) ; errstat = MAX ( errstat, estat )
        ALLOCATE (H2O_profiles(Cmlon, Cmlat, CmETA), STAT=estat ) ; errstat = MAX ( errstat, estat )
@@ -1237,8 +1254,6 @@ CONTAINS
     CASE ('d')
        IF ( ALLOCATED ( latvals      ) )  DEALLOCATE ( latvals      )
        IF ( ALLOCATED ( lonvals      ) )  DEALLOCATE ( lonvals      )
-       IF ( ALLOCATED ( Ap           ) )  DEALLOCATE ( Ap           )
-       IF ( ALLOCATED ( Bp           ) )  DEALLOCATE ( Bp           )
        IF ( ALLOCATED ( Temperature  ) )  DEALLOCATE ( Temperature  )
        IF ( ALLOCATED ( Gas_profiles ) )  DEALLOCATE ( Gas_profiles )
        IF ( ALLOCATED ( H2O_profiles ) )  DEALLOCATE ( H2O_profiles )
@@ -1283,45 +1298,45 @@ CONTAINS
     SELECT CASE ( adlow )
     CASE ('a')
 
-       ALLOCATE (lut_albedo(analb),     STAT=estat)
-       ALLOCATE (lut_srf(ansrf),        STAT=estat)
-       ALLOCATE (lut_clp(ancld),        STAT=estat)
-       ALLOCATE (lut_sza(ansza),        STAT=estat)
-       ALLOCATE (lut_vza(anvza),        STAT=estat)
-       ALLOCATE (lut_wavelength(anwav), STAT=estat)
-       ALLOCATE (lut_toms(anozo),       STAT=estat)
+       ALLOCATE (lut_alb(1:analb),     STAT=estat)
+       ALLOCATE (lut_srf(1:ansrf),        STAT=estat)
+       ALLOCATE (lut_clp(1:ancld),        STAT=estat)
+       ALLOCATE (lut_sza(1:ansza),        STAT=estat)
+       ALLOCATE (lut_vza(1:anvza),        STAT=estat)
+       ALLOCATE (lut_wavelength(1:anwav), STAT=estat)
+       ALLOCATE (lut_toms(1:anozo),       STAT=estat)
        
-       ALLOCATE (lut_air(anozo,ansrf,anlay), STAT=estat)
-       ALLOCATE (lut_alt_lay(ansrf,anlay),   STAT=estat)
-       ALLOCATE (lut_alt_lev(ansrf,anlev),   STAT=estat)
-       ALLOCATE (lut_ozo(anozo,ansrf,anlay), STAT=estat)
-       ALLOCATE (lut_pre_lay(ansrf,anlay),   STAT=estat)
-       ALLOCATE (lut_pre_lev(ansrf,anlev),   STAT=estat)
-       ALLOCATE (lut_tem(anozo,ansrf,anlev), STAT=estat)
+       ALLOCATE (lut_air(1:anozo,1:ansrf,1:anlay), STAT=estat)
+       ALLOCATE (lut_alt_lay(1:ansrf,1:anlay),   STAT=estat)
+       ALLOCATE (lut_alt_lev(1:ansrf,1:anlev),   STAT=estat)
+       ALLOCATE (lut_ozo(1:anozo,1:ansrf,1:anlay), STAT=estat)
+       ALLOCATE (lut_pre_lay(1:ansrf,1:anlay),   STAT=estat)
+       ALLOCATE (lut_pre_lev(1:ansrf,1:anlev),   STAT=estat)
+       ALLOCATE (lut_tem(1:anozo,1:ansrf,1:anlev), STAT=estat)
        
-       ALLOCATE (lut_I0_clr(anozo,ansrf,anvza,ansza), STAT=estat)
-       ALLOCATE (lut_I1_clr(anozo,ansrf,anvza,ansza), STAT=estat)
-       ALLOCATE (lut_I2_clr(anozo,ansrf,anvza,ansza), STAT=estat)
-       ALLOCATE (lut_Ir_clr(anozo,ansrf,anvza,ansza), STAT=estat)
-       ALLOCATE (lut_Sb_clr(anozo,ansrf),             STAT=estat)
+       ALLOCATE (lut_I0_clr(1:anozo,1:ansrf,1:anvza,1:ansza), STAT=estat)
+       ALLOCATE (lut_I1_clr(1:anozo,1:ansrf,1:anvza,1:ansza), STAT=estat)
+       ALLOCATE (lut_I2_clr(1:anozo,1:ansrf,1:anvza,1:ansza), STAT=estat)
+       ALLOCATE (lut_Ir_clr(1:anozo,1:ansrf,1:anvza,1:ansza), STAT=estat)
+       ALLOCATE (lut_Sb_clr(1:anozo,1:ansrf),             STAT=estat)
        
-       ALLOCATE (lut_I0_cld(anozo,ansrf,ancld,anvza,ansza), STAT=estat)
-       ALLOCATE (lut_I1_cld(anozo,ansrf,ancld,anvza,ansza), STAT=estat)
-       ALLOCATE (lut_I2_cld(anozo,ansrf,ancld,anvza,ansza), STAT=estat)
-       ALLOCATE (lut_Ir_cld(anozo,ansrf,ancld,anvza,ansza), STAT=estat)
-       ALLOCATE (lut_Sb_cld(anozo,ansrf,ancld),             STAT=estat)
+       ALLOCATE (lut_I0_cld(1:anozo,1:ansrf,1:ancld,1:anvza,1:ansza), STAT=estat)
+       ALLOCATE (lut_I1_cld(1:anozo,1:ansrf,1:ancld,1:anvza,1:ansza), STAT=estat)
+       ALLOCATE (lut_I2_cld(1:anozo,1:ansrf,1:ancld,1:anvza,1:ansza), STAT=estat)
+       ALLOCATE (lut_Ir_cld(1:anozo,1:ansrf,1:ancld,1:anvza,1:ansza), STAT=estat)
+       ALLOCATE (lut_Sb_cld(1:anozo,1:ansrf,1:ancld),             STAT=estat)
        
-       ALLOCATE (lut_dI0_clr(anozo,ansrf,anlay,analb,anvza,ansza), STAT=estat)
-       ALLOCATE (lut_dI1_clr(anozo,ansrf,anlay,analb,anvza,ansza), STAT=estat)
-       ALLOCATE (lut_dI2_clr(anozo,ansrf,anlay,analb,anvza,ansza), STAT=estat)
+       ALLOCATE (lut_dI0_clr(1:anozo,1:ansrf,1:anlay,1:analb,1:anvza,1:ansza), STAT=estat)
+       ALLOCATE (lut_dI1_clr(1:anozo,1:ansrf,1:anlay,1:analb,1:anvza,1:ansza), STAT=estat)
+       ALLOCATE (lut_dI2_clr(1:anozo,1:ansrf,1:anlay,1:analb,1:anvza,1:ansza), STAT=estat)
        
-       ALLOCATE (lut_dI0_cld(anozo,ansrf,anlay,ancld,anvza,ansza), STAT=estat)
-       ALLOCATE (lut_dI1_cld(anozo,ansrf,anlay,ancld,anvza,ansza), STAT=estat)
-       ALLOCATE (lut_dI2_cld(anozo,ansrf,anlay,ancld,anvza,ansza), STAT=estat)    
+       ALLOCATE (lut_dI0_cld(1:anozo,1:ansrf,1:anlay,1:ancld,1:anvza,1:ansza), STAT=estat)
+       ALLOCATE (lut_dI1_cld(1:anozo,1:ansrf,1:anlay,1:ancld,1:anvza,1:ansza), STAT=estat)
+       ALLOCATE (lut_dI2_cld(1:anozo,1:ansrf,1:anlay,1:ancld,1:anvza,1:ansza), STAT=estat)    
 
     CASE ('d')
 
-       IF ( ALLOCATED ( lut_albedo ) ) DEALLOCATE ( lut_albedo )
+       IF ( ALLOCATED ( lut_alb ) ) DEALLOCATE ( lut_alb )
        IF ( ALLOCATED ( lut_srf ) ) DEALLOCATE ( lut_srf )
        IF ( ALLOCATED ( lut_clp ) ) DEALLOCATE ( lut_clp )
        IF ( ALLOCATED ( lut_sza ) ) DEALLOCATE ( lut_sza )
@@ -1945,18 +1960,16 @@ CONTAINS
     ! ------------------
     ! Modified variables
     ! ------------------
-    REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1,alt_lay_dim(2)), INTENT (INOUT) :: scattw
+    REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1,ngeos5-1), INTENT (INOUT) :: scattw
 
     ! ---------------
     ! Local variables
     ! ---------------
     INTEGER (KIND=i4) :: itime, ixtrack, status, one, &
-         iozo, iwav, isza, ivza, icld, isrf, ipre, ialt
-    INTEGER (KIND=i4), DIMENSION(1) :: iwavs, iwavf, index_thg, index_cld
-    REAL    (KIND=r8) :: temp, tempsquare, grad, raa, tmp_saa, tmp_vaa
-    REAL    (KIND=r8) :: ozo_abs, Jacobian, Oz_xs, Jacobian_cld
-    REAL    (KIND=r8) :: crf, nwavs!, Icr, Icl ,cloud_scattw, clear_scattw
-    REAL    (KIND=r8), DIMENSION(clp_dim(1), sza_dim(1), vza_dim(1), alt_lay_dim(2)) :: scattwe, scattwe_cld
+         iozo, iwav, isza, ivza, icld, isrf, ipre, ialt, ialb, ilev
+    INTEGER (KIND=i4), DIMENSION(1) :: iwavs, iwavf
+    REAL    (KIND=r8) :: grad, raa, tmp_saa, tmp_vaa
+    REAL    (KIND=r8) :: crf, nwavs
     REAL    (KIND=r8), DIMENSION(srf_dim(1), vza_dim(1), sza_dim(1)) :: Inte_clear_3D
     REAL    (KIND=r8), DIMENSION(vza_dim(1), sza_dim(1))             :: Inte_clear_2D
     REAL    (KIND=r8), DIMENSION(sza_dim(1))                         :: Inte_clear_1D
@@ -1965,18 +1978,34 @@ CONTAINS
     REAL    (KIND=r8), DIMENSION(srf_dim(1), vza_dim(1), sza_dim(1))             :: Inte_cloud_3D
     REAL    (KIND=r8), DIMENSION(vza_dim(1), sza_dim(1))                         :: Inte_cloud_2D
     REAL    (KIND=r8), DIMENSION(sza_dim(1))                                     :: Inte_cloud_1D
-    REAL    (KIND=r8), DIMENSION(1)                                              :: Radiance_cld 
+    REAL    (KIND=r8), DIMENSION(1)                                              :: Radiance_cld
+    REAL    (KIND=r8), DIMENSION(srf_dim(1),alt_lay_dim(2),alb_dim(1),vza_dim(1),sza_dim(1)) :: sw_clear_5D
+    REAL    (KIND=r8), DIMENSION(srf_dim(1),alt_lay_dim(2),vza_dim(1),sza_dim(1))            :: sw_clear_4D
+    REAL    (KIND=r8), DIMENSION(alt_lay_dim(2),vza_dim(1),sza_dim(1))                       :: sw_clear_3D
+    REAL    (KIND=r8), DIMENSION(alt_lay_dim(2),sza_dim(1))                                  :: sw_clear_2D
+    REAL    (KIND=r8), DIMENSION(alt_lay_dim(2))                                             :: sw_clear_1D
+    REAL    (KIND=r8), DIMENSION(ngeos5-1)                                                   :: sw_clear
+    REAL    (KIND=r8), DIMENSION(srf_dim(1),alt_lay_dim(2),clp_dim(1),vza_dim(1),sza_dim(1)) :: sw_cloud_5D
+    REAL    (KIND=r8), DIMENSION(srf_dim(1),alt_lay_dim(2),vza_dim(1),sza_dim(1))            :: sw_cloud_4D
+    REAL    (KIND=r8), DIMENSION(alt_lay_dim(2),vza_dim(1),sza_dim(1))                       :: sw_cloud_3D
+    REAL    (KIND=r8), DIMENSION(alt_lay_dim(2),sza_dim(1))                                  :: sw_cloud_2D
+    REAL    (KIND=r8), DIMENSION(alt_lay_dim(2))                                             :: sw_cloud_1D
+    REAL    (KIND=r8), DIMENSION(ngeos5-1)                                                   :: sw_cloud
     REAL    (KIND=r8), DIMENSION(alt_lay_dim(2)) :: re_alt
     REAL    (KIND=r8), DIMENSION(srf_dim(1))     :: re_srf
-    REAL    (KIND=r8), DIMENSION(clp_dim(1))     :: re_pre
+    REAL    (KIND=r8), DIMENSION(alb_dim(1))     :: re_alb
+    REAL    (KIND=r8), DIMENSION(clp_dim(1))     :: re_cld
     REAL    (KIND=r8), DIMENSION(sza_dim(1))     :: re_sza
     REAL    (KIND=r8), DIMENSION(vza_dim(1))     :: re_vza
     REAL    (KIND=r8), DIMENSION(1)              :: local_alb, local_sza, local_vza, local_raa, &
          local_srf, local_cld, local_cfr
-    REAL    (KIND=r8), DIMENSION(1,1,1)   :: cloud_scattw, clear_scattw, Icl
-    REAL    (KIND=r8), DIMENSION(1,1)     :: Icr
-    REAL    (KIND=r8), DIMENSION(alt_lay_dim(2)) :: local_chg
+    REAL    (KIND=r8), DIMENSION(ngeos5)         :: local_lev_pre
+    REAL    (KIND=r8), DIMENSION(ngeos5-1)       :: local_lay_pre
+    REAL    (KIND=r8), DIMENSION(srf_dim(1),alt_lay_dim(2)) :: re_pre_2D
+    REAL    (KIND=r8), DIMENSION(alt_lay_dim(2))            :: lay_pre_1D
     REAL    (KIND=r8), PARAMETER :: d2r = 3.141592653589793d0/180.0  !! JED fix
+
+    ! To select TOMS profile
     REAL    (KIND=r8), PARAMETER :: du  = 2.69e16 ! molecules/cm^2
     INTEGER (KIND=i4)  :: toms_idx
     REAL    (KIND=r8), DIMENSION(10), PARAMETER :: hxxx = (/125,175,225,275,325,375,425,475,523,575/)
@@ -2007,10 +2036,12 @@ CONTAINS
     END DO
     DO isrf = 1, srf_dim(1)
        re_srf(isrf) = REAL(lut_srf(srf_dim(1)+1-isrf), KIND = r8)
+       re_pre_2D(isrf,1:alt_lay_dim(2)) = lut_pre_lay(srf_dim(1)+1-isrf,1:alt_lay_dim(2))
     END DO
-    DO ipre = 1, clp_dim(1)
-       re_pre(ipre) = REAL(lut_clp(clp_dim(1)+1-ipre), KIND = r8)
+    DO icld = 1, clp_dim(1)
+       re_cld(icld) = REAL(lut_clp(clp_dim(1)+1-icld), KIND = r8)
     END DO
+    re_alb(1:alb_dim(1)) = REAL(lut_alb(1:alb_dim(1)), KIND = r8)
 
     ! ---------------
     ! Loop over lines
@@ -2064,9 +2095,6 @@ CONTAINS
           ! Initialize variables
           ! --------------------
           scattw(ixtrack,itime,:) = 0.0_r8
-          Inte_clear_3D = 0.0_r8; Inte_clear_2D = 0.0_r8; Inte_clear_1D = 0.0_r8; Radiance_clr = 0.0_r8
-          Inte_cloud_4D = 0.0_r8; Inte_cloud_3D = 0.0_r8; Inte_cloud_2D = 0.0_r8
-          Inte_cloud_1D = 0.0_r8; Radiance_cld = 0.0_r8
 
           ! ----------------------------------------------
           ! If sza > amf_max_sza set it for calculation to
@@ -2095,9 +2123,33 @@ CONTAINS
           IF (local_srf(1) .GT. MAXVAL(re_srf)) local_srf(1) = MAXVAL(re_srf)
           !Bringing clouds heights to highest available pressure if needed. We avoid extrapolation
           !Current highest cloud pressure is 1000 hPa.
-          IF ( local_cld(1) .GT. MAXVAL(re_pre) ) local_cld(1) = MAXVAL(re_pre)
+          IF ( local_cld(1) .GT. MAXVAL(re_cld) ) local_cld(1) = MAXVAL(re_cld)
           !Be sure that clouds are above or at the surface.
           IF ( local_cld(1) .GT. local_srf(1) ) local_cld(1) = local_srf(1)
+
+          ! ------------------------------------------------
+          ! Now that we have the surface pressure I work out
+          ! the pressure of each layer and layer edges using
+          ! GEOS5 a_p and b_p values.
+          ! ------------------------------------------------
+          ! Level
+          DO ilev = 1, ngeos5
+             local_lev_pre(ngeos5+1-ilev) = (Ap(ilev) + local_srf(1) * Bp(ilev)) !hPa
+          END DO
+          ! Layer
+          DO ialt = 1, ngeos5-1 ! for layer center
+             local_lay_pre(ialt) = (local_lev_pre(ialt+1) + local_lev_pre(ialt))/2.0 ! hPa
+          END DO      
+          ! -----------------------
+          ! Interpolate lut_pre_lay
+          ! to local_srf(1)
+          ! -----------------------
+          DO ialt = 1, alt_lay_dim(2)
+             CALL ezspline_1d_interpolation (INT(srf_dim(1),KIND=i4), re_srf, &
+                  re_pre_2D(1:srf_dim(1),ialt), &
+                  one, local_srf(1), &
+                  lay_pre_1D(ialt), status)
+          END DO
 
           ! --------------------------
           ! Compute clear sky radiance
@@ -2118,7 +2170,7 @@ CONTAINS
                       Inte_cloud_4D(srf_dim(1)+1-isrf,clp_dim(1)+1-icld,vza_dim(1)+1-ivza,sza_dim(1)+1-isza) = &
                            REAL(lut_I0_cld(toms_idx,isrf,icld,ivza,isza), KIND=r8)  +  &
                            REAL(lut_I1_cld(toms_idx,isrf,icld,ivza,isza), KIND=r8) * cos(local_raa(1))      + &
-                           REAL(lut_I2_cld(toms_idx,isrf,icld,ivza,isza), KIND=r8) * cos(2_r8*local_raa(1)) + &
+                           REAL(lut_I2_cld(toms_idx,isrf,icld,ivza,isza), KIND=r8) * cos(2.0_r8*local_raa(1)) + &
                            REAL(lut_Ir_cld(toms_idx,isrf,icld,ivza,isza), KIND=r8) * &
                            amf_alb_cld / (1 - amf_alb_cld * REAL(lut_Sb_cld(toms_idx,isrf,icld), KIND=r8) )
                       
@@ -2129,7 +2181,7 @@ CONTAINS
                    ! force cloud radiance to be cero.
                    ! ----------------------------------------------------------------
                    Inte_cloud_3D(srf_dim(1)+1-isrf,vza_dim(1)+1-ivza,sza_dim(1)+1-isza) = &
-                        linInterpol(INT(clp_dim(1),KIND=i4), re_pre, &
+                        linInterpol(INT(clp_dim(1),KIND=i4), re_cld, &
                         Inte_cloud_4D(srf_dim(1)+1-isrf,1:clp_dim(1),vza_dim(1)+1-ivza,sza_dim(1)+1-isza), &
                         local_cld(1), status=status)
                    IF ( local_cld(1) .GT. re_srf(srf_dim(1)+1-isrf) ) &
@@ -2146,6 +2198,7 @@ CONTAINS
                      Inte_cloud_3D(1:srf_dim(1),vza_dim(1)+1-ivza,sza_dim(1)+1-isza), &
                      one, local_srf(1), &
                      Inte_cloud_2D(vza_dim(1)+1-ivza,sza_dim(1)+1-isza), status)
+
              ENDDO ! End VZA loop
              ! ------------------
              ! Interpolate to VZA
@@ -2182,165 +2235,127 @@ CONTAINS
           crf = local_cfr(1) * Radiance_cld(1) / &
                ( local_cfr(1) * Radiance_cld(1) + &
                (1.0_r8 - local_cfr(1)) * Radiance_clr(1) )
-          print*, crf
-          print*, Radiance_clr(1), Radiance_cld(1), local_sza(1), local_vza(1), local_srf(1), local_cld(1), local_cfr(1)
-          stop
-          ! ----------------------------------------
-          ! Work out scattering weight for clear sky
-          ! Interpolation on SZA, VZA, and albedo.
-          ! ----------------------------------------
-          ! Reconstruct Scattering weights an
-          ! -----------------------------------------------
-          ! Find the two closest cloud top levels from the
-          ! scattering weights table suitable for local_thg
-          ! and local_cld
-          ! -----------------------------------------------
-!!$          index_thg = MINLOC(ABS(re_pre - local_thg(1)))
-!!$          ! Be sure that we are below the level of the surface in the table
-!!$          IF ( (local_thg(1) .GT. re_pre(index_thg(1))) .AND. (index_thg(1) .GT. 1) ) index_thg = index_thg-1
-!!$          index_cld(1) = MINLOC(ABS(re_pre - local_cld(1)))
-!!$          ! Be sure that we are below the level of the cloud in the table
-!!$          IF ( (local_cld(1) .GT. re_pre(index_cld(1))) .AND. (index_cld(1) .GT. 1) ) index_cld = index_cld-1
 
-          ! ----------------------------------------------------------
-          ! First compute back from the parametrization the scattering
-          ! weights for the given wavelength and albedo.
-          ! ----------------------------------------------------------          
-          DO iozo = 1, 1
-             DO iwav = iwavs(1), iwavf(1) !vl_nwav
+          ! ---------------------------
+          ! Work out scattering weights
+          ! ---------------------------
+          DO ialt = 1, alt_lay_dim(2)
+             DO isza = 1, sza_dim(1)
+                DO ivza = 1, vza_dim(1)
+                   DO isrf = 1, srf_dim(1)
+                      ! ------------------------------
+                      ! Albedo loop only for clear sky
+                      ! ------------------------------
+                      DO ialb = 1, alb_dim(1)
+                         sw_clear_5D(srf_dim(1)+1-isrf,ialt,ialb,vza_dim(1)+1-ivza,sza_dim(1)+1-isza) = &
+                              REAL( lut_dI0_clr(toms_idx,isrf,ialt,ialb,ivza,isza), KIND=r8 ) + &
+                              REAL( lut_dI1_clr(toms_idx,isrf,ialt,ialb,ivza,isza), KIND=r8 ) * cos( local_raa(1) ) + &
+                              REAL( lut_dI2_clr(toms_idx,isrf,ialt,ialb,ivza,isza), KIND=r8 ) * cos(2.0_r8 * local_raa(1) )
+                      END DO
+                      ! ---------------------------
+                      ! Interpolate to local albedo
+                      ! ---------------------------
+                      sw_clear_4D(srf_dim(1)+1-isrf,ialt,vza_dim(1)+1-ivza,sza_dim(1)+1-isza) = &
+                           linInterpol(INT(alb_dim(1),KIND=i4), re_alb, &
+                           sw_clear_5D(srf_dim(1)+1-isrf,ialt,1:alb_dim(1),vza_dim(1)+1-ivza,sza_dim(1)+1-isza), &
+                           local_alb(1), status=status)
+                      ! --------------------------------------
+                      ! Cloud pressure loop only for cloud sky
+                      ! --------------------------------------
+                      DO icld = 1, clp_dim(1)
+                         sw_cloud_5D(srf_dim(1)+1-isrf,ialt,clp_dim(1)+1-icld,vza_dim(1)+1-ivza,sza_dim(1)+1-isza) = &
+                              REAL( lut_dI0_cld(toms_idx,isrf,ialt,icld,ivza,isza), KIND=r8 ) + &
+                              REAL( lut_dI1_cld(toms_idx,isrf,ialt,icld,ivza,isza), KIND=r8 ) * cos( local_raa(1) ) + &
+                              REAL( lut_dI2_cld(toms_idx,isrf,ialt,icld,ivza,isza), KIND=r8 ) * cos(2.0_r8 * local_raa(1) )
+                      END DO
+                      ! -----------------------------------
+                      ! Interpolate to local cloud pressure
+                      ! SW below cloud pressure are equal
+                      ! to cero
+                      ! -----------------------------------
+                      sw_cloud_4D(srf_dim(1)+1-isrf,ialt,vza_dim(1)+1-ivza,sza_dim(1)+1-isza) = &
+                           linInterpol(INT(clp_dim(1),KIND=i4), re_cld, &
+                           sw_cloud_5D(srf_dim(1)+1-isrf,ialt,1:clp_dim(1),vza_dim(1)+1-ivza,sza_dim(1)+1-isza), &
+                           local_cld(1), status=status)
+                   END DO ! End suface pressure loop
+                   ! -------------------------------------
+                   ! Interpolate to local surface pressure
+                   ! If cloud pressure is greater than
+                   ! surface pressure then cloud SW are to
+                   ! be cero.
+                   ! -------------------------------------
+                   sw_clear_3D(ialt,vza_dim(1)+1-ivza,sza_dim(1)+1-isza) = &
+                        linInterpol(INT(srf_dim(1),KIND=i4), re_srf, &
+                        sw_clear_4D(1:srf_dim(1),ialt,vza_dim(1)+1-ivza,sza_dim(1)+1-isza), &
+                        local_srf(1), status=status)
+                   sw_cloud_3D(ialt,vza_dim(1)+1-ivza,sza_dim(1)+1-isza) = &
+                        linInterpol(INT(srf_dim(1),KIND=i4), re_srf, &
+                        sw_cloud_4D(1:srf_dim(1),ialt,vza_dim(1)+1-ivza,sza_dim(1)+1-isza), &
+                        local_srf(1), status=status)
+                END DO ! End VZA loop
+                ! ------------------------
+                ! Interpolate to local VZA
+                ! ------------------------
+                CALL ezspline_1d_interpolation (INT(vza_dim(1),KIND=i4), re_vza, &
+                     sw_clear_3D(ialt,1:vza_dim(1),sza_dim(1)+1-isza), &
+                     one, local_vza(1), &
+                     sw_clear_2D(ialt,sza_dim(1)+1-isza), status)
+                CALL ezspline_1d_interpolation (INT(vza_dim(1),KIND=i4), re_vza, &
+                     sw_cloud_3D(ialt,1:vza_dim(1),sza_dim(1)+1-isza), &
+                     one, local_vza(1), &
+                     sw_cloud_2D(ialt,sza_dim(1)+1-isza), status)
+             END DO ! End SZA angle 
+             ! ------------------------
+             ! Interpolate to local SZA
+             ! ------------------------
+             CALL ezspline_1d_interpolation (INT(sza_dim(1),KIND=i4), re_sza, &
+                  sw_clear_2D(ialt,1:sza_dim(1)), &
+                  one, local_sza(1), &
+                  sw_clear_1D(ialt), status)
+             CALL ezspline_1d_interpolation (INT(sza_dim(1),KIND=i4), re_sza, &
+                  sw_cloud_2D(ialt,1:sza_dim(1)), &
+                  one, local_sza(1), &
+                  sw_cloud_1D(ialt), status)
+          END DO ! End alt layer loop
 
-                ! ---------------------------
-                ! Initialize scattwe to zeros
-                ! ---------------------------
-                scattwe      = 0.0_r8
-                scattwe_cld  = 0.0_r8
+          ! --------------------------------
+          ! Finally interpolate to local_pre
+          ! work out from local_srf(1) and
+          ! GEOS5 Ap and Bp
+          ! --------------------------------
+          CALL ezspline_1d_interpolation (INT(alt_lay_dim(2),KIND=i4), lay_pre_1D(1:alt_lay_dim(2)), &
+               sw_clear_1D(1:alt_lay_dim(2)), &
+               ngeos5-1_i4, local_lay_pre(1:ngeos5-1), &
+               sw_clear(1:ngeos5-1), status)
+          DO ialt = 1, ngeos5-1
+             IF ( local_lay_pre(ialt) .GT. local_cld(1) ) THEN
+                sw_cloud(ialt) = 0.0_r8
+             ELSE
+                sw_cloud(ialt) = &
+                     linInterpol(INT(alt_lay_dim(2),KIND=i4), lay_pre_1D(1:alt_lay_dim(2)), &
+                     sw_cloud_1D(1:alt_lay_dim(2)), &
+                     local_lay_pre(ialt), status=status)
+             END IF
+          END DO
 
-                DO ipre = 1, vl_ncld 
-                   DO isza = 1, vl_nsza
-                      DO ivza = 1, vl_nvza
-
-                         IF (ISNAN(vl_Ir(iozo,ipre,isza,ivza,iwav))) THEN
-                            vl_Ir(iozo,ipre,isza,ivza,iwav) = 0.0
-                         END IF
-
-                        
-                         DO ialt = 1, vl_nalt
-
-
-                            Temp       = REAL(vl_tem(iozo,ipre,ialt), KIND = r8) - 273.15_r8
-                            TempSquare = Temp * Temp
-
-                            Oz_xs = REAL(vl_OzC0(iwav), KIND = r8) + &
-                                    REAL(vl_OzC1(iwav), KIND = r8) * Temp + &
-                                    REAL(vl_OzC2(iwav), KIND = r8) * TempSquare
-
-                            ozo_abs = Oz_xs * REAL(vl_ozo(iozo,ipre,ialt), KIND = r8)
-
-                            Jacobian = ( &
-                                 REAL(vl_dI0(iozo,ipre,isza,ivza,iwav,ialt), KIND = r8)  + &
-                                 REAL(vl_dI1(iozo,ipre,isza,ivza,iwav,ialt), KIND = r8)  + &
-                                 REAL(vl_dI2(iozo,ipre,isza,ivza,iwav,ialt), KIND = r8)  + &
-                                 ( (albedo(ixtrack,itime)                                      * &
-                                 REAL(vl_dIr(iozo,ipre,isza,ivza,iwav,ialt), KIND = r8)) / &
-                                 (1.0_r8 - (albedo(ixtrack,itime)                              * &
-                                 REAL(vl_Sb(iozo,ipre,iwav), KIND = r8))) )  )                &
-                                 / REAL(vl_Factor, KIND = r8)
-
-                            Jacobian_cld = ( &
-                                 REAL(vl_dI0(iozo,ipre,isza,ivza,iwav,ialt), KIND = r8)  + &
-                                 REAL(vl_dI1(iozo,ipre,isza,ivza,iwav,ialt), KIND = r8)  + &
-                                 REAL(vl_dI2(iozo,ipre,isza,ivza,iwav,ialt), KIND = r8)  + &
-                                 ( (amf_alb_cld                                                * &
-                                 REAL(vl_dIr(iozo,ipre,isza,ivza,iwav,ialt), KIND = r8)) / &
-                                 (1.0_r8 - (amf_alb_cld                                        * &
-                                 REAL(vl_Sb(iozo,ipre,iwav), KIND = r8))) )  )                &
-                                 / REAL(vl_Factor, KIND = r8)
-
-                            ! -----------------------------------------
-                            ! vl_ncld+1-ipre & vl_nalt+1-ialt to have
-                            ! ascending orden for the interpolation
-                            ! ----------------------------------------------------
-                            ! Intensities for the calculation of the cloudy pixels
-                            ! ----------------------------------------------------
-                            
-                         END DO ! End altitudes (scattering look up tables)
-                      END DO ! End vza loop
-                   END DO ! End sza loop
-                END DO ! End pressure loop
-
-                
-                ! ----------------------------------
-                ! Interpolate for each altitude
-                ! to the given sza, vza and pressure
-                ! ----------------------------------
-                DO ialt = 1, CmETA ! Loop over altitudes, climatology
-                   
-                   cloud_scattw = 0.0_r8
-                   clear_scattw = 0.0_r8
-                   ! --------------------------------------------------
-                   ! If we are below the level of the clouds, the cloud
-                   ! scattering weights are not needed. Cloud fraction
-                   ! must be GT than 0.0. Only interpolate for values
-                   ! above the cloud top.
-                   ! --------------------------------------------------
-                   IF ( local_chg(ialt) .LE. local_cld(1) .AND. local_cfr(1) .GT. 0.0 ) THEN
-                      cloud_scattw(one,one,one) =  linInterpol (              &
-                           vl_nsza, vl_nvza, vl_nalt,                         &
-                           re_sza,  re_vza,  re_alt,                          &
-                           scattwe_cld(index_cld(1),:,:,:),                   &
-                           local_sza(1), local_vza(1), local_chg(ialt),            &
-                           status=status)
-                   END IF
-                   
-                   ! --------------------------------------------------
-                   ! If we are below the level of the land, no need to
-                   ! work out those scattering weights.
-                   ! --------------------------------------------------
-                   IF ( local_chg(ialt) .LE. local_srf(1) ) THEN
-                      clear_scattw(one,one,one) = linInterpol (           &
-                           vl_nsza, vl_nvza, vl_nalt,                     &
-                            re_sza,  re_vza,  re_alt,                     &
-                           scattwe(index_thg(1),:,:,:),                   &
-                           local_sza(1), local_vza(1), local_chg(ialt),        &
-                           status=status)
-                   END IF
-
-                   ! ---------------------------------------------------------------------------------
-                   ! Boersma et al. 2011 AMT, 4, 2011
-                   ! Cloud radiance fraction: Crf= Cfr * Icl / Ir
-                   !  We define Icl = From the Vlidort calculation, see above
-                   !            Icr = From the Vlidort calculation, see above
-                   !             Ir = Cfr * Icl + (1 - Cfr) * Icr (Total pixel radiance)
-                   ! 
-                   ! Now the scattering weights become w = crf * scatt_cloud + (1 - crf) * scatt_clear
-                   !  We add the scattweights calculated in the previous wavelengths.
-                   ! ---------------------------------------------------------------------------------
-                   scattw(ixtrack,itime,ialt) = (crf * cloud_scattw(one,one,one) + (1.0_r8 - crf) * clear_scattw(one,one,one)) &
-                                                 + scattw(ixtrack,itime,ialt)
-
-                END DO ! End looop over altitudes
-                ! -------------------------------------------------------------------------------------------------
-                ! If there is a negative value on the lower layer of the scattw it has to do with the interpolation
-                ! Quick fix, work out a gradient from two layers above and apply it to this first layer assuming
-                ! linear behaviour. Next version of the lookup tables should have at least two levels below surface
-                ! level to prevent the need for this. Even worst the 0.7 scaling for extreme cases
-                ! -------------------------------------------------------------------------------------------------
-                IF (scattw(ixtrack, itime, 1) .LT. 0.0) THEN
-                   grad = (scattw(ixtrack, itime,3) - scattw(ixtrack, itime, 2)) / log(local_chg(3)/local_chg(2))
-                   scattw(ixtrack, itime, 1) = scattw(ixtrack, itime, 2) - grad * log(local_chg(2)/local_chg(1))
-                   IF (scattw(ixtrack,itime,1) .LT. 0.0) scattw(ixtrack,itime,1) = scattw(ixtrack,itime,2) * 0.7
-                END IF
-
-             END DO ! End wavelength loop
-
-          END DO ! End ozone profile loop
-          scattw(ixtrack,itime,1:CmETA) = scattw(ixtrack,itime,1:CmETA) / nwavs          
+          ! ---------------------------------------------------------------------------------
+          ! Boersma et al. 2011 AMT, 4, 2011
+          ! Cloud radiance fraction: Crf= Cfr * Icl / Ir
+          !  We define Icl = From the Vlidort calculation, see above
+          !            Icr = From the Vlidort calculation, see above
+          !             Ir = Cfr * Icl + (1 - Cfr) * Icr (Total pixel radiance)
+          ! 
+          ! Now the scattering weights become w = crf * scatt_cloud + (1 - crf) * scatt_clear
+          !  We add the scattweights calculated in the previous wavelengths.
+          ! ---------------------------------------------------------------------------------
+          DO ialt = 1, ngeos5-1 
+             scattw(ixtrack,itime,ialt) = crf * sw_cloud(ialt) + (1.0_r8 - crf) * sw_clear(ialt)
+          END DO
 
           !  Set non-physical entries to zero.
-          WHERE ( scattw(ixtrack,itime,1:CmETA) < 0.0_r8 )
-             scattw(ixtrack,itime,1:CmETA) = 0.0_r8
+          WHERE ( scattw(ixtrack,itime,1:ngeos5-1) < 0.0_r8 )
+             scattw(ixtrack,itime,1:ngeos5-1) = 0.0_r8
           END WHERE
-
        END DO ! End loop xtrack
        IF ( verb_thresh_lev .GE. vb_lev_screen ) WRITE(*,*) 'Scattering weights line', itime
 
@@ -2843,7 +2858,7 @@ SUBROUTINE read_lookup_table (errstat)
     ! ----------------------------------------------------
     ! Read from the h5 file all these small size variables
     ! ----------------------------------------------------
-    CALL h5dread_f(alb_did, H5T_NATIVE_REAL,  lut_albedo(1:alb_dim(1)),  alb_dim, hdferr)
+    CALL h5dread_f(alb_did, H5T_NATIVE_REAL,  lut_alb(1:alb_dim(1)),  alb_dim, hdferr)
     CALL h5dread_f(srf_did, H5T_NATIVE_REAL,  lut_srf(1:srf_dim(1)),  srf_dim, hdferr)
     CALL h5dread_f(clp_did, H5T_NATIVE_REAL,  lut_clp(1:clp_dim(1)),  clp_dim, hdferr)
     CALL h5dread_f(sza_did, H5T_NATIVE_REAL,  lut_sza(1:sza_dim(1)),  sza_dim, hdferr)
