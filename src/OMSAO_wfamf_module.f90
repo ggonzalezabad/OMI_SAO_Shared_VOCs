@@ -304,7 +304,7 @@ CONTAINS
        ! Compute Scattering weights in the look up table grid but
        ! with the correct albedo. amfdiag is used to skip pixel
        ! ---------------------------------------------------------
-       CALL compute_scatt ( nt, nx, albedo, lat, sza, vza, saa, vaa, l2ctp, l2cfr, terrain_height, amfdiag, &
+       CALL compute_scatt ( nt, nx, albedo, lat, sza, vza, saa, vaa, l2ctp, l2cfr, terrain_height, amfgeo, amfdiag, &
             scattw)
 
        stop
@@ -1909,8 +1909,8 @@ CONTAINS
     RETURN
   END SUBROUTINE amf_diagnostic
 
-  SUBROUTINE compute_scatt ( nt, nx, albedo, lat, sza, vza, saa, vaa, l2ctp, l2cfr, terrain_height, amfdiag, &
-                             scattw)
+  SUBROUTINE compute_scatt ( nt, nx, albedo, lat, sza, vza, saa, vaa, l2ctp, l2cfr, terrain_height, amfgeo, &
+       amfdiag, scattw)
 
     USE OMSAO_lininterpolation_module
     USE OMSAO_variables_module, ONLY: verb_thresh_lev
@@ -1924,7 +1924,7 @@ CONTAINS
     INTEGER (KIND=i4),                                INTENT (IN) :: nt, nx
     INTEGER (KIND=i2), DIMENSION (1:nx,0:nt-1),       INTENT (IN) :: amfdiag
     REAL    (KIND=r4), DIMENSION (1:nx,0:nt-1),       INTENT (IN) :: lat, sza, vza, saa, vaa, terrain_height
-    REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1),       INTENT (IN) :: albedo, l2ctp, l2cfr
+    REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1),       INTENT (IN) :: albedo, l2ctp, l2cfr, amfgeo
 
     ! ------------------
     ! Modified variables
@@ -2029,12 +2029,13 @@ CONTAINS
           ! in function of latitude and ozone column.
           ! -----------------------------------------        
           IF ( ABS(lat(ixtrack,itime)) .GT. 60.0 ) THEN
-             toms_idx = MINLOC(ABS(hxxx-omi_ozone_amount(ixtrack,itime)/du), 1) + 0
+             toms_idx = MINLOC(ABS(hxxx-omi_ozone_amount(ixtrack,itime)/du/amfgeo(ixtrack,itime)), 1) + 0
           ELSE IF ( ABS(lat(ixtrack,itime)) .GT. 30.0 .AND. ABS(lat(ixtrack,itime)) .LE. 60.0 ) THEN
-             toms_idx = MINLOC(ABS(mxxx-omi_ozone_amount(ixtrack,itime)/du), 1) + 17
+             toms_idx = MINLOC(ABS(mxxx-omi_ozone_amount(ixtrack,itime)/du/amfgeo(ixtrack,itime)), 1) + 17
           ELSE IF ( ABS(lat(ixtrack,itime)) .LE. 30.0 ) THEN
-             toms_idx = MINLOC(ABS(lxxx-omi_ozone_amount(ixtrack,itime)/du), 1) + 11
+             toms_idx = MINLOC(ABS(lxxx-omi_ozone_amount(ixtrack,itime)/du)/amfgeo(ixtrack,itime), 1) + 11
           ENDIF
+          print*, toms_idx
           ! ----------------------------------------------
           ! Work out relative azimuth angle for this pixel
           ! ----------------------------------------------
