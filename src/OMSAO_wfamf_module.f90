@@ -278,8 +278,8 @@ CONTAINS
        ! Now it is only needed to interpolate to the pixels of the granule.
        ! It was read there to obtain the dimensions of the number of levels.
        ! ---------------------------------------------------------------------
-       CALL omi_climatology (climatology, cli_heights, cli_psurface, cli_temperature, lat, lon, &
-            nt, nx, xtrange, locerrstat)
+       CALL omi_climatology (climatology, cli_heights, cli_psurface, cli_temperature, terrain_height, &
+            lat, lon, nt, nx, xtrange, locerrstat)
        
        ! -------------------------------------
        ! Write the climatology to the he5 file
@@ -307,7 +307,6 @@ CONTAINS
        CALL compute_scatt ( nt, nx, albedo, lat, sza, vza, saa, vaa, l2ctp, l2cfr, terrain_height, amfgeo, amfdiag, &
             scattw)
 
-       stop
        ! ----------------------------
        ! Deallocate Vlidort variables
        ! ----------------------------
@@ -348,7 +347,7 @@ CONTAINS
     
   END SUBROUTINE amf_calculation
   
-  SUBROUTINE omi_climatology (climatology, local_heights, local_psurf, local_temperature, &
+  SUBROUTINE omi_climatology (climatology, local_heights, local_psurf, local_temperature, terrain_height, &
                               lat, lon, nt, nx, xtrange, locerrstat)
 
     ! =========================================
@@ -362,7 +361,7 @@ CONTAINS
     ! Input variables
     ! ---------------
     INTEGER (KIND=i4),                          INTENT (IN) :: nt, nx
-    REAL    (KIND=r4), DIMENSION (1:nx,0:nt-1), INTENT (IN) :: lat, lon
+    REAL    (KIND=r4), DIMENSION (1:nx,0:nt-1), INTENT (IN) :: lat, lon, terrain_height
     INTEGER (KIND=i4), DIMENSION (0:nt-1,1:2),  INTENT (IN) :: xtrange
 
     ! ------------------
@@ -422,8 +421,15 @@ CONTAINS
 
           local_temperature(ixtrack,itimes,1:CmETA) = Temperature(idx_lon,idx_lat,1:CmETA)
           ltmp(1:CmETA)                             = Temperature(idx_lon,idx_lat,1:CmETA)
-          local_psurf(ixtrack,itimes)               = Psurface(idx_lon,idx_lat)
-          
+
+          ! ----------------------------------------------
+          ! Convert pixel terrain height to pressure using
+          ! Xiong suggested to use pressure altitude:
+          !  Z = -16 alog10 (P / Po) Z in km and P in hPa.
+          ! ----------------------------------------------
+          local_psurf(ixtrack,itimes) = 1013.0_r8 * &
+               (10.0_r8 ** (REAL(terrain_height(ixtrack,itimes),KIND=r8) / 1000.0_r8 / (-16.0_r8)))
+
           ! lpre(0:CmETA) is pressure at layer boundaries, same unit as
           ! local_surf, convert from hPa to Pa, it is a CmETA+1 = CmEp1 array
           ! Ap(1:CmEp1) & Bp(1:CmEp1) are coeff at layer boundary for pressure
@@ -2035,7 +2041,7 @@ CONTAINS
           ELSE IF ( ABS(lat(ixtrack,itime)) .LE. 30.0 ) THEN
              toms_idx = MINLOC(ABS(lxxx-omi_ozone_amount(ixtrack,itime)/du)/amfgeo(ixtrack,itime), 1) + 11
           ENDIF
-          print*, toms_idx
+
           ! ----------------------------------------------
           ! Work out relative azimuth angle for this pixel
           ! ----------------------------------------------
@@ -2353,7 +2359,7 @@ CONTAINS
     ! ---------------
     ! Local variables
     ! ---------------
-    INTEGER (KIND=i4)                      :: locerrstat, n, n1, ixtrack, itimes
+    INTEGER (KIND=i4)                      :: locerrstat, n, n1, ixtrack, itimes, itest
    
     ! ------------------------------
     ! Name of this module/subroutine
@@ -2380,7 +2386,6 @@ CONTAINS
           saoamf(ixtrack,itimes) = SUM(scattw(ixtrack, itimes, 1:CmETA) * &
                                         climatology(ixtrack,itimes,1:CmETA))     / &
                                    SUM(climatology(ixtrack,itimes,1:CmETA))
- 
        END DO ! Finish xtrack pixel loop
     END DO ! Finish 
     
