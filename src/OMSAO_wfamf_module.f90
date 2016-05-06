@@ -197,7 +197,7 @@ CONTAINS
     REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1)       :: amfgeo
     REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1)       :: l2cfr, l2ctp
     REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1)       :: albedo, cli_psurface
-    REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1,CmETA) :: climatology, cli_temperature, cli_heights
+    REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1,CmETA) :: climatology, cli_temperature
     REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1,CmETA) :: scattw !, akernels
 
 
@@ -208,7 +208,6 @@ CONTAINS
     ! ------------------------------------
     albedo       = r8_missval
     climatology  = r8_missval
-    cli_heights  = r8_missval
     cli_psurface = r8_missval
     scattw       = r8_missval
     saoamf       = r8_missval
@@ -278,7 +277,7 @@ CONTAINS
        ! Now it is only needed to interpolate to the pixels of the granule.
        ! It was read there to obtain the dimensions of the number of levels.
        ! ---------------------------------------------------------------------
-       CALL omi_climatology (climatology, cli_heights, cli_psurface, cli_temperature, terrain_height, &
+       CALL omi_climatology (climatology, cli_psurface, cli_temperature, terrain_height, &
             lat, lon, nt, nx, xtrange, locerrstat)
        
        ! -------------------------------------
@@ -318,7 +317,7 @@ CONTAINS
        ! Work out the AMF using the scattering weights and the climatology
        ! Work out Averaging Kernels
        ! -----------------------------------------------------------------
-       CALL compute_amf ( nt, nx, CmETA, climatology, cli_heights, cli_temperature, cli_psurface, &
+       CALL compute_amf ( nt, nx, CmETA, climatology, cli_temperature, cli_psurface, &
             scattw, saoamf, amfdiag, locerrstat)
 
        ! -----------------------------------------------------------------
@@ -347,7 +346,7 @@ CONTAINS
     
   END SUBROUTINE amf_calculation
   
-  SUBROUTINE omi_climatology (climatology, local_heights, local_psurf, local_temperature, terrain_height, &
+  SUBROUTINE omi_climatology (climatology, local_psurf, local_temperature, terrain_height, &
                               lat, lon, nt, nx, xtrange, locerrstat)
 
     ! =========================================
@@ -368,7 +367,7 @@ CONTAINS
     ! Modified variables
     ! ------------------
     INTEGER (KIND=i4),                                INTENT (INOUT) :: locerrstat
-    REAL    (KIND=r8), DIMENSION(1:nx,0:nt-1, CmETA), INTENT (INOUT) :: climatology, local_temperature, local_heights
+    REAL    (KIND=r8), DIMENSION(1:nx,0:nt-1, CmETA), INTENT (INOUT) :: climatology, local_temperature
     REAL    (KIND=r8), DIMENSION(1:nx,0:nt-1),        INTENT (INOUT) :: local_psurf  
 
     ! ---------------
@@ -378,7 +377,7 @@ CONTAINS
     REAL    (KIND=r8)                      :: rho, lhgt, aircolumn, clima_psurf
     REAL    (KIND=r8), DIMENSION (0:CmETA) :: lpre, level_press, clima_lpre
     REAL    (KIND=r8), DIMENSION (1:CmETA) :: ltmp, lh2o, lgas, re_tmp, re_h2o, re_gas, &
-         layer_press, clima_layer_press, clima_local_heights
+         layer_press, clima_layer_press, clima_local_heights, local_heights
     REAL    (KIND=r8) :: thish2omxr, Mwet, Rwet, detlnp
 
     ! -----------------------
@@ -421,9 +420,6 @@ CONTAINS
           idx_lat = MINVAL(MINLOC(ABS(latvals(1:Cmlat) - lat(ixtrack,itimes) )))
           idx_lon = MINVAL(MINLOC(ABS(lonvals(1:Cmlon) - lon(ixtrack,itimes) )))
 
-!!$          local_temperature(ixtrack,itimes,1:CmETA) = REAL(Temperature(idx_lon,idx_lat,1:CmETA), KIND=r8)
-!!$          ltmp(1:CmETA)                             = REAL(Temperature(idx_lon,idx_lat,1:CmETA), KIND=r8)
-
           ! ----------------------------------------------
           ! Convert pixel terrain height to pressure using
           ! Xiong suggested to use pressure altitude:
@@ -448,7 +444,7 @@ CONTAINS
           ! local_heights are pressures in hPa at layer centers (I should get rid of this variable)
           DO ilevel = 1, CmETA ! for layer center
              layer_press(ilevel) = (lpre(ilevel-1) + lpre(ilevel))/2.0 ! Pa
-             local_heights(ixtrack,itimes,ilevel)  = layer_press(ilevel)/1.E2 ! hPa
+             local_heights(ilevel)  = layer_press(ilevel)/1.E2 ! hPa
              clima_layer_press(ilevel) = (clima_lpre(ilevel-1) + clima_lpre(ilevel))/2.0 ! Pa
              clima_local_heights(ilevel)  = clima_layer_press(ilevel)/1.E2 ! hPa
              re_tmp(ilevel) = REAL(Temperature(idx_lon,idx_lat,CmETA+1-ilevel),KIND=r8)
@@ -462,15 +458,15 @@ CONTAINS
           DO ilevel = 1, CmETA
              CALL ezspline_1d_interpolation (INT(CmETA,KIND=i4), clima_local_heights, &
                   re_tmp, &
-                  one, local_heights(ixtrack,itimes,ilevel), &
+                  one, local_heights(ilevel), &
                   ltmp(ilevel), status)
              CALL ezspline_1d_interpolation (INT(CmETA,KIND=i4), clima_local_heights, &
                   re_gas, &
-                  one, local_heights(ixtrack,itimes,ilevel), &
+                  one, local_heights(ilevel), &
                   lgas(ilevel), status)
              CALL ezspline_1d_interpolation (INT(CmETA,KIND=i4), clima_local_heights, &
                   re_h2o, &
-                  one, local_heights(ixtrack,itimes,ilevel), &
+                  one, local_heights(ilevel), &
                   lh2o(ilevel), status)
           END DO         
          
@@ -2362,7 +2358,7 @@ CONTAINS
     
   END SUBROUTINE COMPUTE_SCATT
 
-  SUBROUTINE compute_amf ( nt, nx, CmETA, climatology, cli_heights, cli_temperature, cli_psurface, &
+  SUBROUTINE compute_amf ( nt, nx, CmETA, climatology, cli_temperature, cli_psurface, &
                            scattw, saoamf, amfdiag, errstat)
 
     IMPLICIT NONE
@@ -2371,7 +2367,7 @@ CONTAINS
     ! Input variables
     ! ---------------
     INTEGER (KIND=i4),                                INTENT(IN) :: nt, nx, CmETA
-    REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1,CmETA), INTENT(IN) :: climatology, cli_heights, &
+    REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1,CmETA), INTENT(IN) :: climatology, &
                                                                     cli_temperature, scattw
     REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1),       INTENT(IN) :: cli_psurface
     INTEGER (KIND=i2), DIMENSION (1:nx,0:nt-1),       INTENT(IN) :: amfdiag
@@ -2412,6 +2408,7 @@ CONTAINS
           saoamf(ixtrack,itimes) = SUM(scattw(ixtrack, itimes, 1:CmETA) * &
                                         climatology(ixtrack,itimes,1:CmETA))     / &
                                    SUM(climatology(ixtrack,itimes,1:CmETA))
+          print*, saoamf(ixtrack,itimes)
        END DO ! Finish xtrack pixel loop
     END DO ! Finish 
     
