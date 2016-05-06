@@ -25,7 +25,7 @@ MODULE OMSAO_wfamf_module
   ! ---------------------------------
   ! GMAO GEOS-5 hybrid grid Ap and Bp
   ! ---------------------------------
-  REAL(KIND=r4), DIMENSION(48), PARAMETER :: Ap=(/0.000000E+00, 4.804826E-02, 6.593752E+00, 1.313480E+01, &
+  REAL(KIND=r8), DIMENSION(48), PARAMETER :: Ap=(/0.000000E+00, 4.804826E-02, 6.593752E+00, 1.313480E+01, &
        1.961311E+01, 2.609201E+01, 3.257081E+01, 3.898201E+01, &
        4.533901E+01, 5.169611E+01, 5.805321E+01, 6.436264E+01, &
        7.062198E+01, 7.883422E+01, 8.909992E+01, 9.936521E+01, &
@@ -37,7 +37,7 @@ MODULE OMSAO_wfamf_module
        7.851231E+01, 5.638791E+01, 4.017541E+01, 2.836781E+01, &
        1.979160E+01, 9.292942E+00, 4.076571E+00, 1.650790E+00, &
        6.167791E-01, 2.113490E-01, 6.600001E-02, 1.000000E-02/)
-  REAL(KIND=r4), DIMENSION(48), PARAMETER :: Bp=(/1.000000E+00, 9.849520E-01, 9.634060E-01, 9.418650E-01, &
+  REAL(KIND=r8), DIMENSION(48), PARAMETER :: Bp=(/1.000000E+00, 9.849520E-01, 9.634060E-01, 9.418650E-01, &
        9.203870E-01, 8.989080E-01, 8.774290E-01, 8.560180E-01, &
        8.346609E-01, 8.133039E-01, 7.919469E-01, 7.706375E-01, &
        7.493782E-01, 7.211660E-01, 6.858999E-01, 6.506349E-01, &
@@ -374,10 +374,11 @@ CONTAINS
     ! ---------------
     ! Local variables
     ! ---------------
-    INTEGER (KIND=i4) :: itimes, ixtrack, spix, epix, idx_lat, idx_lon, ilevel, n, n1
-    REAL    (KIND=r8)                      :: rho, lhgt, aircolumn
-    REAL    (KIND=r8), DIMENSION (0:CmETA) :: lpre, level_press
-    REAL    (KIND=r8), DIMENSION (1:CmETA) :: ltmp, layer_press
+    INTEGER (KIND=i4) :: itimes, ixtrack, spix, epix, idx_lat, idx_lon, ilevel, n, n1, one, status
+    REAL    (KIND=r8)                      :: rho, lhgt, aircolumn, clima_psurf
+    REAL    (KIND=r8), DIMENSION (0:CmETA) :: lpre, level_press, clima_lpre
+    REAL    (KIND=r8), DIMENSION (1:CmETA) :: ltmp, lh2o, lgas, re_tmp, re_h2o, re_gas, &
+         layer_press, clima_layer_press, clima_local_heights
     REAL    (KIND=r8) :: thish2omxr, Mwet, Rwet, detlnp
 
     ! -----------------------
@@ -400,6 +401,7 @@ CONTAINS
     ! ----------------------
     locerrstat = pge_errstat_ok
     
+    one = 1_i4
     ! ------------------------------------------------------------
     ! Find the Climatology corresponding to each lat and lon pixel
     ! ------------------------------------------------------------
@@ -419,23 +421,26 @@ CONTAINS
           idx_lat = MINVAL(MINLOC(ABS(latvals(1:Cmlat) - lat(ixtrack,itimes) )))
           idx_lon = MINVAL(MINLOC(ABS(lonvals(1:Cmlon) - lon(ixtrack,itimes) )))
 
-          local_temperature(ixtrack,itimes,1:CmETA) = Temperature(idx_lon,idx_lat,1:CmETA)
-          ltmp(1:CmETA)                             = Temperature(idx_lon,idx_lat,1:CmETA)
+!!$          local_temperature(ixtrack,itimes,1:CmETA) = REAL(Temperature(idx_lon,idx_lat,1:CmETA), KIND=r8)
+!!$          ltmp(1:CmETA)                             = REAL(Temperature(idx_lon,idx_lat,1:CmETA), KIND=r8)
 
           ! ----------------------------------------------
           ! Convert pixel terrain height to pressure using
           ! Xiong suggested to use pressure altitude:
           !  Z = -16 alog10 (P / Po) Z in km and P in hPa.
+          ! From OMI L1B file.
           ! ----------------------------------------------
           local_psurf(ixtrack,itimes) = 1013.0_r8 * &
                (10.0_r8 ** (REAL(terrain_height(ixtrack,itimes),KIND=r8) / 1000.0_r8 / (-16.0_r8)))
 
+          clima_psurf = REAL(Psurface(idx_lon, idx_lat), KIND=r8)
           ! lpre(0:CmETA) is pressure at layer boundaries, same unit as
           ! local_surf, convert from hPa to Pa, it is a CmETA+1 = CmEp1 array
           ! Ap(1:CmEp1) & Bp(1:CmEp1) are coeff at layer boundary for pressure
           ! calculation
           DO ilevel = 0, CmETA
-             lpre(ilevel) = (Ap(ilevel+1) + local_psurf(ixtrack,itimes) * Bp(ilevel+1))*1.E2 ! Pa
+             lpre(CmETA-ilevel) = (Ap(ilevel+1) + local_psurf(ixtrack,itimes) * Bp(ilevel+1))*1.E2 ! Pa
+             clima_lpre(CmETA-ilevel) = (Ap(ilevel+1) + clima_psurf * Bp(ilevel+1))*1.E2 ! Pa
           END DO
 
 
@@ -443,13 +448,35 @@ CONTAINS
           ! local_heights are pressures in hPa at layer centers (I should get rid of this variable)
           DO ilevel = 1, CmETA ! for layer center
              layer_press(ilevel) = (lpre(ilevel-1) + lpre(ilevel))/2.0 ! Pa
-             local_heights(ixtrack,itimes,ilevel)   = layer_press(ilevel)/1.E2 ! hPa
+             local_heights(ixtrack,itimes,ilevel)  = layer_press(ilevel)/1.E2 ! hPa
+             clima_layer_press(ilevel) = (clima_lpre(ilevel-1) + clima_lpre(ilevel))/2.0 ! Pa
+             clima_local_heights(ilevel)  = clima_layer_press(ilevel)/1.E2 ! hPa
+             re_tmp(ilevel) = REAL(Temperature(idx_lon,idx_lat,CmETA+1-ilevel),KIND=r8)
+             re_gas(ilevel) = REAL(gas_profiles(idx_lon,idx_lat,CmETA+1-ilevel),KIND=r8)
+             re_h2o(ilevel) = REAL(H2O_profiles(idx_lon,idx_lat,CmETA+1-ilevel),KIND=r8)
           END DO
 
+          ! ---------------------------------------------------------------------------------------
+          ! Interpolate temperature, gas and h2o profiles from clima_local_heights to local_heights
+          ! ---------------------------------------------------------------------------------------
+          DO ilevel = 1, CmETA
+             CALL ezspline_1d_interpolation (INT(CmETA,KIND=i4), clima_local_heights, &
+                  re_tmp, &
+                  one, local_heights(ixtrack,itimes,ilevel), &
+                  ltmp(ilevel), status)
+             CALL ezspline_1d_interpolation (INT(CmETA,KIND=i4), clima_local_heights, &
+                  re_gas, &
+                  one, local_heights(ixtrack,itimes,ilevel), &
+                  lgas(ilevel), status)
+             CALL ezspline_1d_interpolation (INT(CmETA,KIND=i4), clima_local_heights, &
+                  re_h2o, &
+                  one, local_heights(ixtrack,itimes,ilevel), &
+                  lh2o(ilevel), status)
+          END DO         
+         
           ! -------------------
           ! Develop air density
-          ! -------------------
-          
+          ! -------------------          
           DO n = 1, CmETA
 
              rho       = 0.0_r8
@@ -457,7 +484,7 @@ CONTAINS
              lhgt      = 0.0_r8
              
              ! Convert input water vapor mixing ratio from PPB to unitless
-             thish2omxr = H2O_profiles(idx_lon,idx_lat,n) / 1.0E9
+             thish2omxr = lh2o(n) / 1.0E9
 
              ! Calculate mean molecular weight of wet air 
              Mwet = (1.0_r8 - thish2omxr)*Mdry + thish2omxr*Mh2o
@@ -468,15 +495,14 @@ CONTAINS
              ! Calculate layer thickness using the following
              ! dz = -(R*T/g) * dlnP
              n1                   = n - 1
-             detlnp = log(lpre(n1)) - log(lpre(n))
+             detlnp = log(lpre(n)) - log(lpre(n1))
              lhgt = Rwet * ltmp(n) * detlnp / gplanet ! meter
              
              rho                = layer_press(n) / ltmp(n) / Rstar 
              aircolumn          = rho*lhgt*Navogadro*1.0E-4 ! # air/cm^2
              
              ! -------------------------------------------------------------
-             climatology(ixtrack,itimes,n) = aircolumn * Gas_profiles(idx_lon,idx_lat,n) /1.0E9 ! [GAS]/cm^2
-             
+             climatology(ixtrack,itimes,n) = aircolumn * lgas(n) /1.0E9 ! [GAS]/cm^2
           END DO
           
           !  Set non-physical entries to zero.
@@ -2386,6 +2412,7 @@ CONTAINS
           saoamf(ixtrack,itimes) = SUM(scattw(ixtrack, itimes, 1:CmETA) * &
                                         climatology(ixtrack,itimes,1:CmETA))     / &
                                    SUM(climatology(ixtrack,itimes,1:CmETA))
+          print*, saoamf(ixtrack,itimes)
        END DO ! Finish xtrack pixel loop
     END DO ! Finish 
     
