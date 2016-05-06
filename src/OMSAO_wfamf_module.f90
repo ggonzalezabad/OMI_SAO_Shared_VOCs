@@ -2320,10 +2320,10 @@ CONTAINS
           !             Ir = Cfr * Icl + (1 - Cfr) * Icr (Total pixel radiance)
           ! 
           ! Now the scattering weights become w = crf * scatt_cloud + (1 - crf) * scatt_clear
-          !  We add the scattweights calculated in the previous wavelengths.
+          ! Reverse final vertical grid to match climatology order/
           ! ---------------------------------------------------------------------------------
           DO ialt = 1, ngeos5-1 
-             scattw(ixtrack,itime,ialt) = crf * sw_cloud(ialt) + (1.0_r8 - crf) * sw_clear_1d(ialt)
+             scattw(ixtrack,itime,ngeos5-ialt) = crf * sw_cloud(ialt) + (1.0_r8 - crf) * sw_clear_1d(ialt)
           END DO
           !  Set non-physical entries to zero.
           WHERE ( scattw(ixtrack,itime,1:ngeos5-1) < 0.0_r8 )
