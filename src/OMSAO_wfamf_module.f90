@@ -2386,7 +2386,6 @@ CONTAINS
           saoamf(ixtrack,itimes) = SUM(scattw(ixtrack, itimes, 1:CmETA) * &
                                         climatology(ixtrack,itimes,1:CmETA))     / &
                                    SUM(climatology(ixtrack,itimes,1:CmETA))
-          print*, saoamf(ixtrack,itimes)
        END DO ! Finish xtrack pixel loop
     END DO ! Finish 
     
