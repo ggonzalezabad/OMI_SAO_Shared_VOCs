@@ -66,7 +66,7 @@ MODULE OMSAO_wfamf_module
   REAL(KIND=r4),    DIMENSION(:),           ALLOCATABLE :: lut_alb, lut_clp, lut_sza, &
        lut_vza, lut_wavelength, lut_srf
   CHARACTER(LEN=5), DIMENSION(:),           ALLOCATABLE :: lut_toms
-  REAL(KIND=r4),    DIMENSION(:,:),         ALLOCATABLE :: lut_alt_lay, lut_alt_lev, lut_pre_lay, lut_pre_lev, &
+  REAL(KIND=r4),    DIMENSION(:,:),         ALLOCATABLE :: lut_alt_lay, lut_pre_lay, lut_pre_lev, &
        lut_pre_lev_cld, lut_pre_lay_cld
   REAL(KIND=r4),    DIMENSION(:,:),         ALLOCATABLE :: lut_Sb_clr, lut_Sb_cld
   REAL(KIND=r4),    DIMENSION(:,:,:,:),     ALLOCATABLE :: lut_I0_clr, lut_I1_clr, lut_I2_clr, lut_Ir_clr, &
@@ -1296,7 +1296,6 @@ CONTAINS
        ALLOCATE (lut_toms(1:anozo),       STAT=estat)
        
        ALLOCATE (lut_alt_lay(1:ansrf,1:anlay),   STAT=estat)
-       ALLOCATE (lut_alt_lev(1:ansrf,1:anlev),   STAT=estat)
        ALLOCATE (lut_pre_lay(1:ansrf,1:anlay),   STAT=estat)
        ALLOCATE (lut_pre_lev_cld(1:ancld,1:anlev),   STAT=estat)
        ALLOCATE (lut_pre_lay_cld(1:ancld,1:anlay),   STAT=estat)
@@ -1332,7 +1331,6 @@ CONTAINS
        IF ( ALLOCATED ( lut_wavelength ) ) DEALLOCATE ( lut_wavelength )
        IF ( ALLOCATED ( lut_toms ) ) DEALLOCATE ( lut_toms )
        
-       IF ( ALLOCATED ( lut_alt_lev ) ) DEALLOCATE ( lut_alt_lev )
        IF ( ALLOCATED ( lut_alt_lay ) ) DEALLOCATE ( lut_alt_lay )
        IF ( ALLOCATED ( lut_pre_lev ) ) DEALLOCATE ( lut_pre_lev )
        IF ( ALLOCATED ( lut_pre_lay ) ) DEALLOCATE ( lut_pre_lay )
@@ -2896,8 +2894,6 @@ SUBROUTINE read_lookup_table (errstat)
          lut_dI2_cld(1:toz_dim(1),1:alt_lay_dim(2),1:clp_dim(1),1:vza_dim(1),1:sza_dim(1)), &
          dI0_cld_dim, hdferr)
     
-    CALL h5dread_f(alt_lev_did, H5T_NATIVE_REAL, lut_alt_lev(1:srf_dim(1),1:alt_lev_dim(2)), &
-         alt_lev_dim, hdferr)
     CALL h5dread_f(alt_lay_did, H5T_NATIVE_REAL, lut_alt_lay(1:srf_dim(1),1:alt_lay_dim(2)), &
          alt_lay_dim, hdferr)
     CALL h5dread_f(pre_lev_did, H5T_NATIVE_REAL, lut_pre_lev(1:srf_dim(1),1:alt_lev_dim(2)), &
