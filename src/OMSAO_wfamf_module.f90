@@ -68,7 +68,7 @@ MODULE OMSAO_wfamf_module
   CHARACTER(LEN=5), DIMENSION(:),           ALLOCATABLE :: lut_toms
   REAL(KIND=r4),    DIMENSION(:,:),         ALLOCATABLE :: lut_alt_lay, lut_alt_lev, lut_pre_lay, lut_pre_lev, &
        lut_pre_lev_cld, lut_pre_lay_cld
-  REAL(KIND=r4),    DIMENSION(:,:,:),       ALLOCATABLE :: lut_air, lut_ozo
+  REAL(KIND=r4),    DIMENSION(:,:,:),       ALLOCATABLE :: lut_air
   REAL(KIND=r4),    DIMENSION(:,:),         ALLOCATABLE :: lut_Sb_clr, lut_Sb_cld
   REAL(KIND=r4),    DIMENSION(:,:,:,:),     ALLOCATABLE :: lut_I0_clr, lut_I1_clr, lut_I2_clr, lut_Ir_clr, &
        lut_I0_cld, lut_I1_cld, lut_I2_cld, lut_Ir_cld
@@ -1300,7 +1300,6 @@ CONTAINS
        ALLOCATE (lut_air(1:anozo,1:ansrf,1:anlay), STAT=estat)
        ALLOCATE (lut_alt_lay(1:ansrf,1:anlay),   STAT=estat)
        ALLOCATE (lut_alt_lev(1:ansrf,1:anlev),   STAT=estat)
-       ALLOCATE (lut_ozo(1:anozo,1:ansrf,1:anlay), STAT=estat)
        ALLOCATE (lut_pre_lay(1:ansrf,1:anlay),   STAT=estat)
        ALLOCATE (lut_pre_lev_cld(1:ancld,1:anlev),   STAT=estat)
        ALLOCATE (lut_pre_lay_cld(1:ancld,1:anlay),   STAT=estat)
@@ -1339,7 +1338,6 @@ CONTAINS
        IF ( ALLOCATED ( lut_air ) ) DEALLOCATE ( lut_air )
        IF ( ALLOCATED ( lut_alt_lev ) ) DEALLOCATE ( lut_alt_lev )
        IF ( ALLOCATED ( lut_alt_lay ) ) DEALLOCATE ( lut_alt_lay )
-       IF ( ALLOCATED ( lut_ozo ) ) DEALLOCATE ( lut_ozo )
        IF ( ALLOCATED ( lut_pre_lev ) ) DEALLOCATE ( lut_pre_lev )
        IF ( ALLOCATED ( lut_pre_lay ) ) DEALLOCATE ( lut_pre_lay )
        IF ( ALLOCATED ( lut_pre_lay_cld ) ) DEALLOCATE ( lut_pre_lay_cld )
@@ -2714,7 +2712,7 @@ SUBROUTINE read_lookup_table (errstat)
          I0_cld_did, I1_cld_did, I2_cld_did, Ir_cld_did, Sb_cld_did,        &
          dI0_clr_did, dI1_clr_did, dI2_clr_did, & 
          dI0_cld_did, dI1_cld_did, dI2_cld_did, & 
-         air_did, alt_lev_did, alt_lay_did, pre_lev_did, pre_lay_did, ozo_did, &
+         air_did, alt_lev_did, alt_lay_did, pre_lev_did, pre_lay_did, &
          dspace, toms_datatype_id, pre_lev_cld_did, pre_lay_cld_did
 
     INTEGER(SIZE_T)                :: size
@@ -2793,7 +2791,6 @@ SUBROUTINE read_lookup_table (errstat)
     CALL h5dopen_f(input_file_id,'/Profiles/Pressure Layer', pre_lay_did, hdferr)
     CALL h5dopen_f(input_file_id,'/Profiles/Cloud pressure Level', pre_lev_cld_did, hdferr)
     CALL h5dopen_f(input_file_id,'/Profiles/Cloud pressure Layer', pre_lay_cld_did, hdferr)
-    CALL h5dopen_f(input_file_id,'/Profiles/Ozone Column Layer', ozo_did, hdferr)
 
     CALL h5dopen_f(input_file_id,'/Scattering Weights/Clear Sky/dI0', dI0_clr_did, hdferr)
     CALL h5dopen_f(input_file_id,'/Scattering Weights/Clear Sky/dI1', dI1_clr_did, hdferr)
@@ -2922,8 +2919,6 @@ SUBROUTINE read_lookup_table (errstat)
          alt_lev_cld_dim, hdferr)
     CALL h5dread_f(pre_lay_cld_did, H5T_NATIVE_REAL, lut_pre_lay_cld(1:clp_dim(1),1:alt_lay_dim(2)), &
          alt_lay_cld_dim, hdferr)
-    CALL h5dread_f(ozo_did,     H5T_NATIVE_REAL, lut_ozo(1:toz_dim(1),1:srf_dim(1),1:alt_lay_dim(2)), &
-         air_dim, hdferr)
     
     ! --------------
     ! Close datasets
@@ -2950,7 +2945,6 @@ SUBROUTINE read_lookup_table (errstat)
     CALL h5dclose_f(alt_lay_did, hdferr); CALL h5dclose_f(alt_lev_did, hdferr)
     CALL h5dclose_f(pre_lay_did, hdferr); CALL h5dclose_f(pre_lev_did, hdferr)
     CALL h5dclose_f(pre_lay_cld_did, hdferr); CALL h5dclose_f(pre_lev_cld_did, hdferr)
-    CALL h5dclose_f(ozo_did, hdferr)
     
     ! ----------
     ! Close file
