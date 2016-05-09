@@ -82,7 +82,6 @@ MODULE OMSAO_wfamf_module
        vza_dim, vza_maxdim, &
        wav_dim, wav_maxdim
   INTEGER(HSIZE_T), DIMENSION(2) :: Sb_clr_dim, Sb_clr_maxdim, &
-       alt_lev_dim, alt_lev_maxdim, &
        alt_lay_dim, alt_lay_maxdim, &
        alt_lay_cld_dim, alt_lay_cld_maxdim, Sb_cld_dim, Sb_cld_maxdim
   INTEGER(HSIZE_T), DIMENSION(4) :: I0_clr_dim,  I0_clr_maxdim, I0_cld_dim, I0_cld_maxdim
@@ -308,7 +307,7 @@ CONTAINS
        ! ----------------------------
        CALL vlidort_allocate ("d", INT(toz_dim(1)),INT(srf_dim(1)),INT(clp_dim(1)),INT(alb_dim(1)), &
             INT(sza_dim(1)),INT(vza_dim(1)),INT(wav_dim(1)), &
-            INT(alt_lay_dim(2)),INT(alt_lev_dim(2)),errstat)
+            INT(alt_lay_dim(2)),errstat)
 
        ! -----------------------------------------------------------------
        ! Work out the AMF using the scattering weights and the climatology
@@ -1253,7 +1252,7 @@ CONTAINS
     RETURN
   END SUBROUTINE climatology_allocate
 
-  SUBROUTINE vlidort_allocate ( ad, anozo, ansrf, ancld, analb, ansza, anvza, anwav, anlay, anlev, errstat )
+  SUBROUTINE vlidort_allocate ( ad, anozo, ansrf, ancld, analb, ansza, anvza, anwav, anlay, errstat )
 
     USE OMSAO_casestring_module, ONLY: lower_case
     IMPLICIT NONE
@@ -1262,7 +1261,7 @@ CONTAINS
     ! Input variables
     ! ---------------
     CHARACTER (LEN=1), INTENT (IN) :: ad
-    INTEGER (KIND=i4), INTENT (IN) :: anozo, ansrf, ancld, analb, ansza, anvza, anwav, anlay, anlev
+    INTEGER (KIND=i4), INTENT (IN) :: anozo, ansrf, ancld, analb, ansza, anvza, anwav, anlay
 
     ! ------------------
     ! Modified variables
@@ -2817,8 +2816,6 @@ SUBROUTINE read_lookup_table (errstat)
     CALL h5dget_space_f(dI0_cld_did,dspace,hdferr)
     CALL h5sget_simple_extent_dims_f (dspace, dI0_cld_dim, dI0_cld_maxdim, hdferr)
 
-    CALL h5dget_space_f(alt_lev_did,dspace,hdferr)
-    CALL h5sget_simple_extent_dims_f (dspace, alt_lev_dim, alt_lev_maxdim, hdferr)
     CALL h5dget_space_f(alt_lay_did,dspace,hdferr)
     CALL h5sget_simple_extent_dims_f (dspace, alt_lay_dim, alt_lay_maxdim, hdferr)
 
@@ -2830,7 +2827,7 @@ SUBROUTINE read_lookup_table (errstat)
     ! ---------------------------------------------------------------
     CALL vlidort_allocate('a', INT(toz_dim(1)),INT(srf_dim(1)),INT(clp_dim(1)),INT(alb_dim(1)), &
          INT(sza_dim(1)),INT(vza_dim(1)),INT(wav_dim(1)), &
-         INT(alt_lay_dim(2)),INT(alt_lev_dim(2)),errstat)
+         INT(alt_lay_dim(2)),errstat)
     
     ! ----------------------------------------------------
     ! Read from the h5 file all these small size variables
