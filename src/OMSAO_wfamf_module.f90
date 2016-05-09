@@ -66,7 +66,7 @@ MODULE OMSAO_wfamf_module
   REAL(KIND=r4),    DIMENSION(:),           ALLOCATABLE :: lut_alb, lut_clp, lut_sza, &
        lut_vza, lut_wavelength, lut_srf
   CHARACTER(LEN=5), DIMENSION(:),           ALLOCATABLE :: lut_toms
-  REAL(KIND=r4),    DIMENSION(:,:),         ALLOCATABLE :: lut_alt_lay, lut_pre_lay, &
+  REAL(KIND=r4),    DIMENSION(:,:),         ALLOCATABLE :: lut_pre_lay, &
        lut_pre_lay_cld
   REAL(KIND=r4),    DIMENSION(:,:),         ALLOCATABLE :: lut_Sb_clr, lut_Sb_cld
   REAL(KIND=r4),    DIMENSION(:,:,:,:),     ALLOCATABLE :: lut_I0_clr, lut_I1_clr, lut_I2_clr, lut_Ir_clr, &
@@ -83,7 +83,7 @@ MODULE OMSAO_wfamf_module
        wav_dim, wav_maxdim
   INTEGER(HSIZE_T), DIMENSION(2) :: Sb_clr_dim, Sb_clr_maxdim, &
        alt_lay_dim, alt_lay_maxdim, &
-       alt_lay_cld_dim, alt_lay_cld_maxdim, Sb_cld_dim, Sb_cld_maxdim
+       Sb_cld_dim, Sb_cld_maxdim
   INTEGER(HSIZE_T), DIMENSION(4) :: I0_clr_dim,  I0_clr_maxdim, I0_cld_dim, I0_cld_maxdim
   INTEGER(HSIZE_T), DIMENSION(5) :: dI0_cld_dim, dI0_cld_maxdim
   INTEGER(HSIZE_T), DIMENSION(6) :: dI0_clr_dim,  dI0_clr_maxdim
@@ -1293,7 +1293,6 @@ CONTAINS
        ALLOCATE (lut_wavelength(1:anwav), STAT=estat)
        ALLOCATE (lut_toms(1:anozo),       STAT=estat)
        
-       ALLOCATE (lut_alt_lay(1:ansrf,1:anlay),   STAT=estat)
        ALLOCATE (lut_pre_lay(1:ansrf,1:anlay),   STAT=estat)
        ALLOCATE (lut_pre_lay_cld(1:ancld,1:anlay),   STAT=estat)
 
@@ -1327,7 +1326,6 @@ CONTAINS
        IF ( ALLOCATED ( lut_wavelength ) ) DEALLOCATE ( lut_wavelength )
        IF ( ALLOCATED ( lut_toms ) ) DEALLOCATE ( lut_toms )
        
-       IF ( ALLOCATED ( lut_alt_lay ) ) DEALLOCATE ( lut_alt_lay )
        IF ( ALLOCATED ( lut_pre_lay ) ) DEALLOCATE ( lut_pre_lay )
        IF ( ALLOCATED ( lut_pre_lay_cld ) ) DEALLOCATE ( lut_pre_lay_cld )
        
@@ -2700,7 +2698,7 @@ SUBROUTINE read_lookup_table (errstat)
          I0_cld_did, I1_cld_did, I2_cld_did, Ir_cld_did, Sb_cld_did,        &
          dI0_clr_did, dI1_clr_did, dI2_clr_did, & 
          dI0_cld_did, dI1_cld_did, dI2_cld_did, & 
-         alt_lev_did, alt_lay_did, pre_lay_did, &
+         pre_lay_did, &
          dspace, toms_datatype_id, pre_lay_cld_did
 
     INTEGER(SIZE_T)                :: size
@@ -2771,8 +2769,6 @@ SUBROUTINE read_lookup_table (errstat)
     CALL h5dopen_f(input_file_id,'/Intensity/Cloud Sky/Ir', Ir_cld_did, hdferr)
     CALL h5dopen_f(input_file_id,'/Intensity/Cloud Sky/Sb', Sb_cld_did, hdferr)
     
-    CALL h5dopen_f(input_file_id,'/Profiles/Altitude Level', alt_lev_did, hdferr)
-    CALL h5dopen_f(input_file_id,'/Profiles/Altitude Layer', alt_lay_did, hdferr)
     CALL h5dopen_f(input_file_id,'/Profiles/Pressure Layer', pre_lay_did, hdferr)
     CALL h5dopen_f(input_file_id,'/Profiles/Cloud pressure Layer', pre_lay_cld_did, hdferr)
 
@@ -2816,11 +2812,8 @@ SUBROUTINE read_lookup_table (errstat)
     CALL h5dget_space_f(dI0_cld_did,dspace,hdferr)
     CALL h5sget_simple_extent_dims_f (dspace, dI0_cld_dim, dI0_cld_maxdim, hdferr)
 
-    CALL h5dget_space_f(alt_lay_did,dspace,hdferr)
+    CALL h5dget_space_f(pre_lay_did,dspace,hdferr)
     CALL h5sget_simple_extent_dims_f (dspace, alt_lay_dim, alt_lay_maxdim, hdferr)
-
-    CALL h5dget_space_f(pre_lay_cld_did,dspace,hdferr)
-    CALL h5sget_simple_extent_dims_f (dspace, alt_lay_cld_dim, alt_lay_cld_maxdim, hdferr)
     
     ! ---------------------------------------------------------------
     ! Allocate & initialize variables now that we have the dimensions
@@ -2882,12 +2875,10 @@ SUBROUTINE read_lookup_table (errstat)
          lut_dI2_cld(1:toz_dim(1),1:alt_lay_dim(2),1:clp_dim(1),1:vza_dim(1),1:sza_dim(1)), &
          dI0_cld_dim, hdferr)
     
-    CALL h5dread_f(alt_lay_did, H5T_NATIVE_REAL, lut_alt_lay(1:srf_dim(1),1:alt_lay_dim(2)), &
-         alt_lay_dim, hdferr)
     CALL h5dread_f(pre_lay_did, H5T_NATIVE_REAL, lut_pre_lay(1:srf_dim(1),1:alt_lay_dim(2)), &
          alt_lay_dim, hdferr)
     CALL h5dread_f(pre_lay_cld_did, H5T_NATIVE_REAL, lut_pre_lay_cld(1:clp_dim(1),1:alt_lay_dim(2)), &
-         alt_lay_cld_dim, hdferr)
+         alt_lay_dim, hdferr)
     
     ! --------------
     ! Close datasets
@@ -2910,8 +2901,7 @@ SUBROUTINE read_lookup_table (errstat)
     CALL h5dclose_f(dI1_clr_did, hdferr); CALL h5dclose_f(dI1_cld_did, hdferr)
     CALL h5dclose_f(dI2_clr_did, hdferr); CALL h5dclose_f(dI2_cld_did, hdferr)
     
-    CALL h5dclose_f(alt_lay_did, hdferr); CALL h5dclose_f(pre_lay_did, hdferr)
-    CALL h5dclose_f(alt_lev_did, hdferr)
+    CALL h5dclose_f(pre_lay_did, hdferr)
     CALL h5dclose_f(pre_lay_cld_did, hdferr)
     
     ! ----------
