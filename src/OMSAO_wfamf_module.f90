@@ -67,7 +67,7 @@ MODULE OMSAO_wfamf_module
        lut_vza, lut_wavelength, lut_srf
   CHARACTER(LEN=5), DIMENSION(:),           ALLOCATABLE :: lut_toms
   REAL(KIND=r4),    DIMENSION(:,:),         ALLOCATABLE :: lut_alt_lay, lut_pre_lay, &
-       lut_pre_lev_cld, lut_pre_lay_cld
+       lut_pre_lay_cld
   REAL(KIND=r4),    DIMENSION(:,:),         ALLOCATABLE :: lut_Sb_clr, lut_Sb_cld
   REAL(KIND=r4),    DIMENSION(:,:,:,:),     ALLOCATABLE :: lut_I0_clr, lut_I1_clr, lut_I2_clr, lut_Ir_clr, &
        lut_I0_cld, lut_I1_cld, lut_I2_cld, lut_Ir_cld
@@ -84,7 +84,6 @@ MODULE OMSAO_wfamf_module
   INTEGER(HSIZE_T), DIMENSION(2) :: Sb_clr_dim, Sb_clr_maxdim, &
        alt_lev_dim, alt_lev_maxdim, &
        alt_lay_dim, alt_lay_maxdim, &
-       alt_lev_cld_dim, alt_lev_cld_maxdim, &
        alt_lay_cld_dim, alt_lay_cld_maxdim, Sb_cld_dim, Sb_cld_maxdim
   INTEGER(HSIZE_T), DIMENSION(4) :: I0_clr_dim,  I0_clr_maxdim, I0_cld_dim, I0_cld_maxdim
   INTEGER(HSIZE_T), DIMENSION(5) :: dI0_cld_dim, dI0_cld_maxdim
@@ -1297,7 +1296,6 @@ CONTAINS
        
        ALLOCATE (lut_alt_lay(1:ansrf,1:anlay),   STAT=estat)
        ALLOCATE (lut_pre_lay(1:ansrf,1:anlay),   STAT=estat)
-       ALLOCATE (lut_pre_lev_cld(1:ancld,1:anlev),   STAT=estat)
        ALLOCATE (lut_pre_lay_cld(1:ancld,1:anlay),   STAT=estat)
 
        ALLOCATE (lut_I0_clr(1:anozo,1:ansrf,1:anvza,1:ansza), STAT=estat)
@@ -1333,7 +1331,6 @@ CONTAINS
        IF ( ALLOCATED ( lut_alt_lay ) ) DEALLOCATE ( lut_alt_lay )
        IF ( ALLOCATED ( lut_pre_lay ) ) DEALLOCATE ( lut_pre_lay )
        IF ( ALLOCATED ( lut_pre_lay_cld ) ) DEALLOCATE ( lut_pre_lay_cld )
-       IF ( ALLOCATED ( lut_pre_lev_cld ) ) DEALLOCATE ( lut_pre_lev_cld )
        
        IF ( ALLOCATED ( lut_I0_clr ) ) DEALLOCATE ( lut_I0_clr )
        IF ( ALLOCATED ( lut_I1_clr ) ) DEALLOCATE ( lut_I1_clr )
@@ -2705,7 +2702,7 @@ SUBROUTINE read_lookup_table (errstat)
          dI0_clr_did, dI1_clr_did, dI2_clr_did, & 
          dI0_cld_did, dI1_cld_did, dI2_cld_did, & 
          alt_lev_did, alt_lay_did, pre_lay_did, &
-         dspace, toms_datatype_id, pre_lev_cld_did, pre_lay_cld_did
+         dspace, toms_datatype_id, pre_lay_cld_did
 
     INTEGER(SIZE_T)                :: size
     LOGICAL, SAVE :: h5inited = .FALSE.
@@ -2778,7 +2775,6 @@ SUBROUTINE read_lookup_table (errstat)
     CALL h5dopen_f(input_file_id,'/Profiles/Altitude Level', alt_lev_did, hdferr)
     CALL h5dopen_f(input_file_id,'/Profiles/Altitude Layer', alt_lay_did, hdferr)
     CALL h5dopen_f(input_file_id,'/Profiles/Pressure Layer', pre_lay_did, hdferr)
-    CALL h5dopen_f(input_file_id,'/Profiles/Cloud pressure Level', pre_lev_cld_did, hdferr)
     CALL h5dopen_f(input_file_id,'/Profiles/Cloud pressure Layer', pre_lay_cld_did, hdferr)
 
     CALL h5dopen_f(input_file_id,'/Scattering Weights/Clear Sky/dI0', dI0_clr_did, hdferr)
@@ -2826,8 +2822,6 @@ SUBROUTINE read_lookup_table (errstat)
     CALL h5dget_space_f(alt_lay_did,dspace,hdferr)
     CALL h5sget_simple_extent_dims_f (dspace, alt_lay_dim, alt_lay_maxdim, hdferr)
 
-    CALL h5dget_space_f(pre_lev_cld_did,dspace,hdferr)
-    CALL h5sget_simple_extent_dims_f (dspace, alt_lev_cld_dim, alt_lev_cld_maxdim, hdferr)
     CALL h5dget_space_f(pre_lay_cld_did,dspace,hdferr)
     CALL h5sget_simple_extent_dims_f (dspace, alt_lay_cld_dim, alt_lay_cld_maxdim, hdferr)
     
@@ -2895,8 +2889,6 @@ SUBROUTINE read_lookup_table (errstat)
          alt_lay_dim, hdferr)
     CALL h5dread_f(pre_lay_did, H5T_NATIVE_REAL, lut_pre_lay(1:srf_dim(1),1:alt_lay_dim(2)), &
          alt_lay_dim, hdferr)
-    CALL h5dread_f(pre_lev_cld_did, H5T_NATIVE_REAL, lut_pre_lev_cld(1:clp_dim(1),1:alt_lev_dim(2)), &
-         alt_lev_cld_dim, hdferr)
     CALL h5dread_f(pre_lay_cld_did, H5T_NATIVE_REAL, lut_pre_lay_cld(1:clp_dim(1),1:alt_lay_dim(2)), &
          alt_lay_cld_dim, hdferr)
     
@@ -2921,8 +2913,9 @@ SUBROUTINE read_lookup_table (errstat)
     CALL h5dclose_f(dI1_clr_did, hdferr); CALL h5dclose_f(dI1_cld_did, hdferr)
     CALL h5dclose_f(dI2_clr_did, hdferr); CALL h5dclose_f(dI2_cld_did, hdferr)
     
-    CALL h5dclose_f(alt_lay_did, hdferr); CALL h5dclose_f(alt_lev_did, hdferr)
-    CALL h5dclose_f(pre_lay_cld_did, hdferr); CALL h5dclose_f(pre_lev_cld_did, hdferr)
+    CALL h5dclose_f(alt_lay_did, hdferr); CALL h5dclose_f(pre_lay_did, hdferr)
+    CALL h5dclose_f(alt_lev_did, hdferr)
+    CALL h5dclose_f(pre_lay_cld_did, hdferr)
     
     ! ----------
     ! Close file
