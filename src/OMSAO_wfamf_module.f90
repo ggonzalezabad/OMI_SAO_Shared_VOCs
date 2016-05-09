@@ -193,7 +193,7 @@ CONTAINS
     REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1)       :: amfgeo
     REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1)       :: l2cfr, l2ctp
     REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1)       :: albedo, cli_psurface
-    REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1,CmETA) :: climatology, cli_temperature
+    REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1,CmETA) :: climatology
     REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1,CmETA) :: scattw !, akernels
 
 
@@ -273,7 +273,7 @@ CONTAINS
        ! Now it is only needed to interpolate to the pixels of the granule.
        ! It was read there to obtain the dimensions of the number of levels.
        ! ---------------------------------------------------------------------
-       CALL omi_climatology (climatology, cli_psurface, cli_temperature, terrain_height, &
+       CALL omi_climatology (climatology, cli_psurface, terrain_height, &
             lat, lon, nt, nx, xtrange, locerrstat)
        
        ! -------------------------------------
@@ -342,7 +342,7 @@ CONTAINS
     
   END SUBROUTINE amf_calculation
   
-  SUBROUTINE omi_climatology (climatology, local_psurf, local_temperature, terrain_height, &
+  SUBROUTINE omi_climatology (climatology, local_psurf, terrain_height, &
                               lat, lon, nt, nx, xtrange, locerrstat)
 
     ! =========================================
@@ -363,7 +363,7 @@ CONTAINS
     ! Modified variables
     ! ------------------
     INTEGER (KIND=i4),                                INTENT (INOUT) :: locerrstat
-    REAL    (KIND=r8), DIMENSION(1:nx,0:nt-1, CmETA), INTENT (INOUT) :: climatology, local_temperature
+    REAL    (KIND=r8), DIMENSION(1:nx,0:nt-1, CmETA), INTENT (INOUT) :: climatology
     REAL    (KIND=r8), DIMENSION(1:nx,0:nt-1),        INTENT (INOUT) :: local_psurf  
 
     ! ---------------
