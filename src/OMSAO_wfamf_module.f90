@@ -313,7 +313,7 @@ CONTAINS
        ! Work out the AMF using the scattering weights and the climatology
        ! Work out Averaging Kernels
        ! -----------------------------------------------------------------
-       CALL compute_amf ( nt, nx, CmETA, climatology, cli_temperature, cli_psurface, &
+       CALL compute_amf ( nt, nx, CmETA, climatology, &
             scattw, saoamf, amfdiag, locerrstat)
 
        ! -----------------------------------------------------------------
@@ -2338,7 +2338,7 @@ CONTAINS
     
   END SUBROUTINE COMPUTE_SCATT
 
-  SUBROUTINE compute_amf ( nt, nx, CmETA, climatology, cli_temperature, cli_psurface, &
+  SUBROUTINE compute_amf ( nt, nx, CmETA, climatology, &
                            scattw, saoamf, amfdiag, errstat)
 
     IMPLICIT NONE
@@ -2347,9 +2347,7 @@ CONTAINS
     ! Input variables
     ! ---------------
     INTEGER (KIND=i4),                                INTENT(IN) :: nt, nx, CmETA
-    REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1,CmETA), INTENT(IN) :: climatology, &
-                                                                    cli_temperature, scattw
-    REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1),       INTENT(IN) :: cli_psurface
+    REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1,CmETA), INTENT(IN) :: climatology, scattw
     INTEGER (KIND=i2), DIMENSION (1:nx,0:nt-1),       INTENT(IN) :: amfdiag
 
     ! -----------------------------
