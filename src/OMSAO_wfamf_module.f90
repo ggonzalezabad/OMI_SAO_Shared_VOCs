@@ -418,13 +418,11 @@ CONTAINS
 
           ! ----------------------------------------------
           ! Convert pixel terrain height to pressure using
-          ! Xiong suggested to use pressure altitude:
-          !  Z = -16 alog10 (P / Po) Z in km and P in hPa.
-          ! From OMI L1B file.
+          ! USSA (good below 50 km)
           ! ----------------------------------------------
-          local_psurf(ixtrack,itimes) = 1013.0_r8 * &
-               (10.0_r8 ** (REAL(terrain_height(ixtrack,itimes),KIND=r8) / 1000.0_r8 / (-16.0_r8)))
-
+          CALL ussa_press(REAL(terrain_height(ixtrack,itimes),KIND=r8) / 1000.0_r8, &
+               local_psurf(ixtrack,itimes) )
+          
           clima_psurf = REAL(Psurface(idx_lon, idx_lat), KIND=r8)
           ! lpre(0:CmETA) is pressure at layer boundaries, same unit as
           ! local_surf, convert from hPa to Pa, it is a CmETA+1 = CmEp1 array
@@ -2094,7 +2092,7 @@ CONTAINS
           ! Xiong suggested to use pressure altitude:
           !  Z = -16 alog10 (P / Po) Z in km and P in hPa.
           ! ----------------------------------------------
-          local_srf(1) = 1013.0_r8 * (10.0_r8 ** (local_srf(1) / 1000.0_r8 / (-16.0_r8))) 
+          CALL ussa_press(local_srf(1) / 1000.0_r8, local_srf(1))
 
           !Bringing surface pressure to highest available in lookup table if needed
           !Current highest surface pressure is 1030 hPa.
@@ -2911,6 +2909,46 @@ SUBROUTINE read_lookup_table (errstat)
 100 FORMAT (A)
 
 END SUBROUTINE read_lookup_table
+
+SUBROUTINE ussa_press (altitude,pressure)
+
+  ! -----------------------------
+  ! Adapted from GAMAP ussa_press
+  ! -----------------------------
+  IMPLICIT NONE
+
+  ! ----------------------------
+  ! Input variable (altitude km)
+  ! ----------------------------
+  REAL(KIND=r8), INTENT(IN) :: altitude
+  
+  ! ------------------------------
+  ! Output variable (pressure hPa)
+  ! ------------------------------
+  REAL(KIND=r8), INTENT(OUT) :: pressure
+
+  ! ---------------------------------------------
+  ! Polynomial coefficients to work outp pressure
+  ! ---------------------------------------------
+  REAL(KIND=r8), DIMENSION(6), PARAMETER :: coeff = (/ &
+       2.99955D+00, -4.61994D-02, &
+       -1.55620D-03, 4.57018D-05, &
+       -5.14580D-07, 1.94170D-09 /)
+
+  ! -----------------
+  ! Work out pressure
+  ! -----------------
+  pressure = &
+       coeff(1) + &
+       coeff(2) * altitude**1 + &
+       coeff(3) * altitude**2 + &
+       coeff(4) * altitude**3 + &
+       coeff(5) * altitude**4 + &
+       coeff(6) * altitude**5
+
+  pressure = 10**pressure
+  
+END SUBROUTINE ussa_press
 
 END MODULE OMSAO_wfamf_module
 
