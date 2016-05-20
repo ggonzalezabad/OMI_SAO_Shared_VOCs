@@ -5,6 +5,7 @@ MODULE OMSAO_wfamf_module
   ! nt AMF calculations and contains necessary subroutines to read files
   ! and calculate them
   ! ====================================================================
+  USE OMSAO_lininterpolation_module
   USE OMSAO_precision_module, ONLY: i4, r8, C_LONG, r4
   USE OMSAO_parameters_module
   USE OMSAO_errstat_module
@@ -422,8 +423,8 @@ CONTAINS
           ! ----------------------------------------------
           CALL ussa_press(REAL(terrain_height(ixtrack,itimes),KIND=r8) / 1000.0_r8, &
                local_psurf(ixtrack,itimes) )
-          
           clima_psurf = REAL(Psurface(idx_lon, idx_lat), KIND=r8)
+          
           ! lpre(0:CmETA) is pressure at layer boundaries, same unit as
           ! local_surf, convert from hPa to Pa, it is a CmETA+1 = CmEp1 array
           ! Ap(1:CmEp1) & Bp(1:CmEp1) are coeff at layer boundary for pressure
@@ -1918,7 +1919,6 @@ CONTAINS
   SUBROUTINE compute_scatt ( nt, nx, albedo, lat, sza, vza, saa, vaa, l2ctp, l2cfr, terrain_height, amfgeo, &
        amfdiag, scattw)
 
-    USE OMSAO_lininterpolation_module
     USE OMSAO_variables_module, ONLY: verb_thresh_lev
     USE OMSAO_omidata_module, ONLY: omi_ozone_amount
 
@@ -2920,33 +2920,47 @@ SUBROUTINE ussa_press (altitude,pressure)
   ! ----------------------------
   ! Input variable (altitude km)
   ! ----------------------------
-  REAL(KIND=r8), INTENT(IN) :: altitude
+  REAL(KIND=r8), DIMENSION(1), INTENT(IN) :: altitude
   
   ! ------------------------------
   ! Output variable (pressure hPa)
   ! ------------------------------
-  REAL(KIND=r8), INTENT(OUT) :: pressure
+  REAL(KIND=r8), DIMENSION(1), INTENT(OUT) :: pressure
 
-  ! ---------------------------------------------
-  ! Polynomial coefficients to work outp pressure
-  ! ---------------------------------------------
-  REAL(KIND=r8), DIMENSION(6), PARAMETER :: coeff = (/ &
-       2.99955D+00, -4.61994D-02, &
-       -1.55620D-03, 4.57018D-05, &
-       -5.14580D-07, 1.94170D-09 /)
+  ! ------------------------------------
+  ! GEOS 5 log(pressure) for (47 layers)
+  ! Surface pressure 1013
+  ! ------------------------------------
+  INTEGER, PARAMETER :: dim1 = 48
+  REAL(KIND=r8), DIMENSION(48), PARAMETER :: pressure_grid = &
+       (/ 6.92067, 6.90556, 6.89012, 6.87445, 6.85853, 6.84235, 6.82590, 6.80918, &
+       6.79218, 6.77488, 6.75728, 6.73936, 6.72112, 6.69626, 6.66430, 6.63129, &
+       6.59715, 6.56181, 6.52518, 6.46759, 6.40650, 6.34143, 6.27187, 6.19711, &
+       6.11635, 6.02853, 5.93233, 5.82593, 5.66612, 5.50223, 5.33870, 5.17575, &
+       5.01325, 4.85076, 4.68825, 4.52576, 4.36326, 4.03225, 3.69326, 3.34526, &
+       2.98526, 2.22926, 1.40526, 0.501254, -0.483244, -1.55424, -2.71810, -4.60517 /)
+  REAL(KIND=r8), DIMENSION(48), PARAMETER :: altitude_grid = &
+       (/0.00, 0.125233, 0.256359, 0.389019, 0.523258, 0.659134, 0.796688, 0.935970, &
+       1.07703, 1.21995, 1.36477, 1.51157, 1.66039, 1.86211, 2.11983, 2.38408, &
+       2.65524, 2.93381, 3.22033, 3.66622, 4.13342, 4.62472, 5.14312, 5.69270, &
+       6.27820, 6.90579, 7.58319, 8.32105, 9.40939, 10.5039, 11.5778, 12.6330, &
+       13.6737, 14.7055, 15.7312, 16.7531, 17.7734, 19.8549, 22.0036, 24.2399, &
+       26.5964, 31.7163, 37.5745, 44.2858, 51.7878, 59.9239, 68.3921, 80.5806 /)
 
-  ! -----------------
-  ! Work out pressure
-  ! -----------------
-  pressure = &
-       coeff(1) + &
-       coeff(2) * altitude**1 + &
-       coeff(3) * altitude**2 + &
-       coeff(4) * altitude**3 + &
-       coeff(5) * altitude**4 + &
-       coeff(6) * altitude**5
+  ! --------------
+  ! Error variable
+  ! --------------
+  INTEGER :: status
+  ! ------------------------------------------
+  ! Work out pressure by interpolating altidue
+  ! Since we are using log(pressure) linear
+  ! interpolation will do
+  ! ------------------------------------------
+  pressure(1) = lininterpol(dim1, altitude_grid(1:dim1), pressure_grid(1:dim1), &
+       altitude(1), status=status)
 
-  pressure = 10**pressure
+  ! Undo logarithm
+  pressure(1) = DEXP(pressure(1))
   
 END SUBROUTINE ussa_press
 
