@@ -55,9 +55,9 @@ MODULE OMSAO_wfamf_module
   ! ---------------------------------------
   ! Data obtained from the climatology file
   ! ---------------------------------------
-  REAL(KIND=r4), DIMENSION(:),     ALLOCATABLE :: latvals, lonvals
-  REAL(KIND=r4), DIMENSION(:,:),   ALLOCATABLE :: Psurface
-  REAL(KIND=r4), DIMENSION(:,:,:), ALLOCATABLE :: Temperature, Gas_profiles, H2O_profiles
+  REAL(KIND=r8), DIMENSION(:),     ALLOCATABLE :: latvals, lonvals
+  REAL(KIND=r8), DIMENSION(:,:),   ALLOCATABLE :: Psurface
+  REAL(KIND=r8), DIMENSION(:,:,:), ALLOCATABLE :: Temperature, Gas_profiles, H2O_profiles
 
   ! ---------------------------------------
   ! Data obtained from Vlidort lookup table
@@ -414,16 +414,25 @@ CONTAINS
           ! ----------------------------------------------------
           ! Just selecting the closest location to lat lon pixel
           ! ----------------------------------------------------
-          idx_lat = MINVAL(MINLOC(ABS(latvals(1:Cmlat) - lat(ixtrack,itimes) )))
-          idx_lon = MINVAL(MINLOC(ABS(lonvals(1:Cmlon) - lon(ixtrack,itimes) )))
+          idx_lat = MINVAL(MINLOC(ABS(latvals(1:Cmlat) - REAL(lat(ixtrack,itimes),KIND=8) )))
+          idx_lon = MINVAL(MINLOC(ABS(lonvals(1:Cmlon) - REAL(lon(ixtrack,itimes),KIND=8) )))
 
           ! ----------------------------------------------
           ! Convert pixel terrain height to pressure using
           ! USSA (good below 50 km)
           ! ----------------------------------------------
-          CALL ussa_press(REAL(terrain_height(ixtrack,itimes),KIND=r8) / 1000.0_r8, &
-               local_psurf(ixtrack,itimes) )
-          clima_psurf = REAL(Psurface(idx_lon, idx_lat), KIND=r8)
+!!$          CALL ussa_press(REAL(terrain_height(ixtrack,itimes),KIND=r8) / 1000.0_r8, &
+!!$               local_psurf(ixtrack,itimes) )
+          
+          ! ---------------------------------------------------------
+          ! For OMH2O I should use terrain heigh from the climatology
+          ! ---------------------------------------------------------
+          local_psurf(ixtrack,itimes) = linInterpol(Cmlon, Cmlat, &
+               lonvals(1:Cmlat), latvals(1:Cmlon), &
+               Psurface(1:Cmlon,1:Cmlat), &
+               REAL(lon(ixtrack,itimes),KIND=8), REAL(lat(ixtrack,itimes),KIND=8), &
+               status=status)
+          clima_psurf = Psurface(idx_lon, idx_lat)
           
           ! lpre(0:CmETA) is pressure at layer boundaries, same unit as
           ! local_surf, convert from hPa to Pa, it is a CmETA+1 = CmEp1 array
@@ -442,9 +451,9 @@ CONTAINS
              local_heights(ilevel)  = layer_press(ilevel)/1.E2 ! hPa
              clima_layer_press(ilevel) = (clima_lpre(ilevel-1) + clima_lpre(ilevel))/2.0 ! Pa
              clima_local_heights(ilevel)  = clima_layer_press(ilevel)/1.E2 ! hPa
-             re_tmp(ilevel) = REAL(Temperature(idx_lon,idx_lat,CmETA+1-ilevel),KIND=r8)
-             re_gas(ilevel) = REAL(gas_profiles(idx_lon,idx_lat,CmETA+1-ilevel),KIND=r8)
-             re_h2o(ilevel) = REAL(H2O_profiles(idx_lon,idx_lat,CmETA+1-ilevel),KIND=r8)
+             re_tmp(ilevel) = Temperature(idx_lon,idx_lat,CmETA+1-ilevel)
+             re_gas(ilevel) = Gas_profiles(idx_lon,idx_lat,CmETA+1-ilevel)
+             re_h2o(ilevel) = H2O_profiles(idx_lon,idx_lat,CmETA+1-ilevel)
           END DO
 
           ! ---------------------------------------------------------------------------------------
@@ -539,8 +548,12 @@ CONTAINS
     CHARACTER (LEN=15), PARAMETER :: cli_Psurf_field       = 'SurfacePressure'
     CHARACTER (LEN=18), PARAMETER :: cli_Temperature_field = 'TemperatureProfile'
 
-    REAL      (KIND=r4) :: scale_lat, scale_lon, scale_gas, scale_Psurf, &
-                           scale_temperature, scale_H2O
+    REAL (KIND=r4), ALLOCATABLE, DIMENSION(:) :: dummy_lon, dummy_lat
+    REAL (KIND=r4), ALLOCATABLE, DIMENSION(:,:) :: dummy_psurf
+    REAL (KIND=r4), ALLOCATABLE, DIMENSION(:,:,:) :: dummy_temp, dummy_gaspr, dummy_h2opr
+
+    REAL (KIND=r4) :: scale_lat, scale_lon, scale_gas, scale_Psurf, &
+         scale_temperature, scale_H2O
 
     ! ------------------------
     ! Error handling variables
@@ -644,15 +657,22 @@ CONTAINS
        RETURN
     END IF
 
+    ! -----------------------------------
+    ! Allocate dummy arrays (necessary to 
+    ! read 32 bit arrays
+    ! -----------------------------------
+    ALLOCATE(dummy_lat(1:Cmlat))
+    ALLOCATE(dummy_lon(1:Cmlon))
+
     ! -------------------------------
     ! Read dimension-defining arrays
     ! -------------------------------
     he5_start_1d = zerocl ; he5_stride_1d = onecl ; he5_edge_1d = Cmlatcl
     he5stat = HE5_SWrdfld ( swath_id, cli_lat_field, &
-         he5_start_1d, he5_stride_1d, he5_edge_1d, latvals(1:Cmlat) )
+         he5_start_1d, he5_stride_1d, he5_edge_1d, dummy_lat(1:Cmlat) )
     he5_start_1d = zerocl ; he5_stride_1d = onecl ; he5_edge_1d = Cmloncl
     he5stat = HE5_SWrdfld ( swath_id, cli_lon_field, &
-         he5_start_1d, he5_stride_1d, he5_edge_1d, lonvals(1:Cmlon) )
+         he5_start_1d, he5_stride_1d, he5_edge_1d, dummy_lon(1:Cmlon) )
     he5_start_1d = zerocl ; he5_stride_1d = onecl ; he5_edge_1d = CmEp1cl
     IF ( he5stat /= pge_errstat_ok ) &
          CALL error_check ( he5stat, OMI_S_SUCCESS, pge_errstat_error, OMSAO_E_PREFITCOL, &
@@ -669,9 +689,24 @@ CONTAINS
 
     ! -----------------------------------
     ! Apply scaling factors to geo fields
+    ! and converting to 64 bit
     ! -----------------------------------
-    lonvals = lonvals * scale_lon
-    latvals = latvals * scale_lat
+    lonvals(1:Cmlon) = REAL(dummy_lon(1:Cmlon) * scale_lon, KIND=r8)
+    latvals(1:Cmlat) = REAL(dummy_lat(1:Cmlat) * scale_lat, KIND=r8)
+    
+    ! ------------------------
+    ! De-allocate dummy arrays
+    ! ------------------------
+    DEALLOCATE(dummy_lat)
+    DEALLOCATE(dummy_lon)
+
+    ! ---------------------------------------
+    ! Allocate dummy variables to read 32 bit
+    ! ---------------------------------------
+    ALLOCATE(dummy_psurf(1:Cmlon,1:Cmlat))
+    ALLOCATE(dummy_temp(1:Cmlon,1:Cmlat,1:CmETA))
+    ALLOCATE(dummy_gaspr(1:Cmlon,1:Cmlat,1:CmETA))
+    ALLOCATE(dummy_h2opr(1:Cmlon,1:Cmlat,1:CmETA))
 
     ! -----------------------------------------------
     ! Read the tables: Psurface, Heights, Temperature
@@ -686,11 +721,11 @@ CONTAINS
     he5stat = HE5_SWrdfld (                                &
          swath_id, cli_Psurf_field,                        &
          he5_start_2d, he5_stride_2d, he5_edge_2d,         &
-         Psurface(1:Cmlon,1:Cmlat) )
+         dummy_psurf(1:Cmlon,1:Cmlat) )
     he5stat = HE5_SWrdfld (                                &
          swath_id, cli_Temperature_field,                  &
          he5_start_3d, he5_stride_3d, he5_edge_3d,         &
-         Temperature(1:Cmlon,1:Cmlat,1:CmETA) )
+         dummy_temp(1:Cmlon,1:Cmlat,1:CmETA) )
 
     ! --------------------------------------
     ! Read datafields scale factor attribute
@@ -727,7 +762,7 @@ CONTAINS
     he5stat = HE5_SWrdfld (                                &
          swath_id, TRIM(ADJUSTL(gasdatafieldname)),        &
          he5_start_3d, he5_stride_3d, he5_edge_3d,         &
-         Gas_profiles(1:Cmlon,1:Cmlat,1:CmETA) )
+         dummy_gaspr(1:Cmlon,1:Cmlat,1:CmETA) )
 
     ! -----------------------------------------
     ! Read gas datafield scale factor attribute
@@ -760,7 +795,7 @@ CONTAINS
     he5stat = HE5_SWrdfld (                                &
          swath_id, TRIM(ADJUSTL(gasdatafieldname)),        &
          he5_start_3d, he5_stride_3d, he5_edge_3d,         &
-         H2O_profiles(1:Cmlon,1:Cmlat,1:CmETA) )
+         dummy_h2opr(1:Cmlon,1:Cmlat,1:CmETA) )
 
     ! -----------------------------------------
     ! Read gas datafield scale factor attribute
@@ -771,10 +806,18 @@ CONTAINS
     ! ------------------------------------
     ! Apply scaling factors to data fields
     ! ------------------------------------
-    Temperature  = Temperature  * scale_Temperature
-    Psurface     = Psurface     * scale_Psurf
-    Gas_profiles = Gas_profiles * scale_gas
-    H2O_profiles = H2O_profiles * scale_H2O
+    Temperature  = REAL(dummy_temp * scale_Temperature, KIND=r8)
+    Psurface     = REAL(dummy_psurf * scale_Psurf, KIND=r8)
+    Gas_profiles = REAL(dummy_gaspr * scale_gas, KIND=r8)
+    H2O_profiles = REAL(dummy_h2opr * scale_H2O, KIND=r8)
+
+    ! ------------------------
+    ! De-allocate dummy arrays
+    ! ------------------------
+    DEALLOCATE(dummy_psurf)
+    DEALLOCATE(dummy_temp)
+    DEALLOCATE(dummy_gaspr)
+    DEALLOCATE(dummy_h2opr)
 
   END SUBROUTINE omi_read_climatology
 
