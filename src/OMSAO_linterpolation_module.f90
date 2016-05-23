@@ -146,6 +146,7 @@ contains
     integer :: node1
     REAL(SP), dimension(ndim) :: distance
     REAL(SP), dimension(2**ndim) :: weights, values
+    REAL(SP), dimension(1) :: denominator
     integer :: i
     integer :: npoint
     status = 0 ! set to success
@@ -163,11 +164,14 @@ contains
       return
     end if
 
+    ! No need to recompute dimscale(node1+1) - dimscale1(node1) each time
+    denominator(1) = dimscale1(node1+1) - dimscale1(node1)
+
     npoint = 0
     do i = node1, node1 + 1
       npoint = npoint + 1
 
-      distance(1) = (x1 - dimscale1(i)) / (dimscale1(node1+1) - dimscale1(node1))
+      distance(1) = (x1 - dimscale1(i)) / (denominator(1))
 
       distance = 1. - abs(distance)
 
@@ -208,6 +212,7 @@ contains
     integer :: node1, node2
     REAL(SP), dimension(ndim) :: distance
     REAL(SP), dimension(2**ndim) :: weights, values
+    REAL(SP), dimension(2) :: denominator
     integer :: i, j
     integer :: npoint
 
@@ -229,15 +234,18 @@ contains
       return
     end if
 
+    denominator(1) = dimscale1(node1+1) - dimscale1(node1)
+    denominator(2) = dimscale2(node2+1) - dimscale2(node2)
+
     npoint = 0
     do i = node1, node1 + 1
       do j=node2, node2 + 1
 
         npoint = npoint + 1
 
-        distance(1) = (x1 - dimscale1(i)) / (dimscale1(node1+1) - dimscale1(node1))
+        distance(1) = (x1 - dimscale1(i)) / (denominator(1))
 
-        distance(2) = (x2 - dimscale2(j)) / (dimscale2(node2+1) - dimscale2(node2))
+        distance(2) = (x2 - dimscale2(j)) / (denominator(2))
 
         distance = 1. - abs(distance)
 
@@ -280,6 +288,7 @@ contains
     integer :: node1, node2,node3
     REAL(SP), dimension(ndim) :: distance
     REAL(SP), dimension(2**ndim) :: weights, values
+    REAL(SP), dimension(3) :: denominator
     integer :: i, j, k
     integer :: npoint
 
@@ -303,6 +312,10 @@ contains
       return
     end if
 
+    denominator(1) = dimscale1(node1+1) - dimscale1(node1)
+    denominator(2) = dimscale2(node2+1) - dimscale2(node2)
+    denominator(3) = dimscale3(node3+1) - dimscale3(node3)
+    
     npoint = 0
     do i = node1, node1 + 1
       do j=node2, node2 + 1
@@ -310,11 +323,11 @@ contains
 
           npoint = npoint + 1
 
-          distance(1) = (x1 - dimscale1(i)) / (dimscale1(node1+1) - dimscale1(node1))
+          distance(1) = (x1 - dimscale1(i)) / (denominator(1))
 
-          distance(2) = (x2 - dimscale2(j)) / (dimscale2(node2+1) - dimscale2(node2))
+          distance(2) = (x2 - dimscale2(j)) / (denominator(2))
 
-          distance(3) = (x3 - dimscale3(k)) / (dimscale3(node3+1) - dimscale3(node3))
+          distance(3) = (x3 - dimscale3(k)) / (denominator(3))
 
           distance = 1. - abs(distance)
 
@@ -361,6 +374,7 @@ contains
     integer :: node1, node2,node3,node4
     REAL(SP), dimension(ndim) :: distance
     REAL(SP), dimension(2**ndim) :: weights, values
+    REAL(SP), dimension(4) :: denominator
     integer :: i, j, k,l
     integer :: npoint
 
@@ -386,6 +400,11 @@ contains
       return
     end if
 
+    denominator(1) = dimscale1(node1+1) - dimscale1(node1)
+    denominator(2) = dimscale2(node2+1) - dimscale2(node2)
+    denominator(3) = dimscale3(node3+1) - dimscale3(node3)
+    denominator(4) = dimscale4(node4+1) - dimscale4(node4)
+    
     npoint = 0
     do i = node1, node1 + 1
       do j=node2, node2 + 1
@@ -394,13 +413,13 @@ contains
 
             npoint = npoint + 1
 
-            distance(1) = (x1 - dimscale1(i)) / (dimscale1(node1+1) - dimscale1(node1))
+            distance(1) = (x1 - dimscale1(i)) / (denominator(1))
 
-            distance(2) = (x2 - dimscale2(j)) / (dimscale2(node2+1) - dimscale2(node2))
+            distance(2) = (x2 - dimscale2(j)) / (denominator(2))
 
-            distance(3) = (x3 - dimscale3(k)) / (dimscale3(node3+1) - dimscale3(node3))
+            distance(3) = (x3 - dimscale3(k)) / (denominator(3))
 
-            distance(4) = (x4 - dimscale4(l)) / (dimscale4(node4+1) - dimscale4(node4))
+            distance(4) = (x4 - dimscale4(l)) / (denominator(4))
 
             distance = 1. - abs(distance)
 
@@ -453,6 +472,7 @@ contains
     integer :: node1, node2, node3, node4, node5
     REAL(SP), dimension(ndim) :: distance
     REAL(SP), dimension(2**ndim) :: weights, values
+    REAL(SP), dimension(5) :: denominator
     integer :: i, j, k, l, m
     integer :: npoint
 
@@ -488,7 +508,13 @@ contains
       return
     end if
 
-    npoint = 0
+    denominator(1) = dimscale1(node1+1) - dimscale1(node1)
+    denominator(2) = dimscale2(node2+1) - dimscale2(node2)
+    denominator(3) = dimscale3(node3+1) - dimscale3(node3)
+    denominator(4) = dimscale4(node4+1) - dimscale4(node4)
+    denominator(5) = dimscale5(node5+1) - dimscale5(node5)
+
+    npoint = 0 
     do i = node1, node1 + 1
       do j=node2, node2 + 1
         do k=node3, node3 + 1
@@ -497,15 +523,15 @@ contains
 
               npoint = npoint + 1
 
-              distance(1) = (x1 - dimscale1(i)) / (dimscale1(node1+1) - dimscale1(node1))
+              distance(1) = (x1 - dimscale1(i)) / (denominator(1))
 
-              distance(2) = (x2 - dimscale2(j)) / (dimscale2(node2+1) - dimscale2(node2))
+              distance(2) = (x2 - dimscale2(j)) / (denominator(2))
 
-              distance(3) = (x3 - dimscale3(k)) / (dimscale3(node3+1) - dimscale3(node3))
+              distance(3) = (x3 - dimscale3(k)) / (denominator(3))
 
-              distance(4) = (x4 - dimscale4(l)) / (dimscale4(node4+1) - dimscale4(node4))
+              distance(4) = (x4 - dimscale4(l)) / (denominator(4))
 
-              distance(5) = (x5 - dimscale5(m)) / (dimscale5(node5+1) - dimscale5(node5))
+              distance(5) = (x5 - dimscale5(m)) / (denominator(5))
 
               distance = 1. - abs(distance)
 
@@ -557,6 +583,7 @@ contains
     integer :: node1, node2,node3,node4,node5,node6
     REAL(SP), dimension(ndim) :: distance
     REAL(SP), dimension(2**ndim) :: weights, values
+    REAL(SP), dimension(6) :: denominator
     integer :: i, j, k, l, m, n
     integer :: npoint
 
@@ -586,6 +613,13 @@ contains
       return
     end if
 
+    denominator(1) = dimscale1(node1+1) - dimscale1(node1)
+    denominator(2) = dimscale2(node2+1) - dimscale2(node2)
+    denominator(3) = dimscale3(node3+1) - dimscale3(node3)
+    denominator(4) = dimscale4(node4+1) - dimscale4(node4)
+    denominator(5) = dimscale5(node5+1) - dimscale5(node5)
+    denominator(6) = dimscale6(node6+1) - dimscale6(node6)
+
     npoint = 0
     do i = node1, node1 + 1
       do j = node2, node2 + 1
@@ -596,17 +630,17 @@ contains
 
                 npoint = npoint + 1
 
-                distance(1) = (x1 - dimscale1(i)) / (dimscale1(node1+1) - dimscale1(node1))
+                distance(1) = (x1 - dimscale1(i)) / (denominator(1))
 
-                distance(2) = (x2 - dimscale2(j)) / (dimscale2(node2+1) - dimscale2(node2))
+                distance(2) = (x2 - dimscale2(j)) / (denominator(2))
 
-                distance(3) = (x3 - dimscale3(k)) / (dimscale3(node3+1) - dimscale3(node3))
+                distance(3) = (x3 - dimscale3(k)) / (denominator(3))
 
-                distance(4) = (x4 - dimscale4(l)) / (dimscale4(node4+1) - dimscale4(node4))
+                distance(4) = (x4 - dimscale4(l)) / (denominator(4))
 
-                distance(5) = (x5 - dimscale5(m)) / (dimscale5(node5+1) - dimscale5(node5))
+                distance(5) = (x5 - dimscale5(m)) / (denominator(5))
 
-                distance(6) = (x6 - dimscale6(n)) / (dimscale6(node6+1) - dimscale6(node6))
+                distance(6) = (x6 - dimscale6(n)) / (denominator(6))
 
                 distance = 1. - abs(distance)
 
@@ -660,6 +694,7 @@ contains
     integer :: node1, node2,node3,node4,node5,node6,node7
     REAL(SP), dimension(ndim) :: distance
     REAL(SP), dimension(2**ndim) :: weights, values
+    REAL(SP), dimension(7) :: denominator
     integer :: i, j, k, l, m, n, o
     integer :: npoint
 
@@ -691,6 +726,14 @@ contains
       return
     end if
 
+    denominator(1) = dimscale1(node1+1) - dimscale1(node1)
+    denominator(2) = dimscale2(node2+1) - dimscale2(node2)
+    denominator(3) = dimscale3(node3+1) - dimscale3(node3)
+    denominator(4) = dimscale4(node4+1) - dimscale4(node4)
+    denominator(5) = dimscale5(node5+1) - dimscale5(node5)
+    denominator(6) = dimscale6(node6+1) - dimscale6(node6)
+    denominator(7) = dimscale7(node7+1) - dimscale7(node7)
+
     npoint = 0
     do i = node1, node1 + 1
       do j = node2, node2 + 1
@@ -702,19 +745,19 @@ contains
 
                   npoint = npoint + 1
 
-                  distance(1) = (x1 - dimscale1(i)) / (dimscale1(node1+1) - dimscale1(node1))
+                  distance(1) = (x1 - dimscale1(i)) / (denominator(1))
 
-                  distance(2) = (x2 - dimscale2(j)) / (dimscale2(node2+1) - dimscale2(node2))
+                  distance(2) = (x2 - dimscale2(j)) / (denominator(2))
 
-                  distance(3) = (x3 - dimscale3(k)) / (dimscale3(node3+1) - dimscale3(node3))
+                  distance(3) = (x3 - dimscale3(k)) / (denominator(3))
 
-                  distance(4) = (x4 - dimscale4(l)) / (dimscale4(node4+1) - dimscale4(node4))
+                  distance(4) = (x4 - dimscale4(l)) / (denominator(4))
 
-                  distance(5) = (x5 - dimscale5(m)) / (dimscale5(node5+1) - dimscale5(node5))
+                  distance(5) = (x5 - dimscale5(m)) / (denominator(5))
 
-                  distance(6) = (x6 - dimscale6(n)) / (dimscale6(node6+1) - dimscale6(node6))
+                  distance(6) = (x6 - dimscale6(n)) / (denominator(6))
 
-                  distance(7) = (x7 - dimscale7(o)) / (dimscale7(node7+1) - dimscale7(node7))
+                  distance(7) = (x7 - dimscale7(o)) / (denominator(7))
 
                   distance = 1. - abs(distance)
 
