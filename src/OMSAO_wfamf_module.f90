@@ -374,7 +374,7 @@ CONTAINS
     REAL    (KIND=r8)                      :: rho, lhgt, aircolumn, clima_psurf
     REAL    (KIND=r8), DIMENSION (0:CmETA) :: lpre, level_press, clima_lpre
     REAL    (KIND=r8), DIMENSION (1:CmETA) :: ltmp, lh2o, lgas, re_tmp, re_h2o, re_gas, &
-         layer_press, clima_layer_press, clima_local_heights, local_heights
+         layer_press, clima_layer_press
     REAL    (KIND=r8) :: thish2omxr, Mwet, Rwet, detlnp
 
     ! -----------------------
@@ -439,18 +439,15 @@ CONTAINS
           ! Ap(1:CmEp1) & Bp(1:CmEp1) are coeff at layer boundary for pressure
           ! calculation
           DO ilevel = 0, CmETA
-             lpre(CmETA-ilevel) = (Ap(ilevel+1) + local_psurf(ixtrack,itimes) * Bp(ilevel+1))*1.E2 ! Pa
-             clima_lpre(CmETA-ilevel) = (Ap(ilevel+1) + clima_psurf * Bp(ilevel+1))*1.E2 ! Pa
+             lpre(CmETA-ilevel) = (Ap(ilevel+1) + local_psurf(ixtrack,itimes) * Bp(ilevel+1))*1.D2 ! Pa
+             clima_lpre(CmETA-ilevel) = (Ap(ilevel+1) + clima_psurf * Bp(ilevel+1))*1.D2 ! Pa
           END DO
 
 
-          ! layer_press(1:CmETA) are pressure at layer centers in Pa
-          ! local_heights are pressures in hPa at layer centers (I should get rid of this variable)
+          ! layer_press(1:CmETA) are pressure at layer centers in hPa
           DO ilevel = 1, CmETA ! for layer center
-             layer_press(ilevel) = (lpre(ilevel-1) + lpre(ilevel))/2.0 ! Pa
-             local_heights(ilevel)  = layer_press(ilevel)/1.E2 ! hPa
-             clima_layer_press(ilevel) = (clima_lpre(ilevel-1) + clima_lpre(ilevel))/2.0 ! Pa
-             clima_local_heights(ilevel)  = clima_layer_press(ilevel)/1.E2 ! hPa
+             layer_press(ilevel) = DLOG((lpre(ilevel-1) + lpre(ilevel))/2.0/1.D2) ! hPa
+             clima_layer_press(ilevel) = DLOG((clima_lpre(ilevel-1) + clima_lpre(ilevel))/2.0/1.D2) ! Pa
              re_tmp(ilevel) = Temperature(idx_lon,idx_lat,CmETA+1-ilevel)
              re_gas(ilevel) = Gas_profiles(idx_lon,idx_lat,CmETA+1-ilevel)
              re_h2o(ilevel) = H2O_profiles(idx_lon,idx_lat,CmETA+1-ilevel)
@@ -460,18 +457,12 @@ CONTAINS
           ! Interpolate temperature, gas and h2o profiles from clima_local_heights to local_heights
           ! ---------------------------------------------------------------------------------------
           DO ilevel = 1, CmETA
-             CALL ezspline_1d_interpolation (INT(CmETA,KIND=i4), clima_local_heights, &
-                  re_tmp, &
-                  one, local_heights(ilevel), &
-                  ltmp(ilevel), status)
-             CALL ezspline_1d_interpolation (INT(CmETA,KIND=i4), clima_local_heights, &
-                  re_gas, &
-                  one, local_heights(ilevel), &
-                  lgas(ilevel), status)
-             CALL ezspline_1d_interpolation (INT(CmETA,KIND=i4), clima_local_heights, &
-                  re_h2o, &
-                  one, local_heights(ilevel), &
-                  lh2o(ilevel), status)
+             ltmp(ilevel) = linInterpol( CmETA, clima_layer_press(1:CmETA), &
+                  re_tmp(1:CmETA), layer_press(ilevel), status=status)
+             lgas(ilevel) = linInterpol( CmETA, clima_layer_press(1:CmETA), &
+                  re_gas(1:CmETA), layer_press(ilevel), status=status)
+             lh2o(ilevel) = linInterpol( CmETA, clima_layer_press(1:CmETA), &
+                  re_h2o(1:CmETA), layer_press(ilevel), status=status)
           END DO         
          
           ! -------------------
@@ -498,7 +489,7 @@ CONTAINS
              detlnp = log(lpre(n)) - log(lpre(n1))
              lhgt = Rwet * ltmp(n) * detlnp / gplanet ! meter
              
-             rho                = layer_press(n) / ltmp(n) / Rstar 
+             rho                = DEXP(layer_press(n)) / ltmp(n) / Rstar 
              aircolumn          = rho*lhgt*Navogadro*1.0E-4 ! # air/cm^2
              
              ! -------------------------------------------------------------
