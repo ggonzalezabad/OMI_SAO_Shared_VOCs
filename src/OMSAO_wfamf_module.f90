@@ -69,9 +69,9 @@ MODULE OMSAO_wfamf_module
   CHARACTER(LEN=5), DIMENSION(:),           ALLOCATABLE :: lut_toms
   REAL(KIND=r4),    DIMENSION(:,:),         ALLOCATABLE :: lut_pre_lay, &
        lut_pre_lay_cld
-  REAL(KIND=r4),    DIMENSION(:,:),         ALLOCATABLE :: lut_Sb_clr, lut_Sb_cld
+  REAL(KIND=r4),    DIMENSION(:,:),         ALLOCATABLE :: lut_Sb_clr
   REAL(KIND=r4),    DIMENSION(:,:,:,:),     ALLOCATABLE :: lut_I0_clr, lut_I1_clr, lut_I2_clr, lut_Ir_clr, &
-       lut_I0_cld, lut_I1_cld, lut_I2_cld, lut_Ir_cld
+       lut_I0_cld, lut_I1_cld, lut_I2_cld
   REAL(KIND=r4),    DIMENSION(:,:,:,:,:),   ALLOCATABLE :: lut_dI0_cld, lut_dI1_cld, lut_dI2_cld
   REAL(KIND=r4),    DIMENSION(:,:,:,:,:,:), ALLOCATABLE :: lut_dI0_clr, lut_dI1_clr, lut_dI2_clr
   ! To read the data:
@@ -269,19 +269,6 @@ CONTAINS
           ISCCP_CloudClim%ctp = r8_missval
        END IF
 
-       ! ---------------------------------------------------------------------
-       ! The climatology has already been read, inside omi_pge_fitting_process
-       ! Now it is only needed to interpolate to the pixels of the granule.
-       ! It was read there to obtain the dimensions of the number of levels.
-       ! ---------------------------------------------------------------------
-       CALL omi_climatology (climatology, cli_psurface, terrain_height, &
-            lat, lon, nt, nx, xtrange, locerrstat)
-       
-       ! -------------------------------------
-       ! Write the climatology to the he5 file
-       ! -------------------------------------
-       IF (yn_write) CALL write_climatology_he5 (climatology, cli_psurface, nt, nx, CmETA, locerrstat)
-
        ! ------------------------------------------------------------------
        ! Read VLIDORT look up table. Variables are declared at module level
        ! ------------------------------------------------------------------
@@ -296,12 +283,25 @@ CONTAINS
             MINVAL(lut_clp), MAXVAL(lut_clp), l2cfr, l2ctp,&
             amfdiag  )
 
+       ! ---------------------------------------------------------------------
+       ! The climatology has already been read, inside omi_pge_fitting_process
+       ! Now it is only needed to interpolate to the pixels of the granule.
+       ! It was read there to obtain the dimensions of the number of levels.
+       ! ---------------------------------------------------------------------
+       CALL omi_climatology (climatology, cli_psurface, terrain_height, &
+            lat, lon, nt, nx, amfdiag, locerrstat)
+       
+       ! -------------------------------------
+       ! Write the climatology to the he5 file
+       ! -------------------------------------
+       IF (yn_write) CALL write_climatology_he5 (climatology, cli_psurface, nt, nx, CmETA, locerrstat)
+
        ! --------------------------------------------------------
        ! Compute Scattering weights in the look up table grid but
        ! with the correct albedo. amfdiag is used to skip pixel
        ! ---------------------------------------------------------
-       CALL compute_scatt ( nt, nx, albedo, lat, sza, vza, saa, vaa, l2ctp, l2cfr, terrain_height, amfgeo, amfdiag, &
-            scattw)
+       CALL compute_scatt ( nt, nx, albedo, lat, sza, vza, saa, vaa, l2ctp, l2cfr, &
+            cli_psurface, amfgeo, amfdiag, scattw)
 
        ! ----------------------------
        ! Deallocate Vlidort variables
@@ -344,13 +344,14 @@ CONTAINS
   END SUBROUTINE amf_calculation
   
   SUBROUTINE omi_climatology (climatology, local_psurf, terrain_height, &
-                              lat, lon, nt, nx, xtrange, locerrstat)
+                              lat, lon, nt, nx, amfdiag, locerrstat)
 
     ! =========================================
     ! Extract Gas climatology to granule pixels
     ! No interpolation or something like that,
     ! Just pick the closest model grid
     ! =========================================
+    USE OMSAO_omidata_module,   ONLY: omi_oob_cli
     IMPLICIT NONE
 
     ! ---------------
@@ -358,11 +359,11 @@ CONTAINS
     ! ---------------
     INTEGER (KIND=i4),                          INTENT (IN) :: nt, nx
     REAL    (KIND=r4), DIMENSION (1:nx,0:nt-1), INTENT (IN) :: lat, lon, terrain_height
-    INTEGER (KIND=i4), DIMENSION (0:nt-1,1:2),  INTENT (IN) :: xtrange
 
     ! ------------------
     ! Modified variables
     ! ------------------
+    INTEGER (KIND=i2), DIMENSION (01:nx,0:nt-1), INTENT (INOUT) :: amfdiag
     INTEGER (KIND=i4),                                INTENT (INOUT) :: locerrstat
     REAL    (KIND=r8), DIMENSION(1:nx,0:nt-1, CmETA), INTENT (INOUT) :: climatology
     REAL    (KIND=r8), DIMENSION(1:nx,0:nt-1),        INTENT (INOUT) :: local_psurf  
@@ -403,13 +404,14 @@ CONTAINS
     ! ------------------------------------------------------------
     DO itimes = 0, nt-1
 
-       spix = xtrange(itimes,1); epix = xtrange(itimes,2)
-       DO ixtrack = spix, epix
+       DO ixtrack = 1, nx
 
           IF (lon(ixtrack,itimes) .LT. -180.0_r4 .OR. &
               lat(ixtrack,itimes) .LT.  -90.0_r4 .OR. &
               lon(ixtrack,itimes) .GT.  180.0_r4 .OR. &
-              lat(ixtrack,itimes) .GT.  90.0_r4) CYCLE
+              lat(ixtrack,itimes) .GT.  90.0_r4) amfdiag(ixtrack,itimes) = omi_oob_cli
+
+          IF (amfdiag(ixtrack,itimes) .LT. 0) CYCLE
 
           ! ----------------------------------------------------
           ! Just selecting the closest location to lat lon pixel
@@ -433,6 +435,13 @@ CONTAINS
                REAL(lon(ixtrack,itimes),KIND=8), REAL(lat(ixtrack,itimes),KIND=8), &
                status=status)
           clima_psurf = Psurface(idx_lon, idx_lat)
+
+          ! ----------------------------------------------
+          ! To avoid problems with interpolation if 
+          ! clima_psurf < local_psurf(ixtrack,itimes) then
+          ! clima_psurf = local_psurf(ixtrack,itimes)
+          ! ----------------------------------------------
+          IF (clima_psurf .LT. local_psurf(ixtrack,itimes)) clima_psurf = local_psurf(ixtrack,itimes)
           
           ! lpre(0:CmETA) is pressure at layer boundaries, same unit as
           ! local_surf, convert from hPa to Pa, it is a CmETA+1 = CmEp1 array
@@ -1338,8 +1347,6 @@ CONTAINS
        ALLOCATE (lut_I0_cld(1:anozo,1:ancld,1:anvza,1:ansza), STAT=estat)
        ALLOCATE (lut_I1_cld(1:anozo,1:ancld,1:anvza,1:ansza), STAT=estat)
        ALLOCATE (lut_I2_cld(1:anozo,1:ancld,1:anvza,1:ansza), STAT=estat)
-       ALLOCATE (lut_Ir_cld(1:anozo,1:ancld,1:anvza,1:ansza), STAT=estat)
-       ALLOCATE (lut_Sb_cld(1:anozo,1:ancld),                 STAT=estat)
        
        ALLOCATE (lut_dI0_clr(1:anozo,1:ansrf,1:anlay,1:analb,1:anvza,1:ansza), STAT=estat)
        ALLOCATE (lut_dI1_clr(1:anozo,1:ansrf,1:anlay,1:analb,1:anvza,1:ansza), STAT=estat)
@@ -1371,8 +1378,6 @@ CONTAINS
        IF ( ALLOCATED ( lut_I0_cld ) ) DEALLOCATE ( lut_I0_cld )
        IF ( ALLOCATED ( lut_I1_cld ) ) DEALLOCATE ( lut_I1_cld )
        IF ( ALLOCATED ( lut_I2_cld ) ) DEALLOCATE ( lut_I2_cld )
-       IF ( ALLOCATED ( lut_Ir_cld ) ) DEALLOCATE ( lut_Ir_cld )
-       IF ( ALLOCATED ( lut_Sb_cld ) ) DEALLOCATE ( lut_Sb_cld )
        
        IF ( ALLOCATED ( lut_dI0_clr ) ) DEALLOCATE ( lut_dI0_clr ) 
        IF ( ALLOCATED ( lut_dI1_clr ) ) DEALLOCATE ( lut_dI1_clr ) 
@@ -1963,8 +1968,9 @@ CONTAINS
     ! ---------------
     INTEGER (KIND=i4),                                INTENT (IN) :: nt, nx
     INTEGER (KIND=i2), DIMENSION (1:nx,0:nt-1),       INTENT (IN) :: amfdiag
-    REAL    (KIND=r4), DIMENSION (1:nx,0:nt-1),       INTENT (IN) :: lat, sza, vza, saa, vaa, terrain_height
-    REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1),       INTENT (IN) :: albedo, l2ctp, l2cfr, amfgeo
+    REAL    (KIND=r4), DIMENSION (1:nx,0:nt-1),       INTENT (IN) :: lat, sza, vza, saa, vaa
+    REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1),       INTENT (IN) :: albedo, l2ctp, l2cfr, &
+         amfgeo, terrain_height
 
     ! ------------------
     ! Modified variables
@@ -1981,22 +1987,13 @@ CONTAINS
     REAL    (KIND=r8) :: crf, nwavs
     REAL    (KIND=r8), DIMENSION(1), PARAMETER :: one_r8 =(/1.0_r8/)
     REAL    (KIND=r8), DIMENSION(srf_dim(1), vza_dim(1), sza_dim(1)) :: Inte_clear_3D
-    REAL    (KIND=r8), DIMENSION(vza_dim(1), sza_dim(1))             :: Inte_clear_2D
-    REAL    (KIND=r8), DIMENSION(sza_dim(1))                         :: Inte_clear_1D
     REAL    (KIND=r8), DIMENSION(1)                                  :: Radiance_clr
     REAL    (KIND=r8), DIMENSION(clp_dim(1), vza_dim(1), sza_dim(1)) :: Inte_cloud_3D
-    REAL    (KIND=r8), DIMENSION(vza_dim(1), sza_dim(1))             :: Inte_cloud_2D
-    REAL    (KIND=r8), DIMENSION(sza_dim(1))                         :: Inte_cloud_1D
     REAL    (KIND=r8), DIMENSION(1)                                  :: Radiance_cld
     REAL    (KIND=r8), DIMENSION(srf_dim(1),alt_lay_dim(2),alb_dim(1),vza_dim(1),sza_dim(1)) :: sw_clear_5D
-    REAL    (KIND=r8), DIMENSION(srf_dim(1),alt_lay_dim(2),vza_dim(1),sza_dim(1))            :: sw_clear_4D
-    REAL    (KIND=r8), DIMENSION(alt_lay_dim(2),vza_dim(1),sza_dim(1))                       :: sw_clear_3D
-    REAL    (KIND=r8), DIMENSION(alt_lay_dim(2),sza_dim(1))                                  :: sw_clear_2D
     REAL    (KIND=r8), DIMENSION(alt_lay_dim(2))                                             :: sw_clear_1D
     REAL    (KIND=r8), DIMENSION(ngeos5-1)                                                   :: sw_clear
     REAL    (KIND=r8), DIMENSION(alt_lay_dim(2),clp_dim(1),vza_dim(1),sza_dim(1)) :: sw_cloud_4D
-    REAL    (KIND=r8), DIMENSION(alt_lay_dim(2),vza_dim(1),sza_dim(1))            :: sw_cloud_3D
-    REAL    (KIND=r8), DIMENSION(alt_lay_dim(2),sza_dim(1))                       :: sw_cloud_2D
     REAL    (KIND=r8), DIMENSION(alt_lay_dim(2))                                  :: sw_cloud_1D
     REAL    (KIND=r8), DIMENSION(ngeos5-1)                                        :: sw_cloud
     REAL    (KIND=r8), DIMENSION(alt_lay_dim(2)) :: re_alt
@@ -2010,9 +2007,9 @@ CONTAINS
     REAL    (KIND=r8), DIMENSION(ngeos5)         :: local_lev_pre
     REAL    (KIND=r8), DIMENSION(ngeos5-1)       :: local_lay_pre
     REAL    (KIND=r8), DIMENSION(srf_dim(1),alt_lay_dim(2)) :: re_pre_2D, re_pre_cld_2D
-    REAL    (KIND=r8), DIMENSION(alt_lay_dim(2))            :: lay_pre_1D, lay_pre_cld_1D
+    REAL    (KIND=r8), DIMENSION(alt_lay_dim(2))            :: lay_pre_cld_1D
     REAL    (KIND=r8), PARAMETER :: d2r = 3.141592653589793d0/180.0  !! JED fix
-
+    REAL    (KIND=r8), DIMENSION(1) :: cosRAA, cos2RAA
     ! To select TOMS profile
     REAL    (KIND=r8), PARAMETER :: du  = 2.69e16 ! molecules/cm^2
     INTEGER (KIND=i4)  :: toms_idx
@@ -2037,18 +2034,18 @@ CONTAINS
     ! look up tables
     ! ------------------------------- ------------------------
     DO isza = 1, sza_dim(1)
-       re_sza(isza) = cos(d2r*REAL(lut_sza(sza_dim(1)+1-isza), KIND = r8))  ! JED fix
+       re_sza(isza) = dcos(d2r*REAL(lut_sza(sza_dim(1)+1-isza), KIND = r8))  ! JED fix
     END DO
     DO ivza = 1, vza_dim(1)
-       re_vza(ivza) = cos(d2r*REAL(lut_vza(vza_dim(1)+1-ivza), KIND = r8)) ! JED fix
+       re_vza(ivza) = dcos(d2r*REAL(lut_vza(vza_dim(1)+1-ivza), KIND = r8)) ! JED fix
     END DO
     DO isrf = 1, srf_dim(1)
        re_srf(isrf) = REAL(lut_srf(srf_dim(1)+1-isrf), KIND = r8)
-       re_pre_2D(isrf,1:alt_lay_dim(2)) = lut_pre_lay(srf_dim(1)+1-isrf,1:alt_lay_dim(2))
+       re_pre_2D(isrf,1:alt_lay_dim(2)) = REAL(lut_pre_lay(srf_dim(1)+1-isrf,1:alt_lay_dim(2)),KIND=r8)
     END DO
     DO icld = 1, clp_dim(1)
        re_cld(icld) = REAL(lut_clp(clp_dim(1)+1-icld), KIND = r8)
-       re_pre_cld_2D(icld,1:alt_lay_dim(2)) = lut_pre_lay_cld(clp_dim(1)+1-icld,1:alt_lay_dim(2))
+       re_pre_cld_2D(icld,1:alt_lay_dim(2)) = REAL(lut_pre_lay_cld(clp_dim(1)+1-icld,1:alt_lay_dim(2)),KIND=r8)
     END DO
     re_alb(1:alb_dim(1)) = REAL(lut_alb(1:alb_dim(1)), KIND = r8)
 
@@ -2116,17 +2113,13 @@ CONTAINS
           local_alb(1) = REAL(albedo(ixtrack,itime), KIND=r8)
           local_cld(1) = REAL(l2ctp(ixtrack,itime), KIND=r8)
           local_cfr(1) = REAL(l2cfr(ixtrack,itime), KIND=r8)
-          local_sza(1) = cos(d2r*local_sza(1))  ! JED fix
-          local_vza(1) = cos(d2r*REAL(vza(ixtrack,itime), KIND = r8))  ! JED fix
+          local_sza(1) = dcos(d2r*local_sza(1))  ! JED fix
+          local_vza(1) = dcos(d2r*REAL(vza(ixtrack,itime), KIND = r8))  ! JED fix
           local_raa(1) = d2r*REAL(raa,KIND = r8)
-          local_srf(1) = REAL(terrain_height(ixtrack,itime), KIND = r8)
+          local_srf(1) = terrain_height(ixtrack,itime)
 
-          ! ----------------------------------------------
-          ! Convert pixel terrain height to pressure using
-          ! Xiong suggested to use pressure altitude:
-          !  Z = -16 alog10 (P / Po) Z in km and P in hPa.
-          ! ----------------------------------------------
-          CALL ussa_press(local_srf(1) / 1000.0_r8, local_srf(1))
+          ! Compute cosRAA and cos2RAA
+          cosRAA(1) = dcos(d2r*local_raa(1)); cos2RAA(1) = dcos(d2r*2.0_r8*local_raa(1))
 
           !Bringing surface pressure to highest available in lookup table if needed
           !Current highest surface pressure is 1030 hPa.
@@ -2151,27 +2144,16 @@ CONTAINS
           END DO
           ! Layer
           DO ialt = 1, ngeos5-1 ! for layer center
-             local_lay_pre(ialt) = (local_lev_pre(ialt+1) + local_lev_pre(ialt))/2.0 ! hPa
+             local_lay_pre(ialt) = ((local_lev_pre(ialt+1) + local_lev_pre(ialt))/2.0) ! hPa
           END DO      
-          ! -----------------------
-          ! Interpolate lut_pre_lay
-          ! to local_srf(1)
-          ! -----------------------
-          DO ialt = 1, alt_lay_dim(2)
-             CALL ezspline_1d_interpolation (INT(srf_dim(1),KIND=i4), re_srf, &
-                  re_pre_2D(1:srf_dim(1),ialt), &
-                  one, local_srf(1), &
-                  lay_pre_1D(ialt), status)
-          END DO
+
           ! ---------------------------
           ! Interpolate lut_pre_lay_cld
           ! to local_cld(1)
           ! ---------------------------
           DO ialt = 1, alt_lay_dim(2)
-             CALL ezspline_1d_interpolation (INT(clp_dim(1),KIND=i4), re_cld, &
-                  re_pre_cld_2D(1:clp_dim(1),ialt), &
-                  one, local_cld(1), &
-                  lay_pre_cld_1D(ialt), status)
+             lay_pre_cld_1D(ialt) = linInterpol(INT(clp_dim(1),KIND=i4), re_cld, &
+                  re_pre_cld_2D(1:clp_dim(1),ialt), local_cld(1), status=status)
           END DO
 
           ! --------------------
@@ -2186,8 +2168,8 @@ CONTAINS
                    ! For the intensity the TOMRAD formula works perfect so we need no albedo loop
                    Inte_clear_3D(srf_dim(1)+1-isrf,vza_dim(1)+1-ivza,sza_dim(1)+1-isza) = &
                         REAL(lut_I0_clr(toms_idx,isrf,ivza,isza), KIND=r8)  +  &
-                        REAL(lut_I1_clr(toms_idx,isrf,ivza,isza), KIND=r8) * cos(local_raa(1))        + &
-                        REAL(lut_I2_clr(toms_idx,isrf,ivza,isza), KIND=r8) * cos(2.0_r8*local_raa(1))
+                        REAL(lut_I1_clr(toms_idx,isrf,ivza,isza), KIND=r8) * cosRAA(1)        + &
+                        REAL(lut_I2_clr(toms_idx,isrf,ivza,isza), KIND=r8) * cos2RAA(1)
                    Inte_clear_3D(srf_dim(1)+1-isrf,vza_dim(1)+1-ivza,sza_dim(1)+1-isza) = &
                         Inte_clear_3D(srf_dim(1)+1-isrf,vza_dim(1)+1-ivza,sza_dim(1)+1-isza) + &
                         REAL(lut_Ir_clr(toms_idx,isrf,ivza,isza), KIND=r8) * local_alb(1) / &
@@ -2199,49 +2181,27 @@ CONTAINS
                 DO icld = 1, clp_dim(1)
                    Inte_cloud_3D(clp_dim(1)+1-icld,vza_dim(1)+1-ivza,sza_dim(1)+1-isza) = &
                         REAL(lut_I0_cld(toms_idx,icld,ivza,isza), KIND=r8)  +  &
-                        REAL(lut_I1_cld(toms_idx,icld,ivza,isza), KIND=r8) * cos(local_raa(1))      + &
-                        REAL(lut_I2_cld(toms_idx,icld,ivza,isza), KIND=r8) * cos(2.0_r8*local_raa(1))
+                        REAL(lut_I1_cld(toms_idx,icld,ivza,isza), KIND=r8) * cosRAA(1)      + &
+                        REAL(lut_I2_cld(toms_idx,icld,ivza,isza), KIND=r8) * cos2RAA(1)
                 ENDDO ! End cloud loop
-                ! ----------------------------------------------
-                ! Interpolate clear sky part to surface pressure
-                ! ----------------------------------------------
-                CALL ezspline_1d_interpolation (INT(srf_dim(1),KIND=i4), re_srf, &
-                     Inte_clear_3D(1:srf_dim(1),vza_dim(1)+1-ivza,sza_dim(1)+1-isza), &
-                     one, local_srf(1), &
-                     Inte_clear_2D(vza_dim(1)+1-ivza,sza_dim(1)+1-isza), status)
-                ! --------------------------------------------
-                ! Interpolate cloud sky part to cloud pressure
-                ! --------------------------------------------
-                CALL ezspline_1d_interpolation (INT(clp_dim(1),KIND=i4), re_cld, &
-                     Inte_cloud_3D(1:clp_dim(1),vza_dim(1)+1-ivza,sza_dim(1)+1-isza), &
-                     one, local_cld(1), &
-                     Inte_cloud_2D(vza_dim(1)+1-ivza,sza_dim(1)+1-isza), status)
              ENDDO ! End VZA loop
-             ! ------------------
-             ! Interpolate to VZA
-             ! ------------------
-             CALL ezspline_1d_interpolation (INT(vza_dim(1),KIND=i4), re_vza, &
-                  Inte_clear_2D(1:vza_dim(1),sza_dim(1)+1-isza), &
-                  one, local_vza(1), &
-                  Inte_clear_1D(sza_dim(1)+1-isza), status)
-             CALL ezspline_1d_interpolation (INT(vza_dim(1),KIND=i4), re_vza, &
-                  Inte_cloud_2D(1:vza_dim(1),sza_dim(1)+1-isza), &
-                  one, local_vza(1), &
-                  Inte_cloud_1D(sza_dim(1)+1-isza), status)
           ENDDO ! End SZA loop
           Radiance_clr(1) = 0.0_r8
           Radiance_cld(1) = 0.0_r8
-          ! ------------------
-          ! Interpolate to SZA
-          ! ------------------
-          CALL ezspline_1d_interpolation (INT(sza_dim(1),KIND=i4), re_sza, &
-               Inte_clear_1D(1:sza_dim(1)), &
-               one, local_sza(1), &
-               Radiance_clr(1), status)
-          CALL ezspline_1d_interpolation (INT(sza_dim(1),KIND=i4), re_sza, &
-               Inte_cloud_1D(1:sza_dim(1)), &
-               one, local_sza(1), &
-               Radiance_cld(1), status)
+          ! ----------------------------------
+          ! Interpolate to SRF, CLD, VZA & SZA
+          ! ----------------------------------
+          Radiance_clr(1) = linInterpol(&
+               INT(srf_dim(1),KIND=i4),INT(vza_dim(1),KIND=i4),INT(sza_dim(1),KIND=i4), &
+               re_srf, re_vza, re_sza, &
+               Inte_clear_3D(1:srf_dim(1),1:vza_dim(1),1:sza_dim(1)), &
+               local_srf(1), local_vza(1), local_sza(1), status=status)
+          Radiance_cld(1) = linInterpol(&
+               INT(clp_dim(1),KIND=i4),INT(vza_dim(1),KIND=i4),INT(sza_dim(1),KIND=i4), &
+               re_cld, re_vza, re_sza, &
+               Inte_cloud_3D(1:clp_dim(1),1:vza_dim(1),1:sza_dim(1)), &
+               local_cld(1), local_vza(1), local_sza(1), status=status)
+
           ! ---------------------------------------
           ! Working out the cloud radiance fraction
           ! See note below, Boersma et al. 2011 and
@@ -2268,16 +2228,9 @@ CONTAINS
                       DO ialb = 1, alb_dim(1)
                          sw_clear_5D(srf_dim(1)+1-isrf,ialt,ialb,vza_dim(1)+1-ivza,sza_dim(1)+1-isza) = &
                               REAL( lut_dI0_clr(toms_idx,isrf,ialt,ialb,ivza,isza), KIND=r8 ) + &
-                              REAL( lut_dI1_clr(toms_idx,isrf,ialt,ialb,ivza,isza), KIND=r8 ) * cos( local_raa(1) ) + &
-                              REAL( lut_dI2_clr(toms_idx,isrf,ialt,ialb,ivza,isza), KIND=r8 ) * cos(2.0_r8 * local_raa(1) )
+                              REAL( lut_dI1_clr(toms_idx,isrf,ialt,ialb,ivza,isza), KIND=r8 ) * cosRAA(1) + &
+                              REAL( lut_dI2_clr(toms_idx,isrf,ialt,ialb,ivza,isza), KIND=r8 ) * cos2RAA(1)
                       END DO
-                      ! ---------------------------
-                      ! Interpolate to local albedo
-                      ! ---------------------------
-                      sw_clear_4D(srf_dim(1)+1-isrf,ialt,vza_dim(1)+1-ivza,sza_dim(1)+1-isza) = &
-                           linInterpol(INT(alb_dim(1),KIND=i4), re_alb, &
-                           sw_clear_5D(srf_dim(1)+1-isrf,ialt,1:alb_dim(1),vza_dim(1)+1-ivza,sza_dim(1)+1-isza), &
-                           local_alb(1), status=status)
                    END DO
                    ! --------------------------------------
                    ! Cloud sky
@@ -2285,49 +2238,29 @@ CONTAINS
                    DO icld = 1, clp_dim(1)
                       sw_cloud_4D(ialt,clp_dim(1)+1-icld,vza_dim(1)+1-ivza,sza_dim(1)+1-isza) = &
                            REAL( lut_dI0_cld(toms_idx,ialt,icld,ivza,isza), KIND=r8 ) + &
-                           REAL( lut_dI1_cld(toms_idx,ialt,icld,ivza,isza), KIND=r8 ) * cos( local_raa(1) ) + &
-                           REAL( lut_dI2_cld(toms_idx,ialt,icld,ivza,isza), KIND=r8 ) * cos(2.0_r8 * local_raa(1) )
+                           REAL( lut_dI1_cld(toms_idx,ialt,icld,ivza,isza), KIND=r8 ) * cosRAA(1) + &
+                           REAL( lut_dI2_cld(toms_idx,ialt,icld,ivza,isza), KIND=r8 ) * cos2RAA(1)
                    END DO
-                   ! -------------------------------------
-                   ! Interpolate to local surface pressure
-                   ! If cloud pressure is greater than
-                   ! surface pressure then cloud SW are to
-                   ! be cero.
-                   ! -------------------------------------
-                CALL ezspline_1d_interpolation (INT(srf_dim(1),KIND=i4), re_srf, &
-                     sw_clear_4D(1:srf_dim(1),ialt,vza_dim(1)+1-ivza,sza_dim(1)+1-isza), &
-                     one, local_srf(1), &
-                     sw_clear_3D(ialt,vza_dim(1)+1-ivza,sza_dim(1)+1-isza), status)
-                CALL ezspline_1d_interpolation (INT(clp_dim(1),KIND=i4), re_cld, &
-                     sw_cloud_4D(ialt,1:clp_dim(1),vza_dim(1)+1-ivza,sza_dim(1)+1-isza), &
-                     one, local_cld(1), &
-                     sw_cloud_3D(ialt,vza_dim(1)+1-ivza,sza_dim(1)+1-isza), status)
                 END DO ! End VZA loop
-                ! ------------------------
-                ! Interpolate to local VZA
-                ! ------------------------
-                CALL ezspline_1d_interpolation (INT(vza_dim(1),KIND=i4), re_vza, &
-                     sw_clear_3D(ialt,1:vza_dim(1),sza_dim(1)+1-isza), &
-                     one, local_vza(1), &
-                     sw_clear_2D(ialt,sza_dim(1)+1-isza), status)
-                CALL ezspline_1d_interpolation (INT(vza_dim(1),KIND=i4), re_vza, &
-                     sw_cloud_3D(ialt,1:vza_dim(1),sza_dim(1)+1-isza), &
-                     one, local_vza(1), &
-                     sw_cloud_2D(ialt,sza_dim(1)+1-isza), status)
              END DO ! End SZA angle 
-             ! ------------------------
-             ! Interpolate to local SZA
-             ! ------------------------
-             CALL ezspline_1d_interpolation (INT(sza_dim(1),KIND=i4), re_sza, &
-                  sw_clear_2D(ialt,1:sza_dim(1)), &
-                  one, local_sza(1), &
-                  sw_clear_1D(ialt), status)
-             CALL ezspline_1d_interpolation (INT(sza_dim(1),KIND=i4), re_sza, &
-                  sw_cloud_2D(ialt,1:sza_dim(1)), &
-                  one, local_sza(1), &
-                  sw_cloud_1D(ialt), status)
+             ! --------------------------------------------------------
+             ! Interpolation:
+             ! - Clear sky: local_srf, local_alb, local_vza & local_sza
+             ! - Cloud sky: local_cld, local_vza & local_sza
+             ! --------------------------------------------------------
+             sw_clear_1D(ialt) = &
+                  linInterpol(INT(srf_dim(1),KIND=i4), INT(alb_dim(1),KIND=i4), &
+                  INT(vza_dim(1), KIND=i4), INT(sza_dim(1),KIND=i4), &
+                  re_srf, re_alb, re_vza, re_sza, &
+                  sw_clear_5D(1:srf_dim(1),ialt,1:alb_dim(1),1:vza_dim(1),1:sza_dim(1)), &
+                  local_srf(1), local_alb(1), local_vza(1), local_sza(1), status=status)
+             sw_cloud_1D(ialt) = &
+                  linInterpol(INT(clp_dim(1),KIND=i4), INT(vza_dim(1),KIND=i4), &
+                  INT(sza_dim(1),KIND=i4), &
+                  re_cld, re_vza, re_sza, &
+                  sw_cloud_4D(ialt,1:clp_dim(1),1:vza_dim(1),1:sza_dim(1)), &
+                  local_cld(1), local_vza(1), local_sza(1), status=status)
           END DO ! End alt layer loop
-
           ! --------------------------------
           ! Finally interpolate to local_pre
           ! work out from local_srf(1) and
@@ -2724,7 +2657,7 @@ SUBROUTINE read_lookup_table (errstat)
     INTEGER(HID_T) :: input_file_id                                  ! File identifier
     INTEGER(HID_T) :: alb_did, srf_did, clp_did, sza_did, toz_did, vza_did, wav_did, & ! Dataset identifiers
          I0_clr_did, I1_clr_did, I2_clr_did, Ir_clr_did, Sb_clr_did,        &
-         I0_cld_did, I1_cld_did, I2_cld_did, Ir_cld_did, Sb_cld_did,        &
+         I0_cld_did, I1_cld_did, I2_cld_did, &
          dI0_clr_did, dI1_clr_did, dI2_clr_did, & 
          dI0_cld_did, dI1_cld_did, dI2_cld_did, & 
          pre_lay_did, &
@@ -2795,8 +2728,6 @@ SUBROUTINE read_lookup_table (errstat)
     CALL h5dopen_f(input_file_id,'/Intensity/Cloud Sky/I0', I0_cld_did, hdferr)
     CALL h5dopen_f(input_file_id,'/Intensity/Cloud Sky/I1', I1_cld_did, hdferr)
     CALL h5dopen_f(input_file_id,'/Intensity/Cloud Sky/I2', I2_cld_did, hdferr)
-    CALL h5dopen_f(input_file_id,'/Intensity/Cloud Sky/Ir', Ir_cld_did, hdferr)
-    CALL h5dopen_f(input_file_id,'/Intensity/Cloud Sky/Sb', Sb_cld_did, hdferr)
     
     CALL h5dopen_f(input_file_id,'/Profiles/Pressure Layer', pre_lay_did, hdferr)
     CALL h5dopen_f(input_file_id,'/Profiles/Cloud pressure Layer', pre_lay_cld_did, hdferr)
@@ -2833,8 +2764,6 @@ SUBROUTINE read_lookup_table (errstat)
 
     CALL h5dget_space_f(Sb_clr_did,dspace,hdferr)
     CALL h5sget_simple_extent_dims_f (dspace, Sb_clr_dim, Sb_clr_maxdim, hdferr)
-    CALL h5dget_space_f(Sb_cld_did,dspace,hdferr)
-    CALL h5sget_simple_extent_dims_f (dspace, Sb_cld_dim, Sb_cld_maxdim, hdferr)
 
     CALL h5dget_space_f(dI0_clr_did,dspace,hdferr)
     CALL h5sget_simple_extent_dims_f (dspace, dI0_clr_dim, dI0_clr_maxdim, hdferr)
@@ -2879,10 +2808,6 @@ SUBROUTINE read_lookup_table (errstat)
          lut_I1_cld(1:toz_dim(1),1:clp_dim(1),1:vza_dim(1),1:sza_dim(1)), I0_cld_dim, hdferr)
     CALL h5dread_f(I2_cld_did, H5T_NATIVE_REAL, &
          lut_I2_cld(1:toz_dim(1),1:clp_dim(1),1:vza_dim(1),1:sza_dim(1)), I0_cld_dim, hdferr)
-    CALL h5dread_f(Ir_cld_did, H5T_NATIVE_REAL, &
-         lut_Ir_cld(1:toz_dim(1),1:clp_dim(1),1:vza_dim(1),1:sza_dim(1)), I0_cld_dim, hdferr)
-    CALL h5dread_f(Sb_cld_did, H5T_NATIVE_REAL, &
-         lut_Sb_cld(1:toz_dim(1),1:clp_dim(1)), Sb_cld_dim, hdferr)
 
     CALL h5dread_f(dI0_clr_did, H5T_NATIVE_REAL,  &
          lut_dI0_clr(1:toz_dim(1),1:srf_dim(1),1:alt_lay_dim(2),1:alb_dim(1),1:vza_dim(1),1:sza_dim(1)), &
@@ -2923,8 +2848,8 @@ SUBROUTINE read_lookup_table (errstat)
     CALL h5dclose_f(I0_clr_did, hdferr); CALL h5dclose_f(I0_cld_did, hdferr)
     CALL h5dclose_f(I1_clr_did, hdferr); CALL h5dclose_f(I1_cld_did, hdferr)
     CALL h5dclose_f(I2_clr_did, hdferr); CALL h5dclose_f(I2_cld_did, hdferr)
-    CALL h5dclose_f(Ir_clr_did, hdferr); CALL h5dclose_f(Ir_cld_did, hdferr)
-    CALL h5dclose_f(Sb_clr_did, hdferr); CALL h5dclose_f(Sb_cld_did, hdferr)
+    CALL h5dclose_f(Ir_clr_did, hdferr)
+    CALL h5dclose_f(Sb_clr_did, hdferr)
     
     CALL h5dclose_f(dI0_clr_did, hdferr); CALL h5dclose_f(dI0_cld_did, hdferr)
     CALL h5dclose_f(dI1_clr_did, hdferr); CALL h5dclose_f(dI1_cld_did, hdferr)

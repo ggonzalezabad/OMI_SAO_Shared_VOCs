@@ -42,8 +42,8 @@ MODULE OMSAO_omidata_module
   ! --------------------------------------------------------------------
   INTEGER (KIND=i2), PARAMETER :: &
        omi_cfr_addmiss = 1000, omi_ctp_addmiss = 2000, omi_glint_add = 10000, &
-       omi_oob_cfr     =  210, omi_oob_ctp     =  220, &
-       omi_geo_amf = -1, omi_oobview_amf = -2, omi_wfmod_amf = -9, omi_bigsza_amf = 500
+       omi_oob_cfr =  210, omi_oob_ctp     =  220, omi_oob_cli = -3, &
+       omi_geo_amf = -1,   omi_oobview_amf = -2, omi_wfmod_amf = -9, omi_bigsza_amf = 500
 
   ! -----------------------
   ! Arrays for OMI L1b data
