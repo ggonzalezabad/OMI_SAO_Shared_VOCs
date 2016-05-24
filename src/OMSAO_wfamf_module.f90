@@ -377,6 +377,7 @@ CONTAINS
     REAL    (KIND=r8), DIMENSION (1:CmETA) :: ltmp, lh2o, lgas, re_tmp, re_h2o, re_gas, &
          layer_press, clima_layer_press
     REAL    (KIND=r8) :: thish2omxr, Mwet, Rwet, detlnp
+    REAL    (KIND=r8), DIMENSION (1) :: local_lon, local_lat
 
     ! -----------------------
     ! Some physical constants
@@ -429,10 +430,20 @@ CONTAINS
           ! ---------------------------------------------------------
           ! For OMH2O I should use terrain heigh from the climatology
           ! ---------------------------------------------------------
+          ! To avoid erros with extrapolation in the climatology make
+          ! local_lon and local_lat with in the maximum and minimum
+          ! values of climatology grid
+          ! ---------------------------------------------------------
+          local_lon(1) = REAL(lon(ixtrack,itimes),KIND=8)
+          local_lat(1) = REAL(lat(ixtrack,itimes),KIND=8)
+          IF (local_lon(1) .LT. MINVAL(lonvals(1:Cmlon))) local_lon(1) = MINVAL(lonvals(1:Cmlon))
+          IF (local_lon(1) .GT. MAXVAL(lonvals(1:Cmlon))) local_lon(1) = MAXVAL(lonvals(1:Cmlon))
+          IF (local_lat(1) .LT. MINVAL(latvals(1:Cmlon))) local_lat(1) = MINVAL(latvals(1:Cmlon))
+          IF (local_lat(1) .GT. MAXVAL(latvals(1:Cmlon))) local_lat(1) = MAXVAL(latvals(1:Cmlon))
           local_psurf(ixtrack,itimes) = linInterpol(Cmlon, Cmlat, &
                lonvals(1:Cmlat), latvals(1:Cmlon), &
                Psurface(1:Cmlon,1:Cmlat), &
-               REAL(lon(ixtrack,itimes),KIND=8), REAL(lat(ixtrack,itimes),KIND=8), &
+               local_lon(1), local_lat(1), &
                status=status)
           clima_psurf = Psurface(idx_lon, idx_lat)
 
