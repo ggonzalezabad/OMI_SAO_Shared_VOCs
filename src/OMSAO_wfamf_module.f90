@@ -466,8 +466,8 @@ CONTAINS
 
           ! layer_press(1:CmETA) are pressure at layer centers in hPa
           DO ilevel = 1, CmETA ! for layer center
-             layer_press(ilevel) = DLOG((lpre(ilevel-1) + lpre(ilevel))/2.0/1.D2) ! hPa
-             clima_layer_press(ilevel) = DLOG((clima_lpre(ilevel-1) + clima_lpre(ilevel))/2.0/1.D2) ! Pa
+             layer_press(ilevel) = DLOG((lpre(ilevel-1) + lpre(ilevel))/2.0) ! Pa
+             clima_layer_press(ilevel) = DLOG((clima_lpre(ilevel-1) + clima_lpre(ilevel))/2.0) ! Pa
              re_tmp(ilevel) = Temperature(idx_lon,idx_lat,CmETA+1-ilevel)
              re_gas(ilevel) = Gas_profiles(idx_lon,idx_lat,CmETA+1-ilevel)
              re_h2o(ilevel) = H2O_profiles(idx_lon,idx_lat,CmETA+1-ilevel)
