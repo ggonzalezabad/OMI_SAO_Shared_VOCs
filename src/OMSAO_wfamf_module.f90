@@ -194,7 +194,7 @@ CONTAINS
     REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1)       :: amfgeo
     REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1)       :: l2cfr, l2ctp
     REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1)       :: albedo, cli_psurface
-    REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1,CmETA) :: climatology
+    REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1,CmETA) :: climatology, climatology_sd
     REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1,CmETA) :: scattw !, akernels
 
 
@@ -203,13 +203,14 @@ CONTAINS
     ! ------------------------------------
     ! Initialize variables that are output
     ! ------------------------------------
-    albedo       = r8_missval
-    climatology  = r8_missval
-    cli_psurface = r8_missval
-    scattw       = r8_missval
-    saoamf       = r8_missval
-    amfgeo       = r8_missval
-    amfdiag      = i2_missval
+    albedo         = r8_missval
+    climatology    = r8_missval
+    climatology_sd = r8_missval
+    cli_psurface   = r8_missval
+    scattw         = r8_missval
+    saoamf         = r8_missval
+    amfgeo         = r8_missval
+    amfdiag        = i2_missval
 
     ! -----------------------------------------
     ! If amf_wvl < 0.0 then the slant column is
@@ -288,7 +289,7 @@ CONTAINS
        ! Now it is only needed to interpolate to the pixels of the granule.
        ! It was read there to obtain the dimensions of the number of levels.
        ! ---------------------------------------------------------------------
-       CALL omi_climatology (climatology, cli_psurface, terrain_height, &
+       CALL omi_climatology (climatology, climatology_sd, cli_psurface, terrain_height, &
             lat, lon, nt, nx, amfdiag, locerrstat)
        
        ! -------------------------------------
@@ -314,7 +315,7 @@ CONTAINS
        ! Work out the AMF using the scattering weights and the climatology
        ! Work out Averaging Kernels
        ! -----------------------------------------------------------------
-       CALL compute_amf ( nt, nx, CmETA, climatology, &
+       CALL compute_amf ( nt, nx, CmETA, climatology, climatology_sd, &
             scattw, saoamf, amfdiag, locerrstat)
 
        ! -----------------------------------------------------------------
@@ -343,7 +344,7 @@ CONTAINS
     
   END SUBROUTINE amf_calculation
   
-  SUBROUTINE omi_climatology (climatology, local_psurf, terrain_height, &
+  SUBROUTINE omi_climatology (climatology, climatology_sd, local_psurf, terrain_height, &
                               lat, lon, nt, nx, amfdiag, locerrstat)
 
     ! =========================================
@@ -365,7 +366,7 @@ CONTAINS
     ! ------------------
     INTEGER (KIND=i2), DIMENSION (01:nx,0:nt-1), INTENT (INOUT) :: amfdiag
     INTEGER (KIND=i4),                                INTENT (INOUT) :: locerrstat
-    REAL    (KIND=r8), DIMENSION(1:nx,0:nt-1, CmETA), INTENT (INOUT) :: climatology
+    REAL    (KIND=r8), DIMENSION(1:nx,0:nt-1, CmETA), INTENT (INOUT) :: climatology, climatology_sd
     REAL    (KIND=r8), DIMENSION(1:nx,0:nt-1),        INTENT (INOUT) :: local_psurf  
 
     ! ---------------
@@ -513,13 +514,19 @@ CONTAINS
              aircolumn          = rho*lhgt*Navogadro*1.0E-4 ! # air/cm^2
              
              ! -------------------------------------------------------------
-             climatology(ixtrack,itimes,n) = aircolumn * lgas(n) /1.0E9 ! [GAS]/cm^2
+             climatology(ixtrack,itimes,n) = aircolumn * lgas(n) / 1.0E9 ! [GAS]/cm^2
           END DO
           
           !  Set non-physical entries to zero.
           WHERE ( climatology(ixtrack,itimes,1:CmETA) < 0.0_r8 )
              climatology(ixtrack,itimes,1:CmETA) = 0.0_r8
           END WHERE
+
+          !  Set non-physical entries to zero.
+          WHERE ( climatology_sd(ixtrack,itimes,1:CmETA) < 0.0_r8 )
+             climatology_sd(ixtrack,itimes,1:CmETA) = 0.0_r8
+          END WHERE
+
           
        END DO
     END DO
@@ -2339,7 +2346,7 @@ CONTAINS
     
   END SUBROUTINE COMPUTE_SCATT
 
-  SUBROUTINE compute_amf ( nt, nx, CmETA, climatology, &
+  SUBROUTINE compute_amf ( nt, nx, CmETA, climatology, climatology_sd, &
                            scattw, saoamf, amfdiag, errstat)
 
     IMPLICIT NONE
@@ -2348,7 +2355,7 @@ CONTAINS
     ! Input variables
     ! ---------------
     INTEGER (KIND=i4),                                INTENT(IN) :: nt, nx, CmETA
-    REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1,CmETA), INTENT(IN) :: climatology, scattw
+    REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1,CmETA), INTENT(IN) :: climatology, climatology_sd, scattw
     INTEGER (KIND=i2), DIMENSION (1:nx,0:nt-1),       INTENT(IN) :: amfdiag
 
     ! -----------------------------
@@ -2387,6 +2394,7 @@ CONTAINS
           saoamf(ixtrack,itimes) = SUM(scattw(ixtrack, itimes, 1:CmETA) * &
                                         climatology(ixtrack,itimes,1:CmETA))     / &
                                    SUM(climatology(ixtrack,itimes,1:CmETA))
+
        END DO ! Finish xtrack pixel loop
     END DO ! Finish 
     
