@@ -375,8 +375,8 @@ CONTAINS
     INTEGER (KIND=i4) :: itimes, ixtrack, spix, epix, idx_lat, idx_lon, ilevel, n, n1, one, status
     REAL    (KIND=r8)                      :: rho, lhgt, aircolumn, clima_psurf
     REAL    (KIND=r8), DIMENSION (0:CmETA) :: lpre, level_press, clima_lpre
-    REAL    (KIND=r8), DIMENSION (1:CmETA) :: ltmp, lh2o, lgas, re_tmp, re_h2o, re_gas, re_gas_sd, &
-         layer_press, clima_layer_press
+    REAL    (KIND=r8), DIMENSION (1:CmETA) :: ltmp, lh2o, lgas, lgas_sd, &
+         re_tmp, re_h2o, re_gas, re_gas_sd, layer_press, clima_layer_press
     REAL    (KIND=r8) :: thish2omxr, Mwet, Rwet, detlnp
     REAL    (KIND=r8), DIMENSION (1) :: local_lon, local_lat
 
@@ -471,17 +471,21 @@ CONTAINS
              clima_layer_press(ilevel) = DLOG((clima_lpre(ilevel-1) + clima_lpre(ilevel))/2.0) ! Pa
              re_tmp(ilevel) = Temperature(idx_lon,idx_lat,CmETA+1-ilevel)
              re_gas(ilevel) = Gas_profiles(idx_lon,idx_lat,CmETA+1-ilevel)
+             re_gas_sd(ilevel) = Gas_profiles_sd(idx_lon,idx_lat,CmETA+1-ilevel)
              re_h2o(ilevel) = H2O_profiles(idx_lon,idx_lat,CmETA+1-ilevel)
           END DO
 
-          ! ---------------------------------------------------------------------------------------
-          ! Interpolate temperature, gas and h2o profiles from clima_local_heights to local_heights
-          ! ---------------------------------------------------------------------------------------
+          ! ----------------------------------------------------------
+          ! Interpolate temperature, gas, gas standard deviation
+          ! and h2o profiles from clima_local_heights to local_heights
+          ! ----------------------------------------------------------
           DO ilevel = 1, CmETA
              ltmp(ilevel) = linInterpol( CmETA, clima_layer_press(1:CmETA), &
                   re_tmp(1:CmETA), layer_press(ilevel), status=status)
              lgas(ilevel) = linInterpol( CmETA, clima_layer_press(1:CmETA), &
                   re_gas(1:CmETA), layer_press(ilevel), status=status)
+             lgas_sd(ilevel) = linInterpol( CmETA, clima_layer_press(1:CmETA), &
+                  re_gas_sd(1:CmETA), layer_press(ilevel), status=status)
              lh2o(ilevel) = linInterpol( CmETA, clima_layer_press(1:CmETA), &
                   re_h2o(1:CmETA), layer_press(ilevel), status=status)
           END DO         
@@ -515,6 +519,7 @@ CONTAINS
              
              ! -------------------------------------------------------------
              climatology(ixtrack,itimes,n) = aircolumn * lgas(n) / 1.0E9 ! [GAS]/cm^2
+             climatology_sd(ixtrack,itimes,n) = aircolumn * lgas_sd(n) / 1.0E9 ! [GAS]/cm^2
           END DO
           
           !  Set non-physical entries to zero.
@@ -527,7 +532,6 @@ CONTAINS
              climatology_sd(ixtrack,itimes,1:CmETA) = 0.0_r8
           END WHERE
 
-          
        END DO
     END DO
 
