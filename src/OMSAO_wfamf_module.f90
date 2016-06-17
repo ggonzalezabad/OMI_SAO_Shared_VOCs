@@ -57,7 +57,7 @@ MODULE OMSAO_wfamf_module
   ! ---------------------------------------
   REAL(KIND=r8), DIMENSION(:),     ALLOCATABLE :: latvals, lonvals
   REAL(KIND=r8), DIMENSION(:,:),   ALLOCATABLE :: Psurface
-  REAL(KIND=r8), DIMENSION(:,:,:), ALLOCATABLE :: Temperature, Gas_profiles, H2O_profiles
+  REAL(KIND=r8), DIMENSION(:,:,:), ALLOCATABLE :: Temperature, Gas_profiles, H2O_profiles, Gas_profiles_sd
 
   ! ---------------------------------------
   ! Data obtained from Vlidort lookup table
@@ -374,7 +374,7 @@ CONTAINS
     INTEGER (KIND=i4) :: itimes, ixtrack, spix, epix, idx_lat, idx_lon, ilevel, n, n1, one, status
     REAL    (KIND=r8)                      :: rho, lhgt, aircolumn, clima_psurf
     REAL    (KIND=r8), DIMENSION (0:CmETA) :: lpre, level_press, clima_lpre
-    REAL    (KIND=r8), DIMENSION (1:CmETA) :: ltmp, lh2o, lgas, re_tmp, re_h2o, re_gas, &
+    REAL    (KIND=r8), DIMENSION (1:CmETA) :: ltmp, lh2o, lgas, re_tmp, re_h2o, re_gas, re_gas_sd, &
          layer_press, clima_layer_press
     REAL    (KIND=r8) :: thish2omxr, Mwet, Rwet, detlnp
     REAL    (KIND=r8), DIMENSION (1) :: local_lon, local_lat
@@ -551,7 +551,8 @@ CONTAINS
                                    ismonth, ndatafields, h2o_cli_idx
     INTEGER   (KIND=i4), DIMENSION(10) :: datafield_rank, datafield_type
     INTEGER   (KIND=C_LONG)     :: nswathcl, Cmlatcl, Cmloncl, CmETAcl, CmEp1cl
-    CHARACTER (LEN=   maxchlen) :: swath_file, locswathname, gasdatafieldname, datafield_name
+    CHARACTER (LEN=   maxchlen) :: swath_file, locswathname, gasdatafieldname, datafield_name, &
+         gasdatafieldname_sd
     CHARACTER (LEN=10*maxchlen) :: swath_name
 
     CHARACTER (LEN= 9), PARAMETER :: cli_lat_field         = 'Latitudes'
@@ -561,10 +562,10 @@ CONTAINS
 
     REAL (KIND=r4), ALLOCATABLE, DIMENSION(:) :: dummy_lon, dummy_lat
     REAL (KIND=r4), ALLOCATABLE, DIMENSION(:,:) :: dummy_psurf
-    REAL (KIND=r4), ALLOCATABLE, DIMENSION(:,:,:) :: dummy_temp, dummy_gaspr, dummy_h2opr
+    REAL (KIND=r4), ALLOCATABLE, DIMENSION(:,:,:) :: dummy_temp, dummy_gaspr, dummy_h2opr, dummy_gaspr_sd
 
     REAL (KIND=r4) :: scale_lat, scale_lon, scale_gas, scale_Psurf, &
-         scale_temperature, scale_H2O
+         scale_temperature, scale_H2O, scale_gas_sd
 
     ! ------------------------
     ! Error handling variables
@@ -718,6 +719,7 @@ CONTAINS
     ALLOCATE(dummy_temp(1:Cmlon,1:Cmlat,1:CmETA))
     ALLOCATE(dummy_gaspr(1:Cmlon,1:Cmlat,1:CmETA))
     ALLOCATE(dummy_h2opr(1:Cmlon,1:Cmlat,1:CmETA))
+    ALLOCATE(dummy_gaspr_sd(1:Cmlon,1:Cmlat,1:CmETA))
 
     ! -----------------------------------------------
     ! Read the tables: Psurface, Heights, Temperature
@@ -755,6 +757,11 @@ CONTAINS
     CALL extract_swathname(nswath, TRIM(ADJUSTL(datafield_name)), &
          TRIM(ADJUSTL(sao_molecule_names(pge_idx))), gasdatafieldname)
 
+    ! -----------------------------------
+    ! Build standard deviation field name
+    ! -----------------------------------
+    gasdatafieldname_sd = TRIM(ADJUSTL(gasdatafieldname))//'_sd'
+
     ! ---------------------------------------------------------------------------
     ! Check if we found the correct swath name. If not, report an error and exit.
     ! ---------------------------------------------------------------------------
@@ -780,6 +787,20 @@ CONTAINS
     ! -----------------------------------------
     he5stat = HE5_SWrdlattr ( swath_id, TRIM(ADJUSTL(gasdatafieldname)),&
               "ScaleFactor", scale_gas       )
+
+    ! -----------------------------------
+    ! Read gas profile standard deviation
+    ! -----------------------------------
+    he5stat = HE5_SWrdfld (                                &
+         swath_id, TRIM(ADJUSTL(gasdatafieldname_sd)),        &
+         he5_start_3d, he5_stride_3d, he5_edge_3d,         &
+         dummy_gaspr_sd(1:Cmlon,1:Cmlat,1:CmETA) )
+
+    ! ------------------------------------------------------------
+    ! Read gas standard deviation datafield scale factor attribute
+    ! ------------------------------------------------------------
+    he5stat = HE5_SWrdlattr ( swath_id, TRIM(ADJUSTL(gasdatafieldname_sd)),&
+              "ScaleFactor", scale_gas_sd    )
 
     ! -------------------------------------------------------------------
     ! Finding out the data field for water vapor (to compute air density)
@@ -821,6 +842,7 @@ CONTAINS
     Psurface     = REAL(dummy_psurf * scale_Psurf, KIND=r8)
     Gas_profiles = REAL(dummy_gaspr * scale_gas, KIND=r8)
     H2O_profiles = REAL(dummy_h2opr * scale_H2O, KIND=r8)
+    Gas_profiles_sd = REAL(dummy_gaspr_sd * scale_gas_sd, KIND=r8)
 
     ! ------------------------
     ! De-allocate dummy arrays
@@ -829,6 +851,7 @@ CONTAINS
     DEALLOCATE(dummy_temp)
     DEALLOCATE(dummy_gaspr)
     DEALLOCATE(dummy_h2opr)
+    DEALLOCATE(dummy_gaspr_sd)
 
   END SUBROUTINE omi_read_climatology
 
@@ -1285,19 +1308,21 @@ CONTAINS
 
     SELECT CASE ( adlow )
     CASE ('a')
-       ALLOCATE (latvals (Cmlat),                 STAT=estat ) ; errstat = MAX ( errstat, estat )
-       ALLOCATE (lonvals (Cmlon),                 STAT=estat ) ; errstat = MAX ( errstat, estat )
-       ALLOCATE (Temperature (Cmlon, Cmlat, CmETA), STAT=estat ) ; errstat = MAX ( errstat, estat )
-       ALLOCATE (Gas_profiles(Cmlon, Cmlat, CmETA), STAT=estat ) ; errstat = MAX ( errstat, estat )
-       ALLOCATE (H2O_profiles(Cmlon, Cmlat, CmETA), STAT=estat ) ; errstat = MAX ( errstat, estat )
-       ALLOCATE (Psurface(Cmlon,Cmlat),            STAT=estat ) ; errstat = MAX ( errstat, estat )
+       ALLOCATE (latvals (Cmlat),                      STAT=estat ) ; errstat = MAX ( errstat, estat )
+       ALLOCATE (lonvals (Cmlon),                      STAT=estat ) ; errstat = MAX ( errstat, estat )
+       ALLOCATE (Temperature (Cmlon, Cmlat, CmETA),    STAT=estat ) ; errstat = MAX ( errstat, estat )
+       ALLOCATE (Gas_profiles(Cmlon, Cmlat, CmETA),    STAT=estat ) ; errstat = MAX ( errstat, estat )
+       ALLOCATE (H2O_profiles(Cmlon, Cmlat, CmETA),    STAT=estat ) ; errstat = MAX ( errstat, estat )
+       ALLOCATE (Gas_profiles_sd(Cmlon, Cmlat, CmETA), STAT=estat ) ; errstat = MAX ( errstat, estat )
+       ALLOCATE (Psurface(Cmlon,Cmlat),                STAT=estat ) ; errstat = MAX ( errstat, estat )
     CASE ('d')
-       IF ( ALLOCATED ( latvals      ) )  DEALLOCATE ( latvals      )
-       IF ( ALLOCATED ( lonvals      ) )  DEALLOCATE ( lonvals      )
-       IF ( ALLOCATED ( Temperature  ) )  DEALLOCATE ( Temperature  )
-       IF ( ALLOCATED ( Gas_profiles ) )  DEALLOCATE ( Gas_profiles )
-       IF ( ALLOCATED ( H2O_profiles ) )  DEALLOCATE ( H2O_profiles )
-       IF ( ALLOCATED ( Psurface     ) )  DEALLOCATE ( Psurface     )
+       IF ( ALLOCATED ( latvals         ) )  DEALLOCATE ( latvals      )
+       IF ( ALLOCATED ( lonvals         ) )  DEALLOCATE ( lonvals      )
+       IF ( ALLOCATED ( Temperature     ) )  DEALLOCATE ( Temperature  )
+       IF ( ALLOCATED ( Gas_profiles    ) )  DEALLOCATE ( Gas_profiles )
+       IF ( ALLOCATED ( H2O_profiles    ) )  DEALLOCATE ( H2O_profiles )
+       IF ( ALLOCATED ( Gas_profiles_sd ) )  DEALLOCATE ( Gas_profiles_sd )
+       IF ( ALLOCATED ( Psurface        ) )  DEALLOCATE ( Psurface     )
     CASE DEFAULT
        ! Whatever. Nothing to be done here
     END SELECT
