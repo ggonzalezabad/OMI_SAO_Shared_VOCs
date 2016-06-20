@@ -1115,6 +1115,17 @@ CONTAINS
                             minlat(1):maxlat(1), 1, 1),            &
                one, one, plon, plat, albedo(ixtrack,itimes),       &
                locerrstat )
+
+          ! ----------------------------------------------
+          ! If albedo is smaller than 0 then make it 0.001
+          ! ----------------------------------------------
+          IF (albedo(ixtrack,itimes) .LT. 0) albedo(ixtrack,itimes) = 0.001
+
+          ! ------------------------------------------
+          ! If albedo is greater than 1 then make it 1
+          ! ------------------------------------------
+          IF (albedo(ixtrack,itimes) .GT. 1) albedo(ixtrack,itimes) = 1
+
        END DO
     END DO
     
