@@ -192,7 +192,7 @@ CONTAINS
     INTEGER (KIND=i4)                                :: locerrstat, itt, spixx, epixx, current_month
     INTEGER (KIND=i2), DIMENSION (1:nx,0:nt-1)       :: amfdiag
     REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1)       :: amfgeo
-    REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1)       :: l2cfr, l2ctp
+    REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1)       :: l2cfr, l2ctp, amf_pro_err
     REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1)       :: albedo, cli_psurface
     REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1,CmETA) :: climatology, climatology_sd
     REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1,CmETA) :: scattw !, akernels
@@ -209,6 +209,7 @@ CONTAINS
     cli_psurface   = r8_missval
     scattw         = r8_missval
     saoamf         = r8_missval
+    amf_pro_err    = r8_missval
     amfgeo         = r8_missval
     amfdiag        = i2_missval
 
@@ -316,7 +317,7 @@ CONTAINS
        ! Work out Averaging Kernels
        ! -----------------------------------------------------------------
        CALL compute_amf ( nt, nx, CmETA, climatology, climatology_sd, &
-            scattw, saoamf, amfdiag, locerrstat)
+            scattw, saoamf, amf_pro_err, amfdiag, locerrstat)
 
        ! -----------------------------------------------------------------
        ! Write out scattering weights, altitude grid and averaging kernels
@@ -2351,7 +2352,7 @@ CONTAINS
   END SUBROUTINE COMPUTE_SCATT
 
   SUBROUTINE compute_amf ( nt, nx, CmETA, climatology, climatology_sd, &
-                           scattw, saoamf, amfdiag, errstat)
+                           scattw, saoamf, amf_pro_err, amfdiag, errstat)
 
     IMPLICIT NONE
 
@@ -2365,7 +2366,7 @@ CONTAINS
     ! -----------------------------
     ! Output and modified variables
     ! -----------------------------
-    REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1),       INTENT (INOUT) :: saoamf
+    REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1),       INTENT (INOUT) :: saoamf, amf_pro_err
     INTEGER (KIND=i4),                                INTENT (INOUT) :: errstat
 
     ! ---------------
@@ -2398,6 +2399,10 @@ CONTAINS
           saoamf(ixtrack,itimes) = SUM(scattw(ixtrack, itimes, 1:CmETA) * &
                                         climatology(ixtrack,itimes,1:CmETA))     / &
                                    SUM(climatology(ixtrack,itimes,1:CmETA))
+
+          amf_pro_err(ixtrack,itimes) = SUM(scattw(ixtrack, itimes, 1:CmETA) * &
+               climatology_sd(ixtrack,itimes,1:CmETA))     / &
+               SUM(climatology_sd(ixtrack,itimes,1:CmETA)+climatology(ixtrack,itimes,1:CmETA))
 
        END DO ! Finish xtrack pixel loop
     END DO ! Finish 
