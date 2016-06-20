@@ -291,9 +291,9 @@ FUNCTION he5_define_fields ( pge_idx, swath_name, nTimes, nXtrack, nSwLevels ) R
   DO i = 1, n_cdfields
      ! ----------------------------------------------
      ! If we are not using destriping correction skip
-     ! ColumnAmountDestriped field (number 8)
+     ! ColumnAmountDestriped field (number 9)
      ! ----------------------------------------------
-     IF (i .EQ. 8 .AND. (.NOT. yn_run_destriping)) CYCLE
+     IF (i .EQ. 9 .AND. (.NOT. yn_run_destriping)) CYCLE
 
      CALL he5_check_for_compressibility ( &
           nTimes, nXtrack, nSwLevels, TRIM(ADJUSTL(comdata_he5fields(i)%Dimensions)), &
@@ -1588,9 +1588,9 @@ FUNCTION he5_set_field_attributes ( pge_idx ) RESULT ( he5stat )
   DO i = 1, n_cdfields
      ! ----------------------------------------------
      ! If we are not using destriping correction skip
-     ! ColumnAmountDestriped field (number 8)
+     ! ColumnAmountDestriped field (number 9)
      ! ----------------------------------------------
-     IF (i .EQ. 8 .AND. (.NOT. yn_run_destriping)) CYCLE
+     IF (i .EQ. 9 .AND. (.NOT. yn_run_destriping)) CYCLE
      CALL he5_write_local_attributes ( "", comdata_he5fields(i), locerrstat )
   END DO
 
