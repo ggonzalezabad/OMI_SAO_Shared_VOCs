@@ -339,7 +339,7 @@ CONTAINS
     ! columns and column uncertainties to output file
     ! -----------------------------------------------
     IF (yn_write) CALL he5_amf_write ( pge_idx, nx, nt, saocol, saodco, saoamf, &
-         amfgeo, amfdiag, l2cfr, l2ctp, locerrstat )
+         amfgeo, amfdiag, l2cfr, l2ctp, amf_pro_err, locerrstat )
     
     errstat = MAX ( errstat, locerrstat )
     
@@ -2572,7 +2572,7 @@ CONTAINS
 
 SUBROUTINE he5_amf_write ( &
          pge_idx, nx, nt, saocol, saodco, amfmol, amfgeo, amfdiag, &
-         amfcfr, amfctp, errstat )
+         amfcfr, amfctp, amf_pro_err, errstat )
 
   USE OMSAO_precision_module, ONLY: i2, i4, r8
   USE OMSAO_he5_module
@@ -2593,7 +2593,7 @@ SUBROUTINE he5_amf_write ( &
   ! ---------------
   INTEGER (KIND=i4),                          INTENT (IN) :: pge_idx, nx, nt
   REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1), INTENT (IN) :: saocol, saodco
-  REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1), INTENT (IN) :: amfmol, amfgeo
+  REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1), INTENT (IN) :: amfmol, amfgeo, amf_pro_err
   REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1), INTENT (IN) :: amfcfr, amfctp
   INTEGER (KIND=i2), DIMENSION (1:nx,0:nt-1), INTENT (IN) :: amfdiag
 
@@ -2683,6 +2683,15 @@ SUBROUTINE he5_amf_write ( &
   CALL roundoff_2darr_r8 ( n_roff_dig, nx, nt, colloc(1:nx,0:nt-1) )
   locerrstat = HE5_SWWRFLD ( pge_swath_id, TRIM(ADJUSTL(dcol_field)), &
        he5_start_2d, he5_stride_2d, he5_edge_2d, colloc(1:nx,0:nt-1) )
+  errstat = MAX ( errstat, locerrstat )
+
+  ! ---------------------------
+  ! (6) AMF profile shape error
+  ! ---------------------------
+  amfloc = REAL ( amf_pro_err, KIND=r4 )
+  CALL roundoff_2darr_r4 ( n_roff_dig, nx, nt, amfloc(1:nx,0:nt-1) )
+  locerrstat = HE5_SWWRFLD ( pge_swath_id, TRIM(ADJUSTL(amferrpr_field)), &
+       he5_start_2d, he5_stride_2d, he5_edge_2d, amfloc(1:nx,0:nt-1) )
   errstat = MAX ( errstat, locerrstat )
 
   RETURN
