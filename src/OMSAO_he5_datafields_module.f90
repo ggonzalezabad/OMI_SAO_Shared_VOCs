@@ -194,9 +194,9 @@ MODULE OMSAO_he5_datafields_module
       DO i = 1, n_cdfields
          ! ----------------------------------------------
          ! If we are not using destriping correction skip
-         ! ColumnAmountDestriped field (number 9)
+         ! ColumnAmountDestriped field (number 12)
          ! ----------------------------------------------
-         IF (i .EQ. 9 .AND. (.NOT. yn_run_destriping)) CYCLE
+         IF (i .EQ. 12 .AND. (.NOT. yn_run_destriping)) CYCLE
 
          ! ----------------------------------------
          ! Find the numeric type of the data field.

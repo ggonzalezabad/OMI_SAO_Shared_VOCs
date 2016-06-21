@@ -149,6 +149,9 @@ MODULE OMSAO_he5_module
   CHARACTER (LEN=22), PARAMETER ::  amfgeo_field   = "AirMassFactorGeometric"
   CHARACTER (LEN=13), PARAMETER ::  amfmol_field   = "AirMassFactor"
   CHARACTER (LEN=25), PARAMETER ::  amferrpr_field = "AirMassFactorErrorProfile"
+  CHARACTER (LEN=24), PARAMETER ::  amferral_field = "AirMassFactorErrorAlbedo"
+  CHARACTER (LEN=31), PARAMETER ::  amferrcf_field = "AirMassFactorErrorCloudFraction"
+  CHARACTER (LEN=31), PARAMETER ::  amferrcp_field = "AirMassFactorErrorCloudPressure"
   CHARACTER (LEN=19), PARAMETER ::  avgcol_field   = "AverageColumnAmount"
   CHARACTER (LEN=24), PARAMETER ::  avgdcol_field  = "AverageColumnUncertainty"
   CHARACTER (LEN=17), PARAMETER ::  avgrms_field   = "AverageFittingRMS"
@@ -376,13 +379,16 @@ MODULE OMSAO_he5_module
   ! ------------------------------------------------------------
   ! (1) Main common output quantities ( mostly [nTimes,nXtrack])
   ! ------------------------------------------------------------
-  INTEGER (KIND=i4), PARAMETER :: n_cdfields = 16
+  INTEGER (KIND=i4), PARAMETER :: n_cdfields = 19
   CHARACTER (LEN=41), DIMENSION (2,n_cdfields), PARAMETER ::  &
        comdata_field_names = RESHAPE ( (/ &
        "AirMassFactor                            ", "Molecule Specific Air Mass Factor (AMF)  ",    &
        "AirMassFactorDiagnosticFlag              ", "Diagnostic Flag for Molecule Specific AMF",    &
        "AirMassFactorGeometric                   ", "Geometric Air Mass Factor (AMF)          ",    &
        "AirMassFactorErrorProfile                ", "Air Mass Factor Error Profile            ",    &
+       "AirMassFactorErrorAlbedo                 ", "Air Mass Factor Error Albedo             ",    &
+       "AirMassFactorErrorCloudFraction          ", "Air Mass Factor Error Cloud Fraction     ",    &
+       "AirMassFactorErrorCloudPressure          ", "Air Mass Factor Error Cloud Pressure     ",    &
        "AverageColumnAmount                      ", "Average Column Amount                    ",    &
        "AverageColumnUncertainty                 ", "Average Column Uncertainty               ",    &
        "AverageFittingRMS                        ", "Average Fitting RMS                      ",    &
@@ -401,6 +407,9 @@ MODULE OMSAO_he5_module
        comdata_field_specs = RESHAPE ( (/ &
        "NoUnits           ", "nXtrack,nTimes    ", "OMI-Specific      ", "r4                ",    &
        "NoUnits           ", "nXtrack,nTimes    ", "OMI-Specific      ", "i2                ",    &
+       "NoUnits           ", "nXtrack,nTimes    ", "OMI-Specific      ", "r4                ",    &
+       "NoUnits           ", "nXtrack,nTimes    ", "OMI-Specific      ", "r4                ",    &
+       "NoUnits           ", "nXtrack,nTimes    ", "OMI-Specific      ", "r4                ",    &
        "NoUnits           ", "nXtrack,nTimes    ", "OMI-Specific      ", "r4                ",    &
        "NoUnits           ", "nXtrack,nTimes    ", "OMI-Specific      ", "r4                ",    &
        "molec/cm2         ", "1                 ", "OMI-Specific      ", "r8                ",    &
@@ -427,7 +436,10 @@ MODULE OMSAO_he5_module
        zero_r8,                valid_max_r8,                   &  ! AirMassFactor
        -2.0_r8,                13127.0_r8,                     &  ! AirMassFactorDiagnosticFlag
        zero_r8,                valid_max_r8,                   &  ! AirMassFactorGeometric
-       zero_r8,                valid_max_r8,                   &  ! AirMassFactorProfileError
+       zero_r8,                valid_max_r8,                   &  ! AirMassFactorErrorProfile
+       zero_r8,                valid_max_r8,                   &  ! AirMassFactorErrorAlbedo
+       zero_r8,                valid_max_r8,                   &  ! AirMassFactorErrorCloudFraction
+       zero_r8,                valid_max_r8,                   &  ! AirMassFactorErrorCloudPressure
        valid_min_r8,           valid_max_r8,                   &  ! AverageColumnAmount
        zero_r8,                valid_max_r8,                   &  ! AverageColumnUncertainty
        zero_r8,                valid_max_r8,                   &  ! AverageFittingRMS
@@ -460,10 +472,10 @@ MODULE OMSAO_he5_module
        "CrossTrackStripeCorrection               ", "Correction Factor for Cross Track Stripes",    &
        "FittingParameterColumns                  ", "Colum Values of all Fitting Parameters   ",    &
        "FittingParameterCorrelations             ", "Correlations with Main Fitting Parameter ",    &
-       "FittedSpectrum                           ",	"Fitted Spectrum                          ", 	&
-       "MeasuredSpectrum                         ",	"Observed L1B Radiance                    ", 	&
-       "MeasuredWavelength                       ",	"Spectral Position of L1B Radiance        ", 	&
-       "SpectralFitWeight                        ",	"Weighting of L1B Radiance Pixel          ",    &
+       "FittedSpectrum                           ", "Fitted Spectrum                          ",    &
+       "MeasuredSpectrum                         ", "Observed L1B Radiance                    ",    &
+       "MeasuredWavelength                       ", "Spectral Position of L1B Radiance        ",    &
+       "SpectralFitWeight                        ", "Weighting of L1B Radiance Pixel          ",    &
        "FittingParameterNames                    ", "Names of all Fitting Parameters          ",    &
        "FittingParameterUncertainty              ", "Uncertainties of all Fitting Parameters  ",    &
        "DatabaseSpec                             ", "Reference Spectra used in fitting process",    & 
