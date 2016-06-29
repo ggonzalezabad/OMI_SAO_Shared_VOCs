@@ -248,7 +248,6 @@ CONTAINS
     ! -------------------------------
     CHARACTER (LEN=20), PARAMETER :: modulename = 'omi_slitfunc_compute'
 
-
     ! ----------------------------------------------------------------------
     ! Compose  row and array of column values, making sure that they stay 
     ! within the  bounds of the tabulated slit function parameters. Constant
@@ -371,7 +370,7 @@ CONTAINS
     INTEGER (KIND=i4) :: locerrstat, row
     INTEGER (KIND=i4) :: l, j, j1, j2, k1, k2, k1ext, k2ext
     REAL    (KIND=r8)                                :: sf_area, sf_err, delvar, swvl, ewvl
-    REAL    (KIND=r8), DIMENSION (nwvl, n_sf_tabwvl) :: sf_wvals, sf_profiles
+    REAL    (KIND=r8), DIMENSION (nwvl, n_sf_tabwvl) :: sf_wvals
     REAL    (KIND=r8), DIMENSION (nwvl+1000)              :: wvlext, specext, convtmpext
     REAL    (KIND=r8), DIMENSION (nwvl+1000, n_sf_tabwvl) :: sf_wvalsext, sf_profilesext
     LOGICAL                                          :: yn_full_range
@@ -385,7 +384,7 @@ CONTAINS
     locerrstat   = pge_errstat_ok
     sf_area = 0.0_r8     ; delvar  = 0.0_r8
     swvl    = 0.0_r8     ; ewvl    = 0.0_r8
-    sf_wvals = 0.0_r8    ; sf_profiles = 0.0_r8
+    sf_wvals = 0.0_r8
     wvlext = 0.0_r8      ; specext = 0.0_r8
     sf_wvalsext = 0.0_r8 ; sf_profilesext = 0.0_r8
 
@@ -398,10 +397,12 @@ CONTAINS
     row = sf_xtrack_center_rows(xtrack_pix)
 
     ! --------------------------------------------------------------
-    ! Read the slit function for the wavelength we are interested at
+    ! Compute initial slit function wavelengths. I need them to expa
+    ! nd the omi wvl array and include the extremes.
     ! --------------------------------------------------------------
-    CALL omi_slitfunc_compute ( row, nwvl, wvl(1:nwvl), n_sf_tabwvl, &
-         sf_wvals(1:nwvl,1:n_sf_tabwvl), sf_profiles(1:nwvl,1:n_sf_tabwvl) )
+    DO l = 1, nwvl
+       sf_wvals(l,1:n_sf_tabwvl) =  sf_tabwvl(1:n_sf_tabwvl) + wvl(l)
+    END DO
 
     ! ----------------------------------------------------------
     ! No we work how much further the edges go from the wvl grid
