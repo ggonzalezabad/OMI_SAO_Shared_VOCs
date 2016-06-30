@@ -12,6 +12,7 @@ MODULE OMSAO_slitfunction_module
   USE OMSAO_indices_module,    ONLY: omi_slitfunc_lun
   USE OMSAO_variables_module,  ONLY: omi_slitfunc_fname, l1b_channel
   USE OMSAO_omidata_module,    ONLY: nxtrack_max
+  USE OMSAO_he5_module,        ONLY: granule_year, granule_day, granule_month
   USE OMSAO_errstat_module
 
   IMPLICIT NONE
@@ -729,5 +730,82 @@ CONTAINS
     RETURN
 
   END SUBROUTINE get_omislitscl
+
+  SUBROUTINE load_omislitscl(pge_error_status)
+
+    ! Input/Output variables
+    INTEGER, INTENT(OUT)                        :: pge_error_status
+
+    CHARACTER (LEN=maxchlen)                    :: slitpar_fname, refdbdir
+    CHARACTER (LEN=3)                           :: seasc
+    CHARACTER (LEN=4)                           :: yrc   
+    INTEGER                                     :: yr, mon, day, i, j, ic, iw, ix, nx, nw, errstat, &
+         calunit
+    CHARACTER (LEN=15), PARAMETER               :: modulename = 'load_omislitscl'
+    LOGICAL :: coadd_uv2=.TRUE.
+
+    IF (granule_month >= 1 .AND. granule_month <= 3) THEN
+       seasc = 'JFM'
+    ELSE IF (granule_month >= 4 .AND. granule_month <= 6) THEN
+       seasc = 'AMJ'
+    ELSE IF (granule_month >= 7 .AND. granule_month <= 9) THEN
+       seasc = 'JAS'
+    ELSE
+       seasc = 'OND'
+    ENDIF
+
+    yr = granule_year
+    IF (yr == 2004) THEN
+       seasc = 'OND'
+    ELSE IF (yr > 2011) THEN
+       yr = 2011
+    ENDIF
+    WRITE(yrc, '(I4.4)') yr
+
+    ! For now hardwire directory name
+    refdbdir = '../tbl/'
+    slitpar_fname =  TRIM(ADJUSTL(refdbdir)) // 'OMI/OMISlitScl_' // yrc // seasc // '.dat'
+    OPEN (UNIT=calunit, FILE=TRIM(ADJUSTL(slitpar_fname)), STATUS='UNKNOWN', IOSTAT=errstat)
+    IF ( errstat /= pge_errstat_ok ) THEN
+       WRITE(*, '(2A)') modulename, ': Cannot open slit parameterization file!!!'
+       pge_error_status = pge_errstat_error; RETURN
+    END IF
+    
+    DO ic = 1, NCH
+       READ(calunit, *) nx, nw
+       nsclwls(ic) = nw
+       DO iw = 1, nw 
+          READ(calunit, *) omislit_sclwl(ic, iw), omislit_scl(ic, 1:nx, iw)
+       ENDDO
+    ENDDO
+    CLOSE(calunit)
+  
+!!$   IF (coadd_uv2) THEN
+!!$      DO ix = 1, nfxtrack
+!!$         i = (ix - 1) * ncoadd + 1
+!!$         omislit_scl(2:3, ix, :) = omislit_scl(2:3, i, :) 
+!!$         
+!!$         DO j = 1, ncoadd-1      
+!!$            omislit_scl(2:3, ix, :) = omislit_scl(2:3, ix, :) + omislit_scl(2:3, i + j, :)
+!!$         ENDDO
+!!$         omislit_scl(2:3, ix, :) = omislit_scl(2:3, ix, :) / ncoadd
+!!$      ENDDO
+!!$   ENDIF
+!!$   
+!!$   ! Furthur binning across the track position
+!!$   IF (nxbin > 1) THEN
+!!$      DO ix = 1, nfxtrack / nxbin
+!!$         i = (ix - 1) * nxbin + 1
+!!$         omislit_scl(:, ix, :) = omislit_scl(:, i, :) 
+!!$         
+!!$         DO j = 1, nxbin - 1      
+!!$            omislit_scl(:, ix, :) = omislit_scl(:, ix, :) + omislit_scl(:, i + j, :)
+!!$         ENDDO
+!!$         omislit_scl(:, ix, :) = omislit_scl(:, ix, :) / nxbin
+!!$      ENDDO
+!!$   ENDIF
+   
+    RETURN
+  END SUBROUTINE load_omislitscl
 
 END MODULE OMSAO_slitfunction_module
