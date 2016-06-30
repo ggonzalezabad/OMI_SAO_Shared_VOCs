@@ -2411,10 +2411,15 @@ CONTAINS
                                         climatology(ixtrack,itimes,1:CmETA))     / &
                                    SUM(climatology(ixtrack,itimes,1:CmETA))
 
-          amf_pro_err(ixtrack,itimes) = SUM(scattw(ixtrack, itimes, 1:CmETA) * &
-               climatology_sd(ixtrack,itimes,1:CmETA))     / &
-               SUM(climatology_sd(ixtrack,itimes,1:CmETA)+climatology(ixtrack,itimes,1:CmETA))
-
+          amf_pro_err(ixtrack,itimes) = SQRT( &
+               ( &
+               ( SUM(scattw(ixtrack, itimes, 1:CmETA)*scattw(ixtrack, itimes, 1:CmETA)* &
+               climatology_sd(ixtrack,itimes,1:CmETA)*climatology_sd(ixtrack,itimes,1:CmETA)) &
+               / SUM((scattw(ixtrack, itimes, 1:CmETA)*climatology(ixtrack,itimes,1:CmETA)) * &
+               (scattw(ixtrack, itimes, 1:CmETA)*climatology(ixtrack,itimes,1:CmETA))) ) &
+               + &
+               ( SUM(climatology_sd(ixtrack,itimes,1:CmETA)*climatology_sd(ixtrack,itimes,1:CmETA)) &
+               / SUM(climatology(ixtrack,itimes,1:CmETA)*climatology(ixtrack,itimes,1:CmETA))) ) )
        END DO ! Finish xtrack pixel loop
     END DO ! Finish 
     
