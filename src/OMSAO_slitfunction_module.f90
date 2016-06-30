@@ -86,6 +86,20 @@ MODULE OMSAO_slitfunction_module
   ! ---------------------------------------------------------------------
   REAL (KIND=r8) :: saved_shift = -1.0E+30_r8, saved_squeeze = -1.0E+30_r8
 
+  ! --------------------------------------------------------------
+  ! Variables to use OMI Hybrid Gaussian analytical slit functions
+  ! --------------------------------------------------------------
+  INTEGER, PARAMETER :: NP  = 5, & ! # of parameterized parameters 
+       NP1 = 6, & ! # of actual slit parameters 
+       NO  = 7, & ! order of polynomials for parameterizing each parameter
+       NCH = 3, &    ! UV1, UV2, VIS
+       NROW=577, &
+       MSCL=1421
+
+  REAL (KIND=r8), DIMENSION(NCH, nxtrack_max, MSCL)    :: omislit_scl
+  REAL (KIND=r8), DIMENSION(NCH, MSCL)                 :: omislit_sclwl
+  INTEGER, DIMENSION(NCH)                              :: nsclwls
+
 
 CONTAINS
 
@@ -415,12 +429,12 @@ CONTAINS
 
     ! ----------------------------------------------------------------
     ! Now extend wvl to wvlext with a similar spacing to wvl grid from
-    ! wvl(1) to swvl and wvl(nwvl) to ewvl
+    ! wvl(1) to swvl and wvl(nwvl) to ewvl (kind of zero padding).
     ! ----------------------------------------------------------------
     delvar = wvl(2)-wvl(1); nswvl = 2*((wvl(1)-swvl) / delvar)
     DO l = 1, nswvl
        wvlext(l)  = wvl(1) - delvar * (nswvl-l+1)
-       specext(l) = spec(1)
+       specext(l) = 0
     END DO
     DO l = nswvl+1, nswvl+1+nwvl-1
        wvlext(l)  = wvl(l-nswvl)
@@ -429,7 +443,7 @@ CONTAINS
     delvar = wvl(nwvl)-wvl(nwvl-1); newvl = 2*((ewvl-wvl(nwvl)) / delvar)
     DO l = nswvl+nwvl+1,nswvl+nwvl+1+newvl
        wvlext(l)  = wvl(nwvl) + delvar * (l-(nswvl+nwvl+1)+1)
-       specext(l) = spec(nwvl)
+       specext(l) = 0
     END DO
    
     nextwvl = nswvl + nwvl + newvl
@@ -471,9 +485,9 @@ CONTAINS
              j1 = j-1 ; EXIT get_sf_start
           END IF
        END DO get_sf_start
-       ! ------------------------------------------------------------------------
-       ! J2 is the maximum position of SF > 0 plus 1, but not more than N_SF_NPTS
-       ! ------------------------------------------------------------------------
+       ! --------------------------------------------------------------------------
+       ! J2 is the maximum position of SF > 0 plus 1, but not more than N_SF_tabwvl
+       ! --------------------------------------------------------------------------
        j2  = n_sf_tabwvl
        get_sf_end: DO j = n_sf_tabwvl-1, 1, -1
           IF ( sf_profilesext(l,j) > 0.0_r8 ) THEN
@@ -686,5 +700,34 @@ CONTAINS
 
     RETURN
   END SUBROUTINE asymmetric_gaussian_sf
+
+  SUBROUTINE get_omislitscl (ch, lamda, xtrack_pix, scl)
+    
+    ! Input/Output variables   
+    INTEGER, INTENT(IN)         :: ch, xtrack_pix
+    REAL (KIND=r8), INTENT(IN)  :: lamda
+    REAL (KIND=r8), INTENT(OUT) :: scl
+    
+    ! Local variables
+    INTEGER                     :: sidx, eidx, nw             
+    REAL (KIND=r8)              :: frac
+    
+    nw = nsclwls(ch)
+    IF (lamda <= omislit_sclwl(ch, 1) ) THEN
+       scl = omislit_scl(ch, xtrack_pix, 1)
+    ELSE IF (lamda >= omislit_sclwl(ch, nw) ) THEN
+       scl = omislit_scl(ch, xtrack_pix, nw)
+    ELSE
+       sidx = MINVAL(MINLOC(omislit_sclwl(ch, 1:nw), MASK = (omislit_sclwl(ch, 1:nw) >= lamda)))
+       eidx = sidx + 1
+       frac = 1.0 - (lamda - omislit_sclwl(ch, sidx)) / &
+            (omislit_sclwl(ch, eidx) - omislit_sclwl(ch, sidx))
+       scl = omislit_scl(ch, xtrack_pix, sidx) * &
+            frac +  omislit_scl(ch, xtrack_pix, eidx) * (1.0 - frac) 
+    ENDIF
+
+    RETURN
+
+  END SUBROUTINE get_omislitscl
 
 END MODULE OMSAO_slitfunction_module
