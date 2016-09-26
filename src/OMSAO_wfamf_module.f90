@@ -100,7 +100,7 @@ MODULE OMSAO_wfamf_module
   ! -----------------------------
   ! Dimensions of the climatology
   ! -----------------------------
-  INTEGER (KIND=i4) :: Cmlat, Cmlon, CmETA, CmEp1
+  INTEGER (KIND=i4) :: Cmlat, Cmlon, CmETA
 
   ! -----------------------
   ! To find the right swath
@@ -455,8 +455,8 @@ CONTAINS
           IF (clima_psurf .LT. local_psurf(ixtrack,itimes)) clima_psurf = local_psurf(ixtrack,itimes)
           
           ! lpre(0:CmETA) is pressure at layer boundaries, same unit as
-          ! local_surf, convert from hPa to Pa, it is a CmETA+1 = CmEp1 array
-          ! Ap(1:CmEp1) & Bp(1:CmEp1) are coeff at layer boundary for pressure
+          ! local_surf, convert from hPa to Pa, it is a CmETA+1 array
+          ! Ap(1:CmETA+1) & Bp(1:CmETA+1) are coeff at layer boundary for pressure
           ! calculation
           DO ilevel = 0, CmETA
              lpre(CmETA-ilevel) = (Ap(ilevel+1) + local_psurf(ixtrack,itimes) * Bp(ilevel+1))*1.D2 ! Pa
@@ -550,7 +550,7 @@ CONTAINS
     INTEGER   (KIND=i4)         :: nswath, locerrstat, swath_id, swath_file_id, swlen, he5stat, &
                                    ismonth, ndatafields, h2o_cli_idx
     INTEGER   (KIND=i4), DIMENSION(10) :: datafield_rank, datafield_type
-    INTEGER   (KIND=C_LONG)     :: nswathcl, Cmlatcl, Cmloncl, CmETAcl, CmEp1cl
+    INTEGER   (KIND=C_LONG)     :: nswathcl, Cmlatcl, Cmloncl, CmETAcl
     CHARACTER (LEN=   maxchlen) :: swath_file, locswathname, gasdatafieldname, datafield_name
     CHARACTER (LEN=10*maxchlen) :: swath_name
 
@@ -641,7 +641,7 @@ CONTAINS
     ! Read dimensions of Climatology swath
     ! ------------------------------------
     locerrstat = pge_errstat_ok
-    CALL climatology_getdim ( swath_id, Cmlat, Cmlon, CmETA, CmEp1, locerrstat )
+    CALL climatology_getdim ( swath_id, Cmlat, Cmlon, CmETA, locerrstat )
     IF ( ismonth < 1 .OR. ismonth > nmonths .OR. locerrstat /= pge_errstat_ok ) THEN
        errstat = MAX ( errstat, locerrstat ) 
        RETURN
@@ -655,16 +655,15 @@ CONTAINS
     Cmlatcl = INT ( Cmlat, KIND=C_LONG )
     Cmloncl = INT ( Cmlon, KIND=C_LONG )
     CmETAcl = INT ( CmETA, KIND=C_LONG )
-    CmEp1cl = INT ( CmEp1, KIND=C_LONG )
 
     ! ---------------------------
     ! Allocate Climatology arrays
     ! ---------------------------
     locerrstat = pge_errstat_ok
-    CALL climatology_allocate ( "a", Cmlat, Cmlon, CmETA, CmEp1, locerrstat )
+    CALL climatology_allocate ( "a", Cmlat, Cmlon, CmETA, locerrstat )
     IF ( locerrstat /= pge_errstat_ok ) THEN
        errstat = MAX ( errstat, locerrstat ) 
-       CALL climatology_allocate ( "d", Cmlat, Cmlon, CmETA, CmEp1, locerrstat )
+       CALL climatology_allocate ( "d", Cmlat, Cmlon, CmETA, locerrstat )
        RETURN
     END IF
 
@@ -684,7 +683,6 @@ CONTAINS
     he5_start_1d = zerocl ; he5_stride_1d = onecl ; he5_edge_1d = Cmloncl
     he5stat = HE5_SWrdfld ( swath_id, cli_lon_field, &
          he5_start_1d, he5_stride_1d, he5_edge_1d, dummy_lon(1:Cmlon) )
-    he5_start_1d = zerocl ; he5_stride_1d = onecl ; he5_edge_1d = CmEp1cl
     IF ( he5stat /= pge_errstat_ok ) &
          CALL error_check ( he5stat, OMI_S_SUCCESS, pge_errstat_error, OMSAO_E_PREFITCOL, &
          modulename//f_sep//'Climatology arrays access failed.', vb_lev_default, errstat )
@@ -1177,7 +1175,7 @@ CONTAINS
   END SUBROUTINE extract_swathname
 
   SUBROUTINE climatology_getdim ( &
-       swath_id, Cmlat, Cmlon, CmETA, CmEp1, errstat )
+       swath_id, Cmlat, Cmlon, CmETA, errstat )
 
     ! --------------------------------
     ! Return dimensions of Climatology
@@ -1192,7 +1190,7 @@ CONTAINS
     ! Output variables
     ! ----------------
     INTEGER (KIND=i4), INTENT (INOUT) :: errstat
-    INTEGER (KIND=i4), INTENT (OUT)   :: Cmlat, Cmlon, CmETA, CmEp1
+    INTEGER (KIND=i4), INTENT (OUT)   :: Cmlat, Cmlon, CmETA
 
     ! ---------------
     ! Local variables
@@ -1209,7 +1207,7 @@ CONTAINS
     ! ---------------------------
     ! Initialize output variables
     ! ---------------------------
-    Cmlat = -1 ; Cmlon = -1 ; CmETA = -1; CmEp1 = -1
+    Cmlat = -1 ; Cmlon = -1 ; CmETA = -1
 
     ! ------------------------------
     ! Inquire about swath dimensions
@@ -1253,8 +1251,6 @@ CONTAINS
           Cmlon = dim_array(j)
        CASE ( "nETA" )
           CmETA = dim_array(j)
-       CASE ( "nEp1")
-          CmEp1 = dim_array(j)
        CASE DEFAULT
           ! Whatever. Nothing to be done here.
        END SELECT
@@ -1264,7 +1260,7 @@ CONTAINS
     RETURN
   END SUBROUTINE climatology_getdim
 
-  SUBROUTINE climatology_allocate ( ad, Cmlat, Cmlon, CmETA, CmEp1, errstat )
+  SUBROUTINE climatology_allocate ( ad, Cmlat, Cmlon, CmETA, errstat )
 
     USE OMSAO_casestring_module, ONLY: lower_case
     IMPLICIT NONE
@@ -1273,7 +1269,7 @@ CONTAINS
     ! Input variables
     ! ---------------
     CHARACTER (LEN=1), INTENT (IN) :: ad
-    INTEGER (KIND=i4), INTENT (IN) :: Cmlat, Cmlon, CmETA, CmEp1
+    INTEGER (KIND=i4), INTENT (IN) :: Cmlat, Cmlon, CmETA
 
     ! ------------------
     ! Modified variables
