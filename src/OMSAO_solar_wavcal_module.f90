@@ -37,12 +37,13 @@ CONTAINS
     ! Local variables
     ! ---------------
     INTEGER   (KIND=i2)              :: solcal_itnum
-    INTEGER   (KIND=i4)              :: locerrstat, ipix, solcal_exval, n_sol_wvl
+    INTEGER   (KIND=i4)              :: locerrstat, ipix, solcal_exval, n_sol_wvl, iwav
     CHARACTER (LEN=maxchlen)         :: addmsg
-    REAL      (KIND=r8)              :: chisquav
+    REAL      (KIND=r8)              :: chisquav, rms
     LOGICAL                          :: yn_skip_pix, yn_bad_pixel
     INTEGER (KIND=i4), DIMENSION (4) :: select_idx
     INTEGER (KIND=i4), DIMENSION (2) :: exclud_idx
+    REAL      (KIND=r8), ALLOCATABLE, DIMENSION(:) :: fitres, fitspec
 
     ! ------------------------------
     ! Name of this module/subroutine
@@ -56,9 +57,10 @@ CONTAINS
     ! ---------------------------------------------------------------
     ! Loop for solar wavelength calibration and slit function fitting
     ! ---------------------------------------------------------------
-
+    write(9,*) 'Solar_fitting_ouput'
+    write(9,*) 'Number_of_xtrack_positions ', last_pix-first_pix+1
     XtrackSolCal: DO ipix = first_pix, last_pix
-
+       write(9,*) 'Xtrack_position ', ipix
        locerrstat = pge_errstat_ok
 
        curr_xtrack_pixnum = ipix
@@ -82,7 +84,7 @@ CONTAINS
             n_sol_wvl, curr_sol_spec(wvl_idx:ccd_idx,1:n_omi_irradwvl), &
             yn_skip_pix, locerrstat )
        ! -------------------------------------------------------------------------
-
+       write(9,*) 'Number_of_wavelengths ', n_sol_wvl
        IF ( yn_skip_pix .OR. locerrstat >= pge_errstat_error ) THEN
           errstat = MAX ( errstat, locerrstat )
           omi_cross_track_skippix (ipix) = .TRUE.
@@ -95,10 +97,13 @@ CONTAINS
        END IF
 
        yn_bad_pixel   = .FALSE.
+
+       ALLOCATE( fitspec(1:n_sol_wvl))
+       ALLOCATE( fitres(1:n_sol_wvl))
        CALL solar_fit ( &                              ! Solar wavelength calibration
             n_fitres_loop(solcal_idx), fitres_range(solcal_idx), n_sol_wvl,                       &
             curr_sol_spec(wvl_idx:ccd_idx,1:n_sol_wvl), hw1e, e_asym, solcal_exval, solcal_itnum, &
-            chisquav, yn_bad_pixel, locerrstat )
+            chisquav, yn_bad_pixel, rms, fitspec, fitres, locerrstat )
        ! ------------------------------------------------------------------------------------------
 
        IF ( yn_bad_pixel .OR. locerrstat >= pge_errstat_error ) THEN
@@ -120,7 +125,14 @@ CONTAINS
        omi_solcal_pars (1:max_calfit_idx,ipix)    = fitvar_cal(1:max_calfit_idx)
        omi_solcal_xflag(ipix)                     = INT (solcal_exval, KIND=i2)
        omi_solcal_itnum(ipix)                     = INT (solcal_itnum, KIND=i2)
-       
+       write(9,*) 'Maximum_number_of_fitting_variables ', max_calfit_idx
+       write(9,*) 'RMS ', rms 
+       write(9,'(1xA,17E15.6)') 'FITVAL_CAL', fitvar_cal(1:max_calfit_idx)
+       write(9,'(1xA)') 'WAVE SPEC WEIG FITS RESI'
+       DO iwav =  1, n_sol_wvl
+          write(9,'(5E15.6)') curr_sol_spec(wvl_idx, iwav), curr_sol_spec(spc_idx, iwav), &
+               curr_sol_spec(sig_idx,iwav), fitspec(iwav), fitres(iwav)
+       END DO
        ! ------------------------------------------------------------------------
        ! Save the processed solar spectrum in its original array. Note that the
        ! spectrum is now normalized, has bad pixels set to -1, and that the
@@ -140,6 +152,9 @@ CONTAINS
             0, 1, pge_errstat_ok, OMSAO_S_PROGRESS, TRIM(ADJUSTL(addmsg)), &
             vb_lev_omidebug, errstat )
        IF ( verb_thresh_lev >= vb_lev_screen  ) WRITE (*, '(A)') TRIM(ADJUSTL(addmsg))
+
+       DEALLOCATE(fitspec)
+       DEALLOCATE(fitres)
 
     END DO XtrackSolCal
     errstat = MAX ( errstat, locerrstat )
@@ -167,7 +182,7 @@ CONTAINS
   SUBROUTINE solar_fit ( &
        n_fitres_loop, fitres_range, n_sol_wvl,                            &
        curr_sol_spec, hw1e, e_asym, solcal_exval, solcal_itnum, chisquav, &
-       yn_bad_pixel, errstat )
+       yn_bad_pixel, rms, fitspec, fitres, errstat )
 
     ! ***************************************************************
     !
@@ -190,6 +205,8 @@ CONTAINS
     REAL    (KIND=r8), INTENT (OUT)   :: hw1e, e_asym, chisquav
     INTEGER (KIND=i4), INTENT (OUT)   :: solcal_exval
     INTEGER (KIND=i2), INTENT (OUT)   :: solcal_itnum
+    REAL    (KIND=r8)  :: rms
+    REAL    (KIND=r8), DIMENSION (n_sol_wvl)         :: fitres, fitspec
 
     ! ------------------
     ! Modified variables
@@ -202,8 +219,7 @@ CONTAINS
     ! Local variables
     ! ---------------
     INTEGER (KIND=i4)  :: locerrstat, i, j, locitnum, n_nozero_wgt
-    REAL    (KIND=r8)  :: rms, mean, mdev, sdev, loclim
-    REAL    (KIND=r8), DIMENSION (n_sol_wvl)         :: fitres, fitspec
+    REAL    (KIND=r8)  :: mean, mdev, sdev, loclim
     REAL    (KIND=r8), DIMENSION (max_calfit_idx)    :: fitvar
     REAL    (KIND=r8), DIMENSION (:,:), ALLOCATABLE  :: covar
 
