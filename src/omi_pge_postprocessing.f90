@@ -21,7 +21,7 @@ SUBROUTINE omi_pge_postprocessing ( &
   USE OMSAO_indices_module, ONLY: pge_hcho_idx
   USE OMSAO_Reference_sector_module
   USE OMSAO_radiance_ref_module, ONLY: yn_radiance_reference
-  USE OMSAO_wfamf_module, ONLY: amf_calculation, climatology_allocate, Cmlat, Cmlon, CmETA, CmEp1
+  USE OMSAO_wfamf_module, ONLY: amf_calculation, climatology_allocate, Cmlat, Cmlon, CmETA
 
   IMPLICIT NONE
 
@@ -127,7 +127,7 @@ SUBROUTINE omi_pge_postprocessing ( &
   ! --------------------------------
   ! Deallocate Climatology variables
   ! --------------------------------
-  CALL climatology_allocate ( "d", Cmlat, Cmlon, CmETA, CmEp1, locerrstat )
+  CALL climatology_allocate ( "d", Cmlat, Cmlon, CmETA, locerrstat )
 
 
   errstat = MAX ( errstat, locerrstat )

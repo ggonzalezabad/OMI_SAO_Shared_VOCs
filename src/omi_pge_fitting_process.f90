@@ -296,7 +296,7 @@ SUBROUTINE omi_fitting (                                  &
   CALL xtrack_solar_calibration_loop ( first_wc_pix, last_wc_pix, errstat )
   pge_error_status = MAX ( pge_error_status, errstat )
   IF ( pge_error_status >= pge_errstat_error )  GO TO 666
-
+  stop
   ! ---------------------------------------------------------------
   ! No matter what, we need a swath line for radiance wavelength 
   ! calibration. This may be a single line or it may be the average
