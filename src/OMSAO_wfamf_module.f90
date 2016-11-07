@@ -562,7 +562,8 @@ CONTAINS
                                    ismonth, ndatafields, h2o_cli_idx
     INTEGER   (KIND=i4), DIMENSION(10) :: datafield_rank, datafield_type
     INTEGER   (KIND=C_LONG)     :: nswathcl, Cmlatcl, Cmloncl, CmETAcl
-    CHARACTER (LEN=   maxchlen) :: swath_file, locswathname, gasdatafieldname, datafield_name
+    CHARACTER (LEN=   maxchlen) :: swath_file, locswathname, gasdatafieldname, datafield_name, &
+         gasdatafieldname_sd
     CHARACTER (LEN=10*maxchlen) :: swath_name
 
     CHARACTER (LEN= 9), PARAMETER :: cli_lat_field         = 'Latitudes'

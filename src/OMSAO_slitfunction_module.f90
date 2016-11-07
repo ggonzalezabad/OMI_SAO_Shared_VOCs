@@ -12,7 +12,6 @@ MODULE OMSAO_slitfunction_module
   USE OMSAO_indices_module,    ONLY: omi_slitfunc_lun
   USE OMSAO_variables_module,  ONLY: omi_slitfunc_fname, l1b_channel
   USE OMSAO_omidata_module,    ONLY: nxtrack_max
-  USE OMSAO_he5_module,        ONLY: granule_year, granule_day, granule_month
   USE OMSAO_errstat_module
 
   IMPLICIT NONE
@@ -86,20 +85,6 @@ MODULE OMSAO_slitfunction_module
   ! changed from one iteration to the other is a reconvolution necessary.
   ! ---------------------------------------------------------------------
   REAL (KIND=r8) :: saved_shift = -1.0E+30_r8, saved_squeeze = -1.0E+30_r8
-
-  ! --------------------------------------------------------------
-  ! Variables to use OMI Hybrid Gaussian analytical slit functions
-  ! --------------------------------------------------------------
-  INTEGER, PARAMETER :: NP  = 5, & ! # of parameterized parameters 
-       NP1 = 6, & ! # of actual slit parameters 
-       NO  = 7, & ! order of polynomials for parameterizing each parameter
-       NCH = 3, &    ! UV1, UV2, VIS
-       NROW=577, &
-       MSCL=1421
-
-  REAL (KIND=r8), DIMENSION(NCH, nxtrack_max, MSCL)    :: omislit_scl
-  REAL (KIND=r8), DIMENSION(NCH, MSCL)                 :: omislit_sclwl
-  INTEGER, DIMENSION(NCH)                              :: nsclwls
 
 
 CONTAINS
@@ -263,6 +248,7 @@ CONTAINS
     ! -------------------------------
     CHARACTER (LEN=20), PARAMETER :: modulename = 'omi_slitfunc_compute'
 
+
     ! ----------------------------------------------------------------------
     ! Compose  row and array of column values, making sure that they stay 
     ! within the  bounds of the tabulated slit function parameters. Constant
@@ -385,7 +371,7 @@ CONTAINS
     INTEGER (KIND=i4) :: locerrstat, row
     INTEGER (KIND=i4) :: l, j, j1, j2, k1, k2, k1ext, k2ext
     REAL    (KIND=r8)                                :: sf_area, sf_err, delvar, swvl, ewvl
-    REAL    (KIND=r8), DIMENSION (nwvl, n_sf_tabwvl) :: sf_wvals
+    REAL    (KIND=r8), DIMENSION (nwvl, n_sf_tabwvl) :: sf_wvals, sf_profiles
     REAL    (KIND=r8), DIMENSION (nwvl+1000)              :: wvlext, specext, convtmpext
     REAL    (KIND=r8), DIMENSION (nwvl+1000, n_sf_tabwvl) :: sf_wvalsext, sf_profilesext
     LOGICAL                                          :: yn_full_range
@@ -399,7 +385,7 @@ CONTAINS
     locerrstat   = pge_errstat_ok
     sf_area = 0.0_r8     ; delvar  = 0.0_r8
     swvl    = 0.0_r8     ; ewvl    = 0.0_r8
-    sf_wvals = 0.0_r8
+    sf_wvals = 0.0_r8    ; sf_profiles = 0.0_r8
     wvlext = 0.0_r8      ; specext = 0.0_r8
     sf_wvalsext = 0.0_r8 ; sf_profilesext = 0.0_r8
 
@@ -412,12 +398,10 @@ CONTAINS
     row = sf_xtrack_center_rows(xtrack_pix)
 
     ! --------------------------------------------------------------
-    ! Compute initial slit function wavelengths. I need them to expa
-    ! nd the omi wvl array and include the extremes.
+    ! Read the slit function for the wavelength we are interested at
     ! --------------------------------------------------------------
-    DO l = 1, nwvl
-       sf_wvals(l,1:n_sf_tabwvl) =  sf_tabwvl(1:n_sf_tabwvl) + wvl(l)
-    END DO
+    CALL omi_slitfunc_compute ( row, nwvl, wvl(1:nwvl), n_sf_tabwvl, &
+         sf_wvals(1:nwvl,1:n_sf_tabwvl), sf_profiles(1:nwvl,1:n_sf_tabwvl) )
 
     ! ----------------------------------------------------------
     ! No we work how much further the edges go from the wvl grid
@@ -430,12 +414,12 @@ CONTAINS
 
     ! ----------------------------------------------------------------
     ! Now extend wvl to wvlext with a similar spacing to wvl grid from
-    ! wvl(1) to swvl and wvl(nwvl) to ewvl (kind of zero padding).
+    ! wvl(1) to swvl and wvl(nwvl) to ewvl
     ! ----------------------------------------------------------------
     delvar = wvl(2)-wvl(1); nswvl = 2*((wvl(1)-swvl) / delvar)
     DO l = 1, nswvl
        wvlext(l)  = wvl(1) - delvar * (nswvl-l+1)
-       specext(l) = 0
+       specext(l) = spec(1)
     END DO
     DO l = nswvl+1, nswvl+1+nwvl-1
        wvlext(l)  = wvl(l-nswvl)
@@ -444,7 +428,7 @@ CONTAINS
     delvar = wvl(nwvl)-wvl(nwvl-1); newvl = 2*((ewvl-wvl(nwvl)) / delvar)
     DO l = nswvl+nwvl+1,nswvl+nwvl+1+newvl
        wvlext(l)  = wvl(nwvl) + delvar * (l-(nswvl+nwvl+1)+1)
-       specext(l) = 0
+       specext(l) = spec(nwvl)
     END DO
    
     nextwvl = nswvl + nwvl + newvl
@@ -486,9 +470,9 @@ CONTAINS
              j1 = j-1 ; EXIT get_sf_start
           END IF
        END DO get_sf_start
-       ! --------------------------------------------------------------------------
-       ! J2 is the maximum position of SF > 0 plus 1, but not more than N_SF_tabwvl
-       ! --------------------------------------------------------------------------
+       ! ------------------------------------------------------------------------
+       ! J2 is the maximum position of SF > 0 plus 1, but not more than N_SF_NPTS
+       ! ------------------------------------------------------------------------
        j2  = n_sf_tabwvl
        get_sf_end: DO j = n_sf_tabwvl-1, 1, -1
           IF ( sf_profilesext(l,j) > 0.0_r8 ) THEN
@@ -667,7 +651,9 @@ CONTAINS
           eslit = npoints+i+j ; rwvl = cwvl - wvl_temp(eslit)
 
           sf_val(sslit) = EXP(-lwvl**2 / ( hw1e * (1.0_r8 + signdp(lwvl)*e_asym) )**2)
-          sf_val(eslit) = EXP(-rwvl**2 / ( hw1e * (1.0_r8 + signdp(rwvl)*e_asym) )**2)
+         sf_val(eslit) = EXP(-rwvl**2 / ( hw1e * (1.0_r8 + signdp(rwvl)*e_asym) )**2)
+ !sf_val(sslit) = EXP(-(ABS(lwvl/  hw1e ))**e_asym)
+ !sf_val(eslit) = EXP(-(ABS(rwvl/  hw1e ))**e_asym)
           IF ( sf_val(sslit) < 0.0005_r8 .AND. sf_val(sslit) < 0.0005_r8 ) EXIT getslit
        END DO getslit
 
@@ -701,111 +687,5 @@ CONTAINS
 
     RETURN
   END SUBROUTINE asymmetric_gaussian_sf
-
-  SUBROUTINE get_omislitscl (ch, lamda, xtrack_pix, scl)
-    
-    ! Input/Output variables   
-    INTEGER, INTENT(IN)         :: ch, xtrack_pix
-    REAL (KIND=r8), INTENT(IN)  :: lamda
-    REAL (KIND=r8), INTENT(OUT) :: scl
-    
-    ! Local variables
-    INTEGER                     :: sidx, eidx, nw             
-    REAL (KIND=r8)              :: frac
-    
-    nw = nsclwls(ch)
-    IF (lamda <= omislit_sclwl(ch, 1) ) THEN
-       scl = omislit_scl(ch, xtrack_pix, 1)
-    ELSE IF (lamda >= omislit_sclwl(ch, nw) ) THEN
-       scl = omislit_scl(ch, xtrack_pix, nw)
-    ELSE
-       sidx = MINVAL(MINLOC(omislit_sclwl(ch, 1:nw), MASK = (omislit_sclwl(ch, 1:nw) >= lamda)))
-       eidx = sidx + 1
-       frac = 1.0 - (lamda - omislit_sclwl(ch, sidx)) / &
-            (omislit_sclwl(ch, eidx) - omislit_sclwl(ch, sidx))
-       scl = omislit_scl(ch, xtrack_pix, sidx) * &
-            frac +  omislit_scl(ch, xtrack_pix, eidx) * (1.0 - frac) 
-    ENDIF
-
-    RETURN
-
-  END SUBROUTINE get_omislitscl
-
-  SUBROUTINE load_omislitscl(pge_error_status)
-
-    ! Input/Output variables
-    INTEGER, INTENT(OUT)                        :: pge_error_status
-
-    CHARACTER (LEN=maxchlen)                    :: slitpar_fname, refdbdir
-    CHARACTER (LEN=3)                           :: seasc
-    CHARACTER (LEN=4)                           :: yrc   
-    INTEGER                                     :: yr, mon, day, i, j, ic, iw, ix, nx, nw, errstat, &
-         calunit
-    CHARACTER (LEN=15), PARAMETER               :: modulename = 'load_omislitscl'
-    LOGICAL :: coadd_uv2=.TRUE.
-
-    IF (granule_month >= 1 .AND. granule_month <= 3) THEN
-       seasc = 'JFM'
-    ELSE IF (granule_month >= 4 .AND. granule_month <= 6) THEN
-       seasc = 'AMJ'
-    ELSE IF (granule_month >= 7 .AND. granule_month <= 9) THEN
-       seasc = 'JAS'
-    ELSE
-       seasc = 'OND'
-    ENDIF
-
-    yr = granule_year
-    IF (yr == 2004) THEN
-       seasc = 'OND'
-    ELSE IF (yr > 2011) THEN
-       yr = 2011
-    ENDIF
-    WRITE(yrc, '(I4.4)') yr
-
-    ! For now hardwire directory name
-    refdbdir = '../tbl/'
-    slitpar_fname =  TRIM(ADJUSTL(refdbdir)) // 'OMI/OMISlitScl_' // yrc // seasc // '.dat'
-    OPEN (UNIT=calunit, FILE=TRIM(ADJUSTL(slitpar_fname)), STATUS='UNKNOWN', IOSTAT=errstat)
-    IF ( errstat /= pge_errstat_ok ) THEN
-       WRITE(*, '(2A)') modulename, ': Cannot open slit parameterization file!!!'
-       pge_error_status = pge_errstat_error; RETURN
-    END IF
-    
-    DO ic = 1, NCH
-       READ(calunit, *) nx, nw
-       nsclwls(ic) = nw
-       DO iw = 1, nw 
-          READ(calunit, *) omislit_sclwl(ic, iw), omislit_scl(ic, 1:nx, iw)
-       ENDDO
-    ENDDO
-    CLOSE(calunit)
-  
-!!$   IF (coadd_uv2) THEN
-!!$      DO ix = 1, nfxtrack
-!!$         i = (ix - 1) * ncoadd + 1
-!!$         omislit_scl(2:3, ix, :) = omislit_scl(2:3, i, :) 
-!!$         
-!!$         DO j = 1, ncoadd-1      
-!!$            omislit_scl(2:3, ix, :) = omislit_scl(2:3, ix, :) + omislit_scl(2:3, i + j, :)
-!!$         ENDDO
-!!$         omislit_scl(2:3, ix, :) = omislit_scl(2:3, ix, :) / ncoadd
-!!$      ENDDO
-!!$   ENDIF
-!!$   
-!!$   ! Furthur binning across the track position
-!!$   IF (nxbin > 1) THEN
-!!$      DO ix = 1, nfxtrack / nxbin
-!!$         i = (ix - 1) * nxbin + 1
-!!$         omislit_scl(:, ix, :) = omislit_scl(:, i, :) 
-!!$         
-!!$         DO j = 1, nxbin - 1      
-!!$            omislit_scl(:, ix, :) = omislit_scl(:, ix, :) + omislit_scl(:, i + j, :)
-!!$         ENDDO
-!!$         omislit_scl(:, ix, :) = omislit_scl(:, ix, :) / nxbin
-!!$      ENDDO
-!!$   ENDIF
-   
-    RETURN
-  END SUBROUTINE load_omislitscl
 
 END MODULE OMSAO_slitfunction_module
