@@ -67,19 +67,6 @@ CONTAINS
     REAL    (KIND=r4) :: lat_midpt
     REAL    (KIND=r8) :: specsum
 
-!!$    INTEGER (KIND=i4), DIMENSION (0:ntrr-1,2)     :: xtrange
-!!$    INTEGER (KIND=i1), DIMENSION (0:ntrr-1)       :: binfac
-!!$    LOGICAL,           DIMENSION (0:ntrr-1)       :: ynzoom
-!!$
-!!$    REAL    (KIND=r4), DIMENSION (nxrr)           :: szacount
-!!$    REAL    (KIND=r4), DIMENSION (nxrr,0:ntrr-1)  :: latr4
-!!$    REAL    (KIND=r8), DIMENSION (nxrr, nwrr)     :: radref_spec, radref_wavl
-!!$    REAL    (KIND=r8), DIMENSION (nwrr)           :: radref_wavl_ix
-!!$    REAL    (KIND=r8), DIMENSION (nxrr, nwrr)     :: allcount, dumcount
-!!$    REAL    (KIND=r8), DIMENSION (nwrr      )     :: cntr8
-!!$    INTEGER (KIND=i2), DIMENSION (nwrr,0:nbits-1) :: qflg_bit
-!!$    INTEGER (KIND=i2), DIMENSION (nwrr)           :: qflg_mask
-
     INTEGER (KIND=i4), ALLOCATABLE, DIMENSION (:,:) :: xtrange
     INTEGER (KIND=i1), ALLOCATABLE, DIMENSION (:)   :: binfac
     LOGICAL,           ALLOCATABLE, DIMENSION (:)   :: ynzoom
@@ -151,10 +138,6 @@ CONTAINS
             xtrange(midpt_line:ntrr-1,1:2), radiance_reference_lnums(2), yn_have_limits(2) )
     END IF
 
-    print*, midpt_line, yn_have_scanline, lat_midpt, radref_latrange
-    print*, radiance_reference_lnums(1), radiance_reference_lnums(2)
-    stop
-
     ! -----------------------------------------------------
     ! If we don't find a working scan line, we have to fold
     ! -----------------------------------------------------
@@ -186,190 +169,227 @@ CONTAINS
     ! Now we can average the spectra and the wavelength arrays. Loop over
     ! the block of swath lines in multiples of NLINES_MAX (100 by default)
     ! --------------------------------------------------------------------
-    allcount    = 0.0_r8  ;  dumcount    = 0.0_r8  ;  szacount = 0.0_r4
-    radref_wavl = 0.0_r8  ;  radref_spec = 0.0_r8
-    omi_radref_sza = 0.0_r4 ; omi_radref_vza = 0.0_r4
+    IF (yn_radiance_reference) THEN
+       allcount    = 0.0_r8  ;  dumcount    = 0.0_r8  ;  szacount = 0.0_r4
+       radref_wavl = 0.0_r8  ;  radref_spec = 0.0_r8
+       omi_radref_sza = 0.0_r4 ; omi_radref_vza = 0.0_r4
+       
+       DO iline = radiance_reference_lnums(1), radiance_reference_lnums(2), nlines_max
+          
+          ! --------------------------------------------------------
+          ! Check if loop ends before n_times_loop max is exhausted, 
+          ! or if we are outside the FIRST_LINE -> LAST_LINE range.
+          ! --------------------------------------------------------
+          nloop = MIN( nlines_max, radiance_reference_lnums(2)-radiance_reference_lnums(1)+1 )
+          
+          IF ( (iline+nloop) > ntrr  )  nloop = ntrr - iline
+          
+          ! ------------------------------
+          ! Get NTIMES_LOOP radiance lines
+          ! ------------------------------
+          CALL omi_read_radiance_lines (              &
+               l1bfile, iline, nxrr, nloop, nwrr, errstat )
+          
+          ! Global used to set the dimension of fitspc
+          n_rad_wvl_max = MAXVAL(omi_nwav_rad(:,0))
+          
+          DO iloop = 0, nloop-1
+             
+             ! ------------------------------------------------------
+             ! Skip this cross-track position if there isn't any data
+             ! ------------------------------------------------------
+             fpix = xtrange(iline+iloop,1)
+             lpix = xtrange(iline+iloop,2)
+             
+             DO ix = 1, nxrr
+                
+                IF ( (ix < fpix) .OR. (ix > lpix) ) CYCLE
+                
+                ! ----------------------------
+                ! Find the pixel quality flags
+                ! ----------------------------
+                ! -------------------------------------------------------------------
+                ! CAREFUL: Only 15 flags/positions (0:14) can be returned or else the
+                !          conversion will result in a numeric overflow.
+                ! -------------------------------------------------------------------
+                CALL convert_2bytes_to_16bits ( nbits-1, nwrr, &
+                     omi_radiance_qflg(1:nwrr,ix,iloop), qflg_bit(1:nwrr,0:nbits-2) )
+                ! --------------------------------------------------------------------
+                ! Add contributions from various quality flags. Any CCD pixel that has
+                ! a cumulative quality flag > 0 will be excluded form the averaging.
+                ! --------------------------------------------------------------------
+                qflg_mask(1:nwrr) = 0_i2
+                qflg_mask(1:nwrr) = &
+                     qflg_bit(1:nwrr,qflg_mis_idx) + &   ! Missing pixel
+                     qflg_bit(1:nwrr,qflg_bad_idx) + &   ! Bad pixel
+                     qflg_bit(1:nwrr,qflg_err_idx) !+ &   ! Processing error
+                !qflg_bit(1:nwrr,qflg_tra_idx) + &   ! Transient pixel
+                !qflg_bit(1:nwrr,qflg_rts_idx) + &   ! RTS pixel
+                !qflg_bit(1:nwrr,qflg_sat_idx)       ! Saturation
+                
+                cntr8(1:nwrr) = 1.0_r8
+                WHERE ( qflg_mask(1:nwrr) > 0_i2 )
+                   cntr8(1:nwrr) = 0.0_r8
+                END WHERE
+                
+                ! ------------------------------------
+                ! Only proceed if we have a good value
+                ! ------------------------------------
+                IF ( ANY ( cntr8(1:nwrr) > 0.0_r8 ) ) THEN
+                   
+                   omi_radiance_spec(1:nwrr,ix,iloop) = &
+                        omi_radiance_spec(1:nwrr,ix,iloop)*cntr8(1:nwrr) * cntr8(1:nwrr)
+                   
+                   specsum = SUM ( omi_radiance_spec(1:nwrr,ix,iloop) ) / SUM ( cntr8(1:nwrr) )
+                   IF ( specsum == 0.0_r8 ) specsum = 1.0_r8
+                   
+                   specsum = 1.0_r8
+                   
+                   radref_spec(ix,1:nwrr) = &
+                        radref_spec(ix,1:nwrr) + omi_radiance_spec(1:nwrr,ix,iloop)/specsum
+                   radref_wavl(ix,1:nwrr) = &
+                        radref_wavl(ix,1:nwrr) + omi_radiance_wavl(1:nwrr,ix,iloop)
+                   allcount(ix,1:nwrr) = allcount(ix,1:nwrr) + cntr8(1:nwrr)
+                   dumcount(ix,1:nwrr) = dumcount(ix,1:nwrr) + 1.0_r8
+                   
+                   IF ( omi_szenith(ix,iloop) /= r4_missval .AND. &
+                        omi_vzenith(ix,iloop) /= r4_missval         ) THEN
+                      omi_radref_sza(ix) = omi_radref_sza(ix) + omi_szenith(ix,iloop)
+                      omi_radref_vza(ix) = omi_radref_vza(ix) + omi_vzenith(ix,iloop)
+                      szacount      (ix) = szacount  (ix) + 1.0_r4
+                   END IF
+                   
+                END IF
+                
+             END DO
+             
+          END DO
+          
+       END DO
+       
+       ! -----------------------------------------------------------
+       ! Now for the actual averaging and assignment of final arrays
+       ! -----------------------------------------------------------
+       n_comm_wvl = 0
+       DO ix = 1, nxrr
+          
+          ! -----------------------------------
+          ! Average the wavelengths and spectra
+          ! -----------------------------------
+          WHERE ( allcount(ix,1:nwrr) /= 0.0_r8 )
+             radref_spec(ix,1:nwrr) = radref_spec(ix,1:nwrr) / allcount(ix,1:nwrr)
+          END WHERE
+          WHERE ( dumcount(ix,1:nwrr) /= 0.0_r8 )
+             radref_wavl(ix,1:nwrr) = radref_wavl(ix,1:nwrr) / dumcount(ix,1:nwrr)
+          END WHERE
+          
+          ! -------------------------------------------
+          ! Average the Solar and Viewing Zenith Angles
+          ! -------------------------------------------
+          IF ( szacount(ix) > 0.0_r4 ) THEN
+             omi_radref_sza(ix) = omi_radref_sza(ix) / szacount(ix)
+             omi_radref_vza(ix) = omi_radref_vza(ix) / szacount(ix)
+          ELSE
+             omi_radref_sza(ix) = r4_missval
+             omi_radref_vza(ix) = r4_missval             
+          END IF
+          
+          ! -------------------------------------------------------------------------------
+          ! Determine the CCD pixel numbers based on the selected wavelength fitting window
+          ! -------------------------------------------------------------------------------
+          
+          radref_wavl_ix = radref_wavl (ix, 1:nwrr)
+          DO j1 = 1, 3, 2
+             CALL array_locate_r8 ( &
+                  nwrr, radref_wavl_ix, fit_winwav_lim(j1  ), 'LE', &
+                  omi_ccdpix_selection(ix,j1  ) )
+             CALL array_locate_r8 ( &
+                  nwrr, radref_wavl_ix, fit_winwav_lim(j1+1), 'GE', &
+                  omi_ccdpix_selection(ix,j1+1) )
+          END DO
+          
+          imin = omi_ccdpix_selection(ix,1)
+          imax = omi_ccdpix_selection(ix,4)
+          
+          icnt = imax - imin + 1
+          omi_nwav_radref(       ix) = icnt
+          omi_radref_spec(1:icnt,ix) = radref_spec(ix,imin:imax)
+          omi_radref_wavl(1:icnt,ix) = radref_wavl_ix(imin:imax)
+          omi_radref_qflg(1:icnt,ix) = 0_i2
+          omi_radref_wght(1:icnt,ix) = normweight
+          
+          ! -----------------------------------------------------------------
+          ! Re-assign the average solar wavelength variable, sinfe from here
+          ! on we are concerned with radiances.
+          ! -----------------------------------------------------------------
+          omi_sol_wav_avg(ix) =  SUM( omi_radref_wavl(1:icnt,ix) ) / REAL(icnt, KIND=r8)
+          
+          ! ------------------------------------------------------------------
+          ! Set weights and quality flags to "bad" for missing spectral points
+          ! ------------------------------------------------------------------
+          allcount(ix,1:icnt) = allcount(ix,imin:imax)
+          WHERE ( allcount(ix,1:icnt) == 0.0_r8 )
+             omi_radref_qflg(1:icnt,ix) = 7_i2
+             omi_radref_wght(1:icnt,ix) = downweight
+          END WHERE
+          
+          ! ------------------------------------------------------------------------------
+          ! If any window is excluded, find the corresponding indices. This has to be done
+          ! after the array assignements above because we need to know which indices to
+          ! exclude from the final arrays, not the complete ones read from the HE4 file.
+          ! ------------------------------------------------------------------------------
+          omi_ccdpix_exclusion(ix,1:2) = -1
+          IF ( MINVAL(fit_winexc_lim(1:2)) > 0.0_r8 ) THEN
+             CALL array_locate_r8 ( &
+                  nwrr, radref_wavl_ix, fit_winexc_lim(1), 'GE', &
+                  omi_ccdpix_exclusion(ix,1) )
+             CALL array_locate_r8 ( &
+                  nwrr, radref_wavl_ix, fit_winexc_lim(2), 'LE', &
+                  omi_ccdpix_exclusion(ix,2) )
+          END IF
+          
+          ! ----------------------------------------
+          ! Update the maximum number of wavelengths
+          ! ----------------------------------------
+          n_comm_wvl = MAX ( n_comm_wvl, icnt )
+          
+       END DO
+    ELSE ! When we are not using a radiance reference we still need to find out omi_ccdpix_exclusion
+       iline = radiance_reference_lnums(1)
 
-    DO iline = radiance_reference_lnums(1), radiance_reference_lnums(2), nlines_max
-
-       ! --------------------------------------------------------
-       ! Check if loop ends before n_times_loop max is exhausted, 
-       ! or if we are outside the FIRST_LINE -> LAST_LINE range.
-       ! --------------------------------------------------------
-       nloop = MIN( nlines_max, radiance_reference_lnums(2)-radiance_reference_lnums(1)+1 )
-
-       IF ( (iline+nloop) > ntrr  )  nloop = ntrr - iline
-
+       ! We are reading only one line
+       nloop = 1
+          
        ! ------------------------------
        ! Get NTIMES_LOOP radiance lines
        ! ------------------------------
        CALL omi_read_radiance_lines (              &
             l1bfile, iline, nxrr, nloop, nwrr, errstat )
-
        ! Global used to set the dimension of fitspc
        n_rad_wvl_max = MAXVAL(omi_nwav_rad(:,0))
 
-       DO iloop = 0, nloop-1
+       DO ix = 1, nxrr
 
-          ! ------------------------------------------------------
-          ! Skip this cross-track position if there isn't any data
-          ! ------------------------------------------------------
-          fpix = xtrange(iline+iloop,1)
-          lpix = xtrange(iline+iloop,2)
-
-          DO ix = 1, nxrr
-
-             IF ( (ix < fpix) .OR. (ix > lpix) ) CYCLE
-
-             ! ----------------------------
-             ! Find the pixel quality flags
-             ! ----------------------------
-             ! -------------------------------------------------------------------
-             ! CAREFUL: Only 15 flags/positions (0:14) can be returned or else the
-             !          conversion will result in a numeric overflow.
-             ! -------------------------------------------------------------------
-             CALL convert_2bytes_to_16bits ( nbits-1, nwrr, &
-                  omi_radiance_qflg(1:nwrr,ix,iloop), qflg_bit(1:nwrr,0:nbits-2) )
-             ! --------------------------------------------------------------------
-             ! Add contributions from various quality flags. Any CCD pixel that has
-             ! a cumulative quality flag > 0 will be excluded form the averaging.
-             ! --------------------------------------------------------------------
-             qflg_mask(1:nwrr) = 0_i2
-             qflg_mask(1:nwrr) = &
-                  qflg_bit(1:nwrr,qflg_mis_idx) + &   ! Missing pixel
-                  qflg_bit(1:nwrr,qflg_bad_idx) + &   ! Bad pixel
-                  qflg_bit(1:nwrr,qflg_err_idx) !+ &   ! Processing error
-                  !qflg_bit(1:nwrr,qflg_tra_idx) + &   ! Transient pixel
-                  !qflg_bit(1:nwrr,qflg_rts_idx) + &   ! RTS pixel
-                  !qflg_bit(1:nwrr,qflg_sat_idx)       ! Saturation
-
-             cntr8(1:nwrr) = 1.0_r8
-             WHERE ( qflg_mask(1:nwrr) > 0_i2 )
-                cntr8(1:nwrr) = 0.0_r8
-             END WHERE
-
-             ! ------------------------------------
-             ! Only proceed if we have a good value
-             ! ------------------------------------
-             IF ( ANY ( cntr8(1:nwrr) > 0.0_r8 ) ) THEN
-
-                omi_radiance_spec(1:nwrr,ix,iloop) = &
-                     omi_radiance_spec(1:nwrr,ix,iloop)*cntr8(1:nwrr) * cntr8(1:nwrr)
-
-                specsum = SUM ( omi_radiance_spec(1:nwrr,ix,iloop) ) / SUM ( cntr8(1:nwrr) )
-                IF ( specsum == 0.0_r8 ) specsum = 1.0_r8
-
-                specsum = 1.0_r8
-
-                radref_spec(ix,1:nwrr) = &
-                     radref_spec(ix,1:nwrr) + omi_radiance_spec(1:nwrr,ix,iloop)/specsum
-                radref_wavl(ix,1:nwrr) = &
-                     radref_wavl(ix,1:nwrr) + omi_radiance_wavl(1:nwrr,ix,iloop)
-                allcount(ix,1:nwrr) = allcount(ix,1:nwrr) + cntr8(1:nwrr)
-                dumcount(ix,1:nwrr) = dumcount(ix,1:nwrr) + 1.0_r8
-
-                IF ( omi_szenith(ix,iloop) /= r4_missval .AND. &
-                     omi_vzenith(ix,iloop) /= r4_missval         ) THEN
-                   omi_radref_sza(ix) = omi_radref_sza(ix) + omi_szenith(ix,iloop)
-                   omi_radref_vza(ix) = omi_radref_vza(ix) + omi_vzenith(ix,iloop)
-                   szacount      (ix) = szacount  (ix) + 1.0_r4
-                END IF
-
-             END IF
-
-          END DO
-
-       END DO
-
-    END DO
-
-    ! -----------------------------------------------------------
-    ! Now for the actual averaging and assignment of final arrays
-    ! -----------------------------------------------------------
-    n_comm_wvl = 0
-    DO ix = 1, nxrr
-
-       ! -----------------------------------
-       ! Average the wavelengths and spectra
-       ! -----------------------------------
-       WHERE ( allcount(ix,1:nwrr) /= 0.0_r8 )
-          radref_spec(ix,1:nwrr) = radref_spec(ix,1:nwrr) / allcount(ix,1:nwrr)
-       END WHERE
-       WHERE ( dumcount(ix,1:nwrr) /= 0.0_r8 )
-          radref_wavl(ix,1:nwrr) = radref_wavl(ix,1:nwrr) / dumcount(ix,1:nwrr)
-       END WHERE
-
-       ! -------------------------------------------
-       ! Average the Solar and Viewing Zenith Angles
-       ! -------------------------------------------
-       IF ( szacount(ix) > 0.0_r4 ) THEN
-          omi_radref_sza(ix) = omi_radref_sza(ix) / szacount(ix)
-          omi_radref_vza(ix) = omi_radref_vza(ix) / szacount(ix)
-       ELSE
-          omi_radref_sza(ix) = r4_missval
-          omi_radref_vza(ix) = r4_missval             
-       END IF
-
-       ! -------------------------------------------------------------------------------
-       ! Determine the CCD pixel numbers based on the selected wavelength fitting window
-       ! -------------------------------------------------------------------------------
-
-       radref_wavl_ix = radref_wavl (ix, 1:nwrr)
-       DO j1 = 1, 3, 2
-          CALL array_locate_r8 ( &
-               nwrr, radref_wavl_ix, fit_winwav_lim(j1  ), 'LE', &
-               omi_ccdpix_selection(ix,j1  ) )
-          CALL array_locate_r8 ( &
-               nwrr, radref_wavl_ix, fit_winwav_lim(j1+1), 'GE', &
-               omi_ccdpix_selection(ix,j1+1) )
-       END DO
-
-       imin = omi_ccdpix_selection(ix,1)
-       imax = omi_ccdpix_selection(ix,4)
-
-       icnt = imax - imin + 1
-       omi_nwav_radref(       ix) = icnt
-       omi_radref_spec(1:icnt,ix) = radref_spec(ix,imin:imax)
-       omi_radref_wavl(1:icnt,ix) = radref_wavl_ix(imin:imax)
-       omi_radref_qflg(1:icnt,ix) = 0_i2
-       omi_radref_wght(1:icnt,ix) = normweight
-
-       ! -----------------------------------------------------------------
-       ! Re-assign the average solar wavelength variable, sinfe from here
-       ! on we are concerned with radiances.
-       ! -----------------------------------------------------------------
-       omi_sol_wav_avg(ix) =  SUM( omi_radref_wavl(1:icnt,ix) ) / REAL(icnt, KIND=r8)
-
-       ! ------------------------------------------------------------------
-       ! Set weights and quality flags to "bad" for missing spectral points
-       ! ------------------------------------------------------------------
-       allcount(ix,1:icnt) = allcount(ix,imin:imax)
-       WHERE ( allcount(ix,1:icnt) == 0.0_r8 )
-          omi_radref_qflg(1:icnt,ix) = 7_i2
-          omi_radref_wght(1:icnt,ix) = downweight
-       END WHERE
+          radref_wavl(ix,1:nwrr) = omi_radiance_wavl(1:nwrr,ix,0)
+          radref_wavl_ix = radref_wavl (ix, 1:nwrr)
           
-       ! ------------------------------------------------------------------------------
-       ! If any window is excluded, find the corresponding indices. This has to be done
-       ! after the array assignements above because we need to know which indices to
-       ! exclude from the final arrays, not the complete ones read from the HE4 file.
-       ! ------------------------------------------------------------------------------
-       omi_ccdpix_exclusion(ix,1:2) = -1
-       IF ( MINVAL(fit_winexc_lim(1:2)) > 0.0_r8 ) THEN
-          CALL array_locate_r8 ( &
-               nwrr, radref_wavl_ix, fit_winexc_lim(1), 'GE', &
-               omi_ccdpix_exclusion(ix,1) )
-          CALL array_locate_r8 ( &
-               nwrr, radref_wavl_ix, fit_winexc_lim(2), 'LE', &
-               omi_ccdpix_exclusion(ix,2) )
-       END IF
+          DO j1 = 1, 3, 2
+             CALL array_locate_r8 ( &
+                  nwrr, radref_wavl_ix, fit_winwav_lim(j1  ), 'LE', &
+                  omi_ccdpix_selection(ix,j1  ) )
+             CALL array_locate_r8 ( &
+                  nwrr, radref_wavl_ix, fit_winwav_lim(j1+1), 'GE', &
+                  omi_ccdpix_selection(ix,j1+1) )
+          END DO
+          
+          imin = omi_ccdpix_selection(ix,1)
+          imax = omi_ccdpix_selection(ix,4)
+          
+          icnt = imax - imin + 1
+          omi_nwav_radref(ix) = icnt
 
-       ! ----------------------------------------
-       ! Update the maximum number of wavelengths
-       ! ----------------------------------------
-       n_comm_wvl = MAX ( n_comm_wvl, icnt )
-
-    END DO
+       END DO
+    END IF ! End logical yn_radiance_reference
 
     ! --------------------
     ! Deallocate variables

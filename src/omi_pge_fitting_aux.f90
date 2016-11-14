@@ -126,6 +126,7 @@ SUBROUTINE omi_adjust_irradiance_data ( &
   curr_sol_spec(wvl_idx,1:n_sol_wvl) = omi_irrad_wvl(1:n_sol_wvl)
   curr_sol_spec(spc_idx,1:n_sol_wvl) = omi_irrad_spc(1:n_sol_wvl)
   omi_irrad_ccd(        1:n_sol_wvl) = (/ (i, i = imin1, imax1) /)
+  curr_sol_spec(ccd_idx,1:n_sol_wvl) = omi_irrad_ccd(1:n_sol_wvl)
 
   ! ---------------------------------------------------------
   ! Compute the weights. This is a bit tedious, as we have to
@@ -133,9 +134,7 @@ SUBROUTINE omi_adjust_irradiance_data ( &
   ! out assuming "all is well" and exclude/modify only those
   ! entries that are expected to give us trouble.
   ! ---------------------------------------------------------
-
   curr_sol_spec(sig_idx,1:n_sol_wvl) = normweight
-
 
   ! -----------------------------------
   ! Make sure wavelengths are ascending
@@ -288,7 +287,6 @@ SUBROUTINE omi_adjust_irradiance_data ( &
   j1 = j1 - imin1 + 1    ; j2 = j2 - imin1 + 1
   IF ( j1 >= 1 .AND. j2 <= n_sol_wvl ) curr_sol_spec(sig_idx,j1:j2) = downweight
 
-
   IF ( locerrstat /= pge_errstat_ok ) errstat = MAX ( errstat, locerrstat )
 
   RETURN
@@ -331,11 +329,6 @@ SUBROUTINE omi_adjust_radiance_data (                                   &
   INTEGER (KIND=i4),  DIMENSION (n_omi_radwvl),           INTENT (OUT) :: omi_rad_ccd
   REAL    (KIND=r8),  DIMENSION (ccd_idx,1:n_omi_radwvl), INTENT (OUT) :: curr_rad_spec
 
-  ! ------------------
-  ! Modified variables
-  ! ------------------
-  !INTEGER (KIND=i4), INTENT (INOUT) :: errstat
-
   ! ---------------
   ! Local variables
   ! ---------------
@@ -350,7 +343,7 @@ SUBROUTINE omi_adjust_radiance_data (                                   &
   locerrstat  = pge_errstat_ok
   yn_skip_pix = .FALSE.
 
-  imin1 = omi_ccdpix_idx(1) ; imax1 = omi_ccdpix_idx(4)  ! The total window
+  imin1 = omi_ccdpix_idx(1) ; imax1 = omi_ccdpix_idx(4)  ! The total band
   imin2 = omi_ccdpix_idx(2) ; imax2 = omi_ccdpix_idx(3)  ! The fitting window
 
   ! -------------------------------------------------------------
@@ -361,8 +354,7 @@ SUBROUTINE omi_adjust_radiance_data (                                   &
   curr_rad_spec(wvl_idx,1:n_rad_wvl) = omi_rad_wvl(1:n_rad_wvl)
   curr_rad_spec(spc_idx,1:n_rad_wvl) = omi_rad_spc(1:n_rad_wvl)
   omi_rad_ccd  (        1:n_rad_wvl) = (/ (i, i = imin1, imax1) /)
-
-
+  curr_rad_spec(ccd_idx,1:n_rad_wvl) = omi_rad_ccd(1:n_rad_wvl)
   ! ---------------------------------------------------------
   ! Compute the weights. This is a bit tedious, as we have to
   ! check for a number of things that can go wrong. We start
@@ -487,6 +479,7 @@ SUBROUTINE omi_adjust_radiance_data (                                   &
   rad_spec_avg = SUM ( &
        curr_rad_spec(spc_idx,1:n_rad_wvl)*weightsum(1:n_rad_wvl) ) / &
        MAX(1.0_r8, SUM(weightsum(1:n_rad_wvl)))
+
   IF ( rad_spec_avg <= 0.0_r8 ) THEN
      yn_skip_pix = .TRUE.
      rad_spec_avg = 1.0_r8
