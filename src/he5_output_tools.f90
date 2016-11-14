@@ -86,15 +86,16 @@ FUNCTION he5_init_swath ( file_name, swath_name, nTimes, nXtrack, nSwLevels ) RE
   ! ---------------------------------------------------------
   ! Dimensions for Diagnostic Fields
   ! ---------------------------------------------------------
+  errstat = HE5_SWdefdim  ( pge_swath_id, nfv,   INT(n_fitvar_rad,   KIND=C_LONG) )
+  errstat = HE5_SWdefdim  ( pge_swath_id, nwalm, INT(nwavel_max,     KIND=C_LONG) )
+
   IF ( yn_diagnostic_run ) THEN
-     errstat = HE5_SWdefdim  ( pge_swath_id, nfv,   INT(n_fitvar_rad,   KIND=C_LONG) )
      errstat = HE5_SWdefdim  ( pge_swath_id, ncwvl, INT(n_comm_wvl,     KIND=C_LONG) )
      errstat = HE5_SWDefdim  ( pge_swath_id, ncv,   INT(nclenfit,       KIND=C_LONG) )
      errstat = HE5_SWdefdim  ( pge_swath_id, nwcp,  INT(max_calfit_idx, KIND=C_LONG) )
 
      ! CCM for refspec database
      errstat = HE5_SWdefdim  ( pge_swath_id, nrspc, INT(max_rs_idx,     KIND=C_LONG) )
-     errstat = HE5_SWdefdim  ( pge_swath_id, nwalm, INT(nwavel_max,     KIND=C_LONG) )
 
   END IF
 
@@ -206,22 +207,14 @@ FUNCTION he5_define_fields ( pge_idx, swath_name, nTimes, nXtrack, nSwLevels ) R
   ! Create fields for solar and radiance wavelength calibration parameters
   ! ----------------------------------------------------------------------
   DO i = 1, n_solcal_fields
-     CALL he5_check_for_compressibility ( &
-          nTimes, nXtrack, nSwLevels, TRIM(ADJUSTL(sol_calfit_he5fields(i)%Dimensions)), &
-          yn_compress_field, n_chunk_dim, chunk_dim )
-     IF ( yn_compress_field ) THEN
-        errstat = HE5_SWdefcomch ( &
-             pge_swath_id, he5_comp_type, he5_comp_par, n_chunk_dim, chunk_dim(1:n_chunk_dim) )
-     ELSE
-        errstat = HE5_SWdefchunk( pge_swath_id, n_chunk_dim, chunk_dim(1:n_chunk_dim) )
-        errstat = HE5_SWdefcomp ( pge_swath_id, he5_nocomp_type, he5_nocomp_par )
-     END IF
-
      ! -------------
      ! Set FillValue
      ! -------------
      CALL he5_set_fill_value ( sol_calfit_he5fields(i), errstat )
 
+     ! ----------------
+     ! Create variables
+     ! ----------------
      sol_calfit_he5fields(i)%Swath_ID = pge_swath_id
      errstat = HE5_SWdefdfld (                                      &
           sol_calfit_he5fields(i)%Swath_ID,                         &
@@ -229,6 +222,7 @@ FUNCTION he5_define_fields ( pge_idx, swath_name, nTimes, nXtrack, nSwLevels ) R
           TRIM(ADJUSTL(sol_calfit_he5fields(i)%Dimensions)),   " ", &
           sol_calfit_he5fields(i)%HE5_DataType, he5_hdfe_nomerge )
   END DO
+
   DO i = 1, n_radcal_fields
      CALL he5_check_for_compressibility ( &
           nTimes, nXtrack, nSwLevels, TRIM(ADJUSTL(rad_calfit_he5fields(i)%Dimensions)), &

@@ -13,6 +13,7 @@ MODULE OMSAO_solar_wavcal_module
        winwav_min, winwav_max
   USE OMSAO_omidata_module
   USE OMSAO_errstat_module
+  USE OMSAO_he5_module
 
   IMPLICIT NONE
 
@@ -57,10 +58,7 @@ CONTAINS
     ! ---------------------------------------------------------------
     ! Loop for solar wavelength calibration and slit function fitting
     ! ---------------------------------------------------------------
-    write(9,*) 'Solar_fitting_ouput'
-    write(9,*) 'Number_of_xtrack_positions ', last_pix-first_pix+1
     XtrackSolCal: DO ipix = first_pix, last_pix
-       write(9,*) 'Xtrack_position ', ipix
        locerrstat = pge_errstat_ok
 
        curr_xtrack_pixnum = ipix
@@ -84,7 +82,6 @@ CONTAINS
             n_sol_wvl, curr_sol_spec(wvl_idx:ccd_idx,1:n_omi_irradwvl), &
             yn_skip_pix, locerrstat )
        ! -------------------------------------------------------------------------
-       write(9,*) 'Number_of_wavelengths ', n_sol_wvl
        IF ( yn_skip_pix .OR. locerrstat >= pge_errstat_error ) THEN
           errstat = MAX ( errstat, locerrstat )
           omi_cross_track_skippix (ipix) = .TRUE.
@@ -125,14 +122,7 @@ CONTAINS
        omi_solcal_pars (1:max_calfit_idx,ipix)    = fitvar_cal(1:max_calfit_idx)
        omi_solcal_xflag(ipix)                     = INT (solcal_exval, KIND=i2)
        omi_solcal_itnum(ipix)                     = INT (solcal_itnum, KIND=i2)
-       write(9,*) 'Maximum_number_of_fitting_variables ', max_calfit_idx
-       write(9,*) 'RMS ', rms 
-       write(9,'(1xA,17E15.6)') 'FITVAL_CAL', fitvar_cal(1:max_calfit_idx)
-       write(9,'(1xA)') 'WAVE SPEC WEIG FITS RESI'
-       DO iwav =  1, n_sol_wvl
-          write(9,'(5E15.6)') curr_sol_spec(wvl_idx, iwav), curr_sol_spec(spc_idx, iwav), &
-               curr_sol_spec(sig_idx,iwav), fitspec(iwav), fitres(iwav)
-       END DO
+
        ! ------------------------------------------------------------------------
        ! Save the processed solar spectrum in its original array. Note that the
        ! spectrum is now normalized, has bad pixels set to -1, and that the
@@ -152,6 +142,15 @@ CONTAINS
             0, 1, pge_errstat_ok, OMSAO_S_PROGRESS, TRIM(ADJUSTL(addmsg)), &
             vb_lev_omidebug, errstat )
        IF ( verb_thresh_lev >= vb_lev_screen  ) WRITE (*, '(A)') TRIM(ADJUSTL(addmsg))
+
+       ! ---------------------------
+       ! Write out solar calibration
+       ! ---------------------------
+       CALL he5_solcal_write( &
+            ipix, n_sol_wvl, solcal_exval, solcal_itnum, fitvar_cal(shi_idx), &
+            hw1e, e_asym, rms, curr_sol_spec(wvl_idx, 1:n_sol_wvl),           &
+            curr_sol_spec(spc_idx, 1:n_sol_wvl),                              &
+            fitspec(1:n_sol_wvl), fitres(1:n_sol_wvl), errstat)            
 
        DEALLOCATE(fitspec)
        DEALLOCATE(fitres)
@@ -409,5 +408,82 @@ CONTAINS
     RETURN
   END SUBROUTINE solar_fit
 
+  SUBROUTINE he5_solcal_write ( &
+       ix, nwvl, exval, itnum, shift,  &
+       hw1e, e_asym, rms, wavs,        &
+       measpec, fitspec, fitres, errstat)            
+
+    IMPLICIT NONE
+
+    ! ------------------------------
+    ! Name of this module/subroutine
+    ! ------------------------------
+    CHARACTER (LEN=14), PARAMETER :: modulename = 'he5_solcal_amf'
+
+    ! ---------------
+    ! Input variables
+    ! ---------------
+    INTEGER (KIND=i2), INTENT(IN) :: itnum
+    INTEGER (KIND=i4), INTENT(IN) :: ix, exval, nwvl
+    REAL    (KIND=r8), INTENT(IN) :: shift, hw1e, e_asym, rms
+    REAL    (KIND=r8), DIMENSION(1:nwvl), INTENT(IN) :: wavs, measpec, fitspec, fitres
+
+    ! -----------------
+    ! Modified variable
+    ! -----------------
+    INTEGER (KIND=i4), INTENT (INOUT) :: errstat
+
+    ! ---------------
+    ! Local variables
+    ! ---------------
+    INTEGER (KIND=i4) :: locerrstat
+  
+
+    he5_start_1d  = ix-1 ;  he5_stride_1d = 1 ; he5_edge_1d = 1
+
+    ! Elsunc exit flag
+    locerrstat = HE5_SWWRFLD ( pge_swath_id, TRIM(ADJUSTL(swccf_field)), &
+         he5_start_1d, he5_stride_1d, he5_edge_1d, exval )
+    errstat = MAX ( errstat, locerrstat )
+    ! Iteration number
+    locerrstat = HE5_SWWRFLD ( pge_swath_id, TRIM(ADJUSTL(swcic_field)), &
+         he5_start_1d, he5_stride_1d, he5_edge_1d, itnum )
+    errstat = MAX ( errstat, locerrstat )
+    ! Wavelength shift
+    locerrstat = HE5_SWWRFLD ( pge_swath_id, TRIM(ADJUSTL(swcsh_field)), &
+         he5_start_1d, he5_stride_1d, he5_edge_1d, shift )
+    errstat = MAX ( errstat, locerrstat )
+    ! HW1E
+    locerrstat = HE5_SWWRFLD ( pge_swath_id, TRIM(ADJUSTL(swchw_field)), &
+         he5_start_1d, he5_stride_1d, he5_edge_1d, hw1e )
+    errstat = MAX ( errstat, locerrstat )
+    ! Gauss Factor
+    locerrstat = HE5_SWWRFLD ( pge_swath_id, TRIM(ADJUSTL(swcgf_field)), &
+         he5_start_1d, he5_stride_1d, he5_edge_1d, e_asym )
+    errstat = MAX ( errstat, locerrstat )
+    ! RMS
+    locerrstat = HE5_SWWRFLD ( pge_swath_id, TRIM(ADJUSTL(swcrm_field)), &
+         he5_start_1d, he5_stride_1d, he5_edge_1d, rms )
+    errstat = MAX ( errstat, locerrstat )
+
+    he5_start_2d  = (/ ix-1, 0 /) ;  he5_stride_2d = (/ 1, 1 /) ; he5_edge_2d = (/ 1, nwvl /)
+    ! Wavelengths
+    locerrstat = HE5_SWWRFLD ( pge_swath_id, TRIM(ADJUSTL(swcwa_field)), &
+         he5_start_2d, he5_stride_2d, he5_edge_2d, wavs(1:nwvl) )
+    errstat = MAX ( errstat, locerrstat )
+    ! Solar spectrum
+    locerrstat = HE5_SWWRFLD ( pge_swath_id, TRIM(ADJUSTL(swcms_field)), &
+         he5_start_2d, he5_stride_2d, he5_edge_2d, measpec(1:nwvl) )
+    errstat = MAX ( errstat, locerrstat )
+    ! Fitted spectrum
+    locerrstat = HE5_SWWRFLD ( pge_swath_id, TRIM(ADJUSTL(swcfs_field)), &
+         he5_start_2d, he5_stride_2d, he5_edge_2d, fitspec(1:nwvl) )
+    errstat = MAX ( errstat, locerrstat )
+    ! Fitting residual
+    locerrstat = HE5_SWWRFLD ( pge_swath_id, TRIM(ADJUSTL(swcfr_field)), &
+         he5_start_2d, he5_stride_2d, he5_edge_2d, fitres(1:nwvl) )
+    errstat = MAX ( errstat, locerrstat )
+
+  END SUBROUTINE he5_solcal_write
 
 END MODULE OMSAO_solar_wavcal_module

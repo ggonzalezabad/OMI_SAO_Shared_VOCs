@@ -205,11 +205,16 @@ MODULE OMSAO_he5_module
   CHARACTER (LEN=28), PARAMETER ::  rwcic_field    = "RadianceWavCalIterationCount"
   CHARACTER (LEN=27), PARAMETER ::  rwclr_field    = "RadianceWavCalLatitudeRange"
 
-  CHARACTER (LEN=14), PARAMETER ::  swcfi_field    = "SolarWavCalFit"
   CHARACTER (LEN=26), PARAMETER ::  swccf_field    = "SolarWavCalConvergenceFlag"
   CHARACTER (LEN=25), PARAMETER ::  swcic_field    = "SolarWavCalIterationCount"
-
-
+  CHARACTER (LEN=14), PARAMETER ::  swcrm_field    = "SolarWavCalRMS"
+  CHARACTER (LEN=21), PARAMETER ::  swcwa_field    = "SolarWavCalWavelength"
+  CHARACTER (LEN=24), PARAMETER ::  swcms_field    = "SolarWavCalSolarSpectrum"
+  CHARACTER (LEN=25), PARAMETER ::  swcfs_field    = "SolarWavCalFittedSpectrum"
+  CHARACTER (LEN=26), PARAMETER ::  swcfr_field    = "SolarWavCalFittingResidual"
+  CHARACTER (LEN=16), PARAMETER ::  swcsh_field    = "SolarWavCalShift"
+  CHARACTER (LEN=15), PARAMETER ::  swchw_field    = "SolarWavCalhw1e"
+  CHARACTER (LEN=15), PARAMETER ::  swcgf_field    = "SolarWavCalGfac"
 
   ! --------------------------------------------------
   ! Swath data fields, additional in "diagnostic" runs
@@ -298,19 +303,45 @@ MODULE OMSAO_he5_module
   ! --------------------------------------------  
   ! Data fields for Solar Wavelength Calibration
   ! --------------------------------------------  
-  INTEGER (KIND=i4), PARAMETER :: n_solcal_fields = 1
+  INTEGER (KIND=i4), PARAMETER :: n_solcal_fields = 10
   CHARACTER (LEN=45), DIMENSION ( 2, n_solcal_fields ), PARAMETER :: &
        solcal_field_names = RESHAPE ( (/ &
-       "SolarWavCalConvergenceFlag                   ",     &
-       "Solar Wavelength Calibration Convergence Flag"  /), &
+       "SolarWavCalConvergenceFlag                   ","Solar Wavelength Calibration Convergence Flag",   &
+       "SolarWavCalIterationCount                    ","Solar Wavelength Calibration Iteration Count ",   &
+       "SolarWavCalRMS                               ","Solar Wavelength Calibration RMS             ",   &
+       "SolarWavCalWavelength                        ","Solar Wavelength Calibration Wavelength      ",   &
+       "SolarWavCalSolarSpectrum                     ","Solar Wavelength Calibration Solar Spectrum  ",   &
+       "SolarWavCalFittedSpectrum                    ","Solar Wavelength Calibration Fitted Spectrum ",   &
+       "SolarWavCalFittingResidual                   ","Solar Wavelength Calibration Fitting Residual",   &
+       "SolarWavCalShift                             ","Solar Wavelength Calibration Shift           ",   &
+       "SolarWavCalhw1e                              ","Solar Wavelength Calibration HW1E            ",   &
+       "SolarWavCalGfac                              ","Solar Wavelength Calibration Gauss Factor    "/), &
        (/ 2, n_solcal_fields /) )
-  CHARACTER (LEN=12), DIMENSION ( 4, n_solcal_fields ), PARAMETER :: &
+  CHARACTER (LEN=20), DIMENSION ( 4, n_solcal_fields ), PARAMETER :: &
        solcal_field_specs = RESHAPE ( (/ &
-       "NoUnits     ","nXtrack     ","OMI-Specific","i2          " /),&
+       "NoUnits             ","nXtrack             ","OMI-Specific","i4                  ",   &
+       "NoUnits             ","nXtrack             ","OMI-Specific","i2                  ",   &
+       "NoUnits             ","nXtrack             ","OMI-Specific","r8                  ",   &
+       "NoUnits             ","nXtrack,nwavel_max  ","OMI-Specific","r8                  ",   &
+       "NoUnits             ","nXtrack,nwavel_max  ","OMI-Specific","r8                  ",   &
+       "NoUnits             ","nXtrack,nwavel_max  ","OMI-Specific","r8                  ",   &
+       "NoUnits             ","nXtrack,nwavel_max  ","OMI-Specific","r8                  ",   &
+       "NoUnits             ","nXtrack             ","OMI-Specific","r8                  ",   &
+       "NoUnits             ","nXtrack             ","OMI-Specific","r8                  ",   &
+       "NoUnits             ","nXtrack             ","OMI-Specific","r8                  "/), &
        (/ 4, n_solcal_fields /) )
   REAL (KIND=r8), DIMENSION ( 2, n_solcal_fields ), PARAMETER :: &
        solcal_valids = RESHAPE ( (/ &
-       elsunc_usrstop_eval_r8, elsunc_highest_eval_r8 /), &
+       elsunc_usrstop_eval_r8, elsunc_highest_eval_r8, &
+       0.0_r8,                 valid_max_i2,           &
+       valid_min_r8,           valid_max_r8,           &
+       valid_min_r8,           valid_max_r8,           &
+       valid_min_r8,           valid_max_r8,           &
+       valid_min_r8,           valid_max_r8,           &
+       valid_min_r8,           valid_max_r8,           &
+       valid_min_r8,           valid_max_r8,           &
+       valid_min_r8,           valid_max_r8,           &
+       valid_min_r8,           valid_max_r8        /), &
        (/ 2, n_solcal_fields /) )
 
   ! -----------------------------------------------  
