@@ -19,7 +19,7 @@ MODULE OMSAO_radiance_ref_module
 CONTAINS
 
 
-  SUBROUTINE omi_get_radiance_reference ( l1bfile, ntrr, nxrr, nwrr, radwcal_lines, errstat )
+  SUBROUTINE omi_get_radiance_reference ( l1bfile, radwcal_lines, errstat )
 
     USE OMSAO_parameters_module, ONLY: &
          r4_missval, r8_missval, downweight, normweight, deg2rad, rad2deg
@@ -46,7 +46,6 @@ CONTAINS
     ! Input variables
     ! ---------------
     CHARACTER (LEN=*), INTENT (IN) :: l1bfile
-    INTEGER (KIND=i4), INTENT (IN) :: ntrr, nxrr, nwrr
 
     ! -----------------------------
     ! Output and Modified variables
@@ -62,23 +61,37 @@ CONTAINS
     LOGICAL, DIMENSION (2)       :: yn_have_limits
     CHARACTER (LEN=maxchlen)     :: l1bswath
 
+    INTEGER (KIND=i4) :: ntrr, nxrr, nwrr
     INTEGER (KIND=i4) :: fpix, lpix, midpt_line
     INTEGER (KIND=i4) :: nloop, j1, iline, ix, iloop, imin, imax, icnt
     REAL    (KIND=r4) :: lat_midpt
     REAL    (KIND=r8) :: specsum
 
-    INTEGER (KIND=i4), DIMENSION (0:ntrr-1,2)     :: xtrange
-    INTEGER (KIND=i1), DIMENSION (0:ntrr-1)       :: binfac
-    LOGICAL,           DIMENSION (0:ntrr-1)       :: ynzoom
+!!$    INTEGER (KIND=i4), DIMENSION (0:ntrr-1,2)     :: xtrange
+!!$    INTEGER (KIND=i1), DIMENSION (0:ntrr-1)       :: binfac
+!!$    LOGICAL,           DIMENSION (0:ntrr-1)       :: ynzoom
+!!$
+!!$    REAL    (KIND=r4), DIMENSION (nxrr)           :: szacount
+!!$    REAL    (KIND=r4), DIMENSION (nxrr,0:ntrr-1)  :: latr4
+!!$    REAL    (KIND=r8), DIMENSION (nxrr, nwrr)     :: radref_spec, radref_wavl
+!!$    REAL    (KIND=r8), DIMENSION (nwrr)           :: radref_wavl_ix
+!!$    REAL    (KIND=r8), DIMENSION (nxrr, nwrr)     :: allcount, dumcount
+!!$    REAL    (KIND=r8), DIMENSION (nwrr      )     :: cntr8
+!!$    INTEGER (KIND=i2), DIMENSION (nwrr,0:nbits-1) :: qflg_bit
+!!$    INTEGER (KIND=i2), DIMENSION (nwrr)           :: qflg_mask
 
-    REAL    (KIND=r4), DIMENSION (nxrr)           :: szacount
-    REAL    (KIND=r4), DIMENSION (nxrr,0:ntrr-1)  :: latr4
-    REAL    (KIND=r8), DIMENSION (nxrr, nwrr)     :: radref_spec, radref_wavl
-    REAL    (KIND=r8), DIMENSION (nwrr)           :: radref_wavl_ix
-    REAL    (KIND=r8), DIMENSION (nxrr, nwrr)     :: allcount, dumcount
-    REAL    (KIND=r8), DIMENSION (nwrr      )     :: cntr8
-    INTEGER (KIND=i2), DIMENSION (nwrr,0:nbits-1) :: qflg_bit
-    INTEGER (KIND=i2), DIMENSION (nwrr)           :: qflg_mask
+    INTEGER (KIND=i4), ALLOCATABLE, DIMENSION (:,:) :: xtrange
+    INTEGER (KIND=i1), ALLOCATABLE, DIMENSION (:)   :: binfac
+    LOGICAL,           ALLOCATABLE, DIMENSION (:)   :: ynzoom
+
+    REAL    (KIND=r4), ALLOCATABLE, DIMENSION (:)   :: szacount
+    REAL    (KIND=r4), ALLOCATABLE, DIMENSION (:,:) :: latr4
+    REAL    (KIND=r8), ALLOCATABLE, DIMENSION (:,:) :: radref_spec, radref_wavl
+    REAL    (KIND=r8), ALLOCATABLE, DIMENSION (:)   :: radref_wavl_ix
+    REAL    (KIND=r8), ALLOCATABLE, DIMENSION (:,:) :: allcount, dumcount
+    REAL    (KIND=r8), ALLOCATABLE, DIMENSION (:)   :: cntr8
+    INTEGER (KIND=i2), ALLOCATABLE, DIMENSION (:,:) :: qflg_bit
+    INTEGER (KIND=i2), ALLOCATABLE, DIMENSION (:)   :: qflg_mask
 
 
     ! ------------------------------
@@ -92,6 +105,18 @@ CONTAINS
     ! -------------------------
     CALL omi_read_radiance_paras ( &
          l1bfile, ntrr, nxrr, nwrr, l1bswath, errstat )
+
+    ! ----------------------------------------------------------
+    ! Allocate variables after reading radiance swath dimensions
+    ! ----------------------------------------------------------
+    ALLOCATE (xtrange(0:ntrr-1,2))      ; ALLOCATE (binfac(0:ntrr-1))
+    ALLOCATE (ynzoom(0:ntrr-1))         ; ALLOCATE (szacount(nxrr))
+    ALLOCATE (latr4(nxrr,0:ntrr-1))
+    ALLOCATE (radref_spec(nxrr,nwrr))   ; ALLOCATE (radref_wavl(nxrr,nwrr))
+    ALLOCATE (radref_wavl_ix(nwrr))     ; ALLOCATE (allcount(nxrr,nwrr))
+    ALLOCATE (dumcount(nxrr,nwrr))      ; ALLOCATE (cntr8(nwrr))
+    ALLOCATE (qflg_bit(nwrr,0:nbits-1)) ; ALLOCATE (qflg_mask(nwrr))
+
     CALL omi_read_binning_factor ( &
          l1bfile, l1bswath, ntrr, binfac(0:ntrr-1), ynzoom(0:ntrr-1), errstat )
 
@@ -125,6 +150,10 @@ CONTAINS
             nxrr, midpt_line, ntrr-1, latr4(1:nxrr,midpt_line:ntrr-1), radref_latrange(2), &
             xtrange(midpt_line:ntrr-1,1:2), radiance_reference_lnums(2), yn_have_limits(2) )
     END IF
+
+    print*, midpt_line, yn_have_scanline, lat_midpt, radref_latrange
+    print*, radiance_reference_lnums(1), radiance_reference_lnums(2)
+    stop
 
     ! -----------------------------------------------------
     ! If we don't find a working scan line, we have to fold
@@ -341,6 +370,17 @@ CONTAINS
        n_comm_wvl = MAX ( n_comm_wvl, icnt )
 
     END DO
+
+    ! --------------------
+    ! Deallocate variables
+    ! --------------------
+    DEALLOCATE (xtrange)        ; DEALLOCATE (binfac)
+    DEALLOCATE (ynzoom)         ; DEALLOCATE (szacount)
+    DEALLOCATE (latr4)
+    DEALLOCATE (radref_spec)    ; DEALLOCATE (radref_wavl)
+    DEALLOCATE (radref_wavl_ix) ; DEALLOCATE (allcount)
+    DEALLOCATE (dumcount)       ; DEALLOCATE (cntr8)
+    DEALLOCATE (qflg_bit)       ; DEALLOCATE (qflg_mask)
 
     RETURN
   END SUBROUTINE omi_get_radiance_reference
