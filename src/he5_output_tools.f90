@@ -567,10 +567,10 @@ SUBROUTINE he5_write_wavcal_output ( nXtloc, fpix, lpix, errstat )
   USE OMSAO_he5_datafields_module
   USE OMSAO_errstat_module
   USE OMSAO_omidata_module,   ONLY: &
-       n_roff_dig,                                            &
-       omi_solcal_xflag,  omi_radcal_xflag, omi_radref_xflag, &
-       omi_solcal_pars,   omi_radcal_pars,  omi_radref_pars,  &
-       omi_solcal_itnum,  omi_radcal_itnum, omi_radref_itnum, &
+       n_roff_dig,       &
+       omi_radref_xflag, &
+       omi_radref_pars,  &
+       omi_radref_itnum, &
        omi_radref_col,    omi_radref_dcol,  omi_radref_rms,   &
        omi_radref_xtrcol, omi_itnum_flag
   USE OMSAO_variables_module,    ONLY: yn_diagnostic_run
@@ -609,14 +609,6 @@ SUBROUTINE he5_write_wavcal_output ( nXtloc, fpix, lpix, errstat )
   ! Write results for solar and radiance wavelength calibration, and the radiance reference fit
   ! -------------------------------------------------------------------------------------------
   DO j = fpix, lpix
-     tmpr8(1:max_calfit_idx) = omi_solcal_pars(1:max_calfit_idx,j)
-     CALL roundoff_1darr_r8 ( n_roff_dig, max_calfit_idx, tmpr8(1:max_calfit_idx) )
-     omi_solcal_pars(1:max_calfit_idx,j) = tmpr8(1:max_calfit_idx)
-
-     tmpr8(1:max_calfit_idx) = omi_radcal_pars(1:max_calfit_idx,j)
-     CALL roundoff_1darr_r8 ( n_roff_dig, max_calfit_idx, tmpr8(1:max_calfit_idx) )
-     omi_radcal_pars(1:max_calfit_idx,j) = tmpr8(1:max_calfit_idx)
-
      IF (yn_radiance_reference) THEN
         tmpr8(1:max_calfit_idx) = omi_radref_pars(1:max_calfit_idx,j)
         CALL roundoff_1darr_r8 ( n_roff_dig, max_calfit_idx, tmpr8(1:max_calfit_idx) )
@@ -639,12 +631,6 @@ SUBROUTINE he5_write_wavcal_output ( nXtloc, fpix, lpix, errstat )
   ! -----------------------------
   ! Exit value of Fitting Routine
   ! -----------------------------
-  locerrstat = HE5_SWWRFLD (  &
-       sol_calfit_he5fields(i)%Swath_ID, TRIM(ADJUSTL(swccf_field)), &
-       he5_start_2d, he5_stride_2d, he5_edge_2d, omi_solcal_xflag(1:nXtloc) )
-  locerrstat = HE5_SWWRFLD (  &
-       rad_calfit_he5fields(i)%Swath_ID, TRIM(ADJUSTL(rwccf_field)), &
-       he5_start_2d, he5_stride_2d, he5_edge_2d, omi_radcal_xflag(1:nXtloc) )
   IF (yn_radiance_reference) THEN
      locerrstat = HE5_SWWRFLD (  &
           rad_reffit_he5fields(i)%Swath_ID, TRIM(ADJUSTL(rrcf_field )), &
@@ -659,9 +645,6 @@ SUBROUTINE he5_write_wavcal_output ( nXtloc, fpix, lpix, errstat )
   he5_stride_2d = (/ 1, 0 /)
   he5_edge_2d   = (/ 2, 0 /)
 
-  locerrstat = HE5_SWWRFLD (                                                  &
-       rad_calfit_he5fields(i)%Swath_ID, TRIM(ADJUSTL(rwclr_field )),         &
-       he5_start_2d(1), he5_stride_2d(1), he5_edge_2d(1), radref_latrange(1:2) )
   IF (yn_radiance_reference) THEN
      locerrstat = HE5_SWWRFLD (                                                  &
           rad_reffit_he5fields(i)%Swath_ID, TRIM(ADJUSTL(rrlr_field )),          &
