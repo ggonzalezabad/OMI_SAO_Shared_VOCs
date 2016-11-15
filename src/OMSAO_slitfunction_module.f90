@@ -650,10 +650,10 @@ CONTAINS
           sslit = npoints+i-j ; lwvl = cwvl - wvl_temp(sslit)
           eslit = npoints+i+j ; rwvl = cwvl - wvl_temp(eslit)
 
-          sf_val(sslit) = EXP(-lwvl**2 / ( hw1e * (1.0_r8 + signdp(lwvl)*e_asym) )**2)
-         sf_val(eslit) = EXP(-rwvl**2 / ( hw1e * (1.0_r8 + signdp(rwvl)*e_asym) )**2)
- !sf_val(sslit) = EXP(-(ABS(lwvl/  hw1e ))**e_asym)
- !sf_val(eslit) = EXP(-(ABS(rwvl/  hw1e ))**e_asym)
+ !         sf_val(sslit) = EXP(-lwvl**2 / ( hw1e * (1.0_r8 + signdp(lwvl)*e_asym) )**2)
+ !        sf_val(eslit) = EXP(-rwvl**2 / ( hw1e * (1.0_r8 + signdp(rwvl)*e_asym) )**2)
+          sf_val(sslit) = EXP(-(ABS(lwvl/  hw1e ))**e_asym)
+          sf_val(eslit) = EXP(-(ABS(rwvl/  hw1e ))**e_asym)
           IF ( sf_val(sslit) < 0.0005_r8 .AND. sf_val(sslit) < 0.0005_r8 ) EXIT getslit
        END DO getslit
 
