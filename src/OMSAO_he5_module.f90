@@ -200,9 +200,16 @@ MODULE OMSAO_he5_module
   CHARACTER (LEN=31), PARAMETER ::  rric_field     = "RadianceReferenceIterationCount"
   CHARACTER (LEN=30), PARAMETER ::  rrlr_field     = "RadianceReferenceLatitudeRange"
 
-  CHARACTER (LEN=17), PARAMETER ::  rwcfi_field    = "RadianceWavCalFit"
   CHARACTER (LEN=29), PARAMETER ::  rwccf_field    = "RadianceWavCalConvergenceFlag"
   CHARACTER (LEN=28), PARAMETER ::  rwcic_field    = "RadianceWavCalIterationCount"
+  CHARACTER (LEN=17), PARAMETER ::  rwcrm_field    = "RadianceWavCalRMS"
+  CHARACTER (LEN=24), PARAMETER ::  rwcwa_field    = "RadianceWavCalWavelength"
+  CHARACTER (LEN=30), PARAMETER ::  rwcms_field    = "RadianceWavCalRadianceSpectrum"
+  CHARACTER (LEN=28), PARAMETER ::  rwcfs_field    = "RadianceWavCalFittedSpectrum"
+  CHARACTER (LEN=29), PARAMETER ::  rwcfr_field    = "RadianceWavCalFittingResidual"
+  CHARACTER (LEN=19), PARAMETER ::  rwcsh_field    = "RadianceWavCalShift"
+  CHARACTER (LEN=18), PARAMETER ::  rwchw_field    = "RadianceWavCalhw1e"
+  CHARACTER (LEN=18), PARAMETER ::  rwcgf_field    = "RadianceWavCalGfac"
   CHARACTER (LEN=27), PARAMETER ::  rwclr_field    = "RadianceWavCalLatitudeRange"
 
   CHARACTER (LEN=26), PARAMETER ::  swccf_field    = "SolarWavCalConvergenceFlag"
@@ -350,21 +357,48 @@ MODULE OMSAO_he5_module
   ! NOTE: First N_SOLCAL_FIELDS must be the same type as in SOLCAL_FIELDS,
   !       since this is what is assumed in the output routine.
   ! ----------------------------------------------------------------------
-  INTEGER (KIND=i4), PARAMETER :: n_radcal_fields = 2
-  CHARACTER (LEN=48), DIMENSION ( 2, n_radcal_fields ), PARAMETER :: &
+  INTEGER (KIND=i4), PARAMETER :: n_radcal_fields = 11
+  CHARACTER (LEN=49), DIMENSION ( 2, n_radcal_fields ), PARAMETER :: &
        radcal_field_names = RESHAPE ( (/ &
-       "RadianceWavCalConvergenceFlag                   ", "Radiance Wavelength Calibration Convergence Flag",   &
-       "RadianceWavCalLatitudeRange                     ", "Radiance Wavelength Calibration Latitude Range  " /),&
+       "RadianceWavCalConvergenceFlag                    ", "Radiance Wavelength Calibration Convergence Flag ",   &
+       "RadianceWavCalIterationCount                     ", "Radiance Wavelength Calibration Iteration Count  ",   &
+       "RadianceWavCalRMS                                ", "Radiance Wavelength Calibration RMS              ",   &
+       "RadianceWavCalWavelength                         ", "Radiance Wavelength Calibration Wavelength       ",   &
+       "RadianceWavCalRadianceSpectrum                   ", "Radiance Wavelength Calibration Radiance Spectrum",   &
+       "RadianceWavCalFittedSpectrum                     ", "Radiance Wavelength Calibration Fitted Spectrum  ",   &
+       "RadianceWavCalFittingResidual                    ", "Radiance Wavelength Calibration Fitting Residual ",   &
+       "RadianceWavCalShift                              ", "Radiance Wavelength Calibration Shift            ",   &
+       "RadianceWavCalhw1e                               ", "Radiance Wavelength Calibration HW1E             ",   &
+       "RadianceWavCalGfac                               ", "Radiance Wavelength Calibration Gauss Factor     ",   &
+       "RadianceWavCalLatitudeRange                      ", "Radiance Wavelength Calibration Latitude Range   " /),&
        (/ 2, n_radcal_fields /) )
-  CHARACTER (LEN=12), DIMENSION ( 4, n_radcal_fields ), PARAMETER :: &
+  CHARACTER (LEN=20), DIMENSION ( 4, n_radcal_fields ), PARAMETER :: &
        radcal_field_specs = RESHAPE ( (/ &
-       "NoUnits     ", "nXtrack     ", "OMI-Specific", "i2          ",    &
-       "NoUnits     ", "4           ", "OMI-Specific", "r4          "  /),&
+       "NoUnits             ","nXtrack             ","OMI-Specific","i4                  ",    &
+       "NoUnits             ","nXtrack             ","OMI-Specific","i2                  ",    &
+       "NoUnits             ","nXtrack             ","OMI-Specific","r8                  ",    &
+       "NoUnits             ","nXtrack,nwavel_max  ","OMI-Specific","r8                  ",    &
+       "NoUnits             ","nXtrack,nwavel_max  ","OMI-Specific","r8                  ",    &
+       "NoUnits             ","nXtrack,nwavel_max  ","OMI-Specific","r8                  ",    &
+       "NoUnits             ","nXtrack,nwavel_max  ","OMI-Specific","r8                  ",    &
+       "NoUnits             ","nXtrack             ","OMI-Specific","r8                  ",    &
+       "NoUnits             ","nXtrack             ","OMI-Specific","r8                  ",    &
+       "NoUnits             ","nXtrack             ","OMI-Specific","r8                  ",    &
+       "NoUnits             ", "4                  ","OMI-Specific","r4                  "  /),&
        (/ 4, n_radcal_fields /) )
   REAL (KIND=r8), DIMENSION ( 2, n_radcal_fields ), PARAMETER :: &
        radcal_valids = RESHAPE ( (/ &
-       elsunc_usrstop_eval_r8, elsunc_highest_eval_r8,    &
-       -90.0_r8,               90.0_r8                /), &
+       elsunc_usrstop_eval_r8, elsunc_highest_eval_r8, &
+       0.0_r8,                 valid_max_i2,           &
+       valid_min_r8,           valid_max_r8,           &
+       valid_min_r8,           valid_max_r8,           &
+       valid_min_r8,           valid_max_r8,           &
+       valid_min_r8,           valid_max_r8,           &
+       valid_min_r8,           valid_max_r8,           &
+       valid_min_r8,           valid_max_r8,           &
+       valid_min_r8,           valid_max_r8,           &
+       valid_min_r8,           valid_max_r8,           &
+       -90.0_r8,               90.0_r8             /), &
        (/ 2, n_radcal_fields /) )
 
   ! -----------------------------------------------  

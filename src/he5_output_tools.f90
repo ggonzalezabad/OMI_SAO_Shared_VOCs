@@ -224,22 +224,14 @@ FUNCTION he5_define_fields ( pge_idx, swath_name, nTimes, nXtrack, nSwLevels ) R
   END DO
 
   DO i = 1, n_radcal_fields
-     CALL he5_check_for_compressibility ( &
-          nTimes, nXtrack, nSwLevels, TRIM(ADJUSTL(rad_calfit_he5fields(i)%Dimensions)), &
-          yn_compress_field, n_chunk_dim, chunk_dim )
-     IF ( yn_compress_field ) THEN
-        errstat = HE5_SWdefcomch ( &
-             pge_swath_id, he5_comp_type, he5_comp_par, n_chunk_dim, chunk_dim(1:n_chunk_dim) )
-     ELSE
-        errstat = HE5_SWdefchunk( pge_swath_id, n_chunk_dim, chunk_dim(1:n_chunk_dim) )
-        errstat = HE5_SWdefcomp ( pge_swath_id, he5_nocomp_type, he5_nocomp_par )
-     END IF
-
      ! -------------
      ! Set FillValue
      ! -------------
      CALL he5_set_fill_value ( rad_calfit_he5fields(i), errstat )
 
+     ! ----------------
+     ! Create variables
+     ! ----------------
      rad_calfit_he5fields(i)%Swath_ID = pge_swath_id
      errstat = HE5_SWdefdfld (                                      &
           rad_calfit_he5fields(i)%Swath_ID,                         &
