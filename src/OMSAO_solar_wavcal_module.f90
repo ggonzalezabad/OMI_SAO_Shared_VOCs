@@ -201,16 +201,16 @@ CONTAINS
     ! ----------------
     ! Output variables
     ! ----------------
-    REAL    (KIND=r8), INTENT (OUT)   :: hw1e, e_asym, chisquav
-    INTEGER (KIND=i4), INTENT (OUT)   :: solcal_exval
-    INTEGER (KIND=i2), INTENT (OUT)   :: solcal_itnum
-    REAL    (KIND=r8)  :: rms
-    REAL    (KIND=r8), DIMENSION (n_sol_wvl)         :: fitres, fitspec
+    REAL    (KIND=r8), INTENT (OUT)                        :: hw1e, e_asym, chisquav
+    INTEGER (KIND=i4), INTENT (OUT)                        :: solcal_exval
+    INTEGER (KIND=i2), INTENT (OUT)                        :: solcal_itnum
+    REAL    (KIND=r8), INTENT (OUT)                        :: rms
+    REAL    (KIND=r8), INTENT (OUT), DIMENSION (n_sol_wvl) :: fitres, fitspec
+    LOGICAL,           INTENT (OUT)                        :: yn_bad_pixel
 
     ! ------------------
     ! Modified variables
     ! ------------------
-    LOGICAL,                                                   INTENT (OUT)   :: yn_bad_pixel
     INTEGER (KIND=i4),                                         INTENT (INOUT) :: errstat
     REAL    (KIND=r8), DIMENSION(wvl_idx:ccd_idx,1:n_sol_wvl), INTENT (INOUT) :: curr_sol_spec
 
