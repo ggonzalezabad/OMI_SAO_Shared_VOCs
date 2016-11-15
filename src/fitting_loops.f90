@@ -42,12 +42,13 @@ SUBROUTINE xtrack_radiance_wvl_calibration (             &
   ! ---------------
   INTEGER   (KIND=i2)      :: radcal_itnum
   INTEGER   (KIND=i4)      :: locerrstat, ipix, radcal_exval, i, imax, n_ref_wvl !, nxtloc, xtr_add
-  REAL      (KIND=r8)      :: chisquav, rad_spec_avg
+  REAL      (KIND=r8)      :: chisquav, rad_spec_avg, rms
   LOGICAL                  :: yn_skip_pix, yn_bad_pixel, yn_full_range
   CHARACTER (LEN=maxchlen) :: addmsg
-  INTEGER (KIND=i4), DIMENSION (4)            :: select_idx
-  INTEGER (KIND=i4), DIMENSION (2)            :: exclud_idx
-  REAL    (KIND=r8), DIMENSION (n_max_rspec) :: ref_wvl, ref_spc, ref_wgt, rad_wvl
+  INTEGER (KIND=i4), DIMENSION (4)             :: select_idx
+  INTEGER (KIND=i4), DIMENSION (2)             :: exclud_idx
+  REAL    (KIND=r8), ALLOCATABLE, DIMENSION(:) :: fitres, fitspec
+  REAL    (KIND=r8), DIMENSION (n_max_rspec)   :: ref_wvl, ref_spc, ref_wgt, rad_wvl
 
   ! ------------------------------
   ! Name of this module/subroutine
@@ -176,10 +177,14 @@ SUBROUTINE xtrack_radiance_wvl_calibration (             &
      sol_wav_avg = &
           SUM ( curr_rad_spec(wvl_idx,1:n_omi_radwvl) ) / REAL(n_omi_radwvl,KIND=r8)
      yn_bad_pixel = .FALSE.
+
+     ALLOCATE( fitspec(1:n_rad_wvl))
+     ALLOCATE( fitres(1:n_rad_wvl))
      CALL radiance_wavcal ( &                       ! Radiance wavelength calibration
           ipix, n_fitres_loop(radcal_idx), fitres_range(radcal_idx),       &
           n_rad_wvl, curr_rad_spec(wvl_idx:ccd_idx,1:n_rad_wvl),           &
-          radcal_exval, radcal_itnum, chisquav, yn_bad_pixel, locerrstat )
+          radcal_exval, radcal_itnum, chisquav, yn_bad_pixel, rms,         &
+          fitspec, fitres, locerrstat )
 
      IF ( yn_bad_pixel .OR. locerrstat >= pge_errstat_error ) THEN
         errstat = MAX ( errstat, locerrstat )
@@ -202,6 +207,9 @@ SUBROUTINE xtrack_radiance_wvl_calibration (             &
           0, 1, pge_errstat_ok, OMSAO_S_PROGRESS, TRIM(ADJUSTL(addmsg)), &
           vb_lev_omidebug, locerrstat )
      IF ( verb_thresh_lev >= vb_lev_screen ) WRITE (*, '(A)') TRIM(ADJUSTL(addmsg))
+
+     DEALLOCATE(fitspec)
+     DEALLOCATE(fitres)
 
      ! ---------------------------------
      ! Save crucial variables for output

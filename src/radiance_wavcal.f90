@@ -1,7 +1,7 @@
 SUBROUTINE radiance_wavcal (                              &
      ipix, n_fitres_loop, fitres_range, n_rad_wvl,        &
      curr_rad_spec, radcal_exval, radcal_itnum, chisquav, &
-     yn_bad_pixel, errstat )
+     yn_bad_pixel, rms, fitspec, fitres, errstat )
 
   USE OMSAO_precision_module,     ONLY: i2, i4, r8
   USE OMSAO_parameters_module,    ONLY: &
@@ -30,7 +30,8 @@ SUBROUTINE radiance_wavcal (                              &
   LOGICAL,                                          INTENT (OUT)   :: yn_bad_pixel
   INTEGER (KIND=i2),                                INTENT (OUT)   :: radcal_itnum
   INTEGER (KIND=i4),                                INTENT (OUT)   :: radcal_exval
-  REAL    (KIND=r8),                                INTENT (OUT)   :: chisquav
+  REAL    (KIND=r8),                                INTENT (OUT)   :: chisquav, rms
+  REAL    (KIND=r8), DIMENSION (n_rad_wvl),         INTENT (OUT)   :: fitres, fitspec
   INTEGER (KIND=i4),                                INTENT (INOUT) :: errstat
   REAL    (KIND=r8), DIMENSION (ccd_idx,n_rad_wvl), INTENT (INOUT) :: curr_rad_spec
   
@@ -38,8 +39,7 @@ SUBROUTINE radiance_wavcal (                              &
   ! Local variables
   ! ---------------
   INTEGER (KIND=i4)  :: i, locerrstat, locitnum, n_nozero_wgt
-  REAL    (KIND=r8)  :: rms, mean, mdev, sdev, loclim
-  REAL    (KIND=r8), DIMENSION (n_rad_wvl)         :: fitres, fitspec
+  REAL    (KIND=r8)  :: mean, mdev, sdev, loclim
   REAL    (KIND=r8), DIMENSION (max_calfit_idx)    :: fitvar
   REAL    (KIND=r8), DIMENSION (:,:), ALLOCATABLE  :: covar
 
