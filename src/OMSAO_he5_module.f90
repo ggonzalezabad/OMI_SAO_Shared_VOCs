@@ -384,7 +384,7 @@ MODULE OMSAO_he5_module
        "NoUnits             ","nXtrack             ","OMI-Specific","r8                  ",    &
        "NoUnits             ","nXtrack             ","OMI-Specific","r8                  ",    &
        "NoUnits             ","nXtrack             ","OMI-Specific","r8                  ",    &
-       "NoUnits             ", "4                  ","OMI-Specific","r4                  "  /),&
+       "NoUnits             ", "2                  ","OMI-Specific","r4                  "  /),&
        (/ 4, n_radcal_fields /) )
   REAL (KIND=r8), DIMENSION ( 2, n_radcal_fields ), PARAMETER :: &
        radcal_valids = RESHAPE ( (/ &

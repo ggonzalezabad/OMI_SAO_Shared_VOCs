@@ -686,6 +686,95 @@ SUBROUTINE he5_write_wavcal_output ( nXtloc, fpix, lpix, errstat )
 END SUBROUTINE he5_write_wavcal_output
 
 
+SUBROUTINE he5_radcal_write ( &
+       ix, nwvl, exval, itnum, shift,  &
+       hw1e, e_asym, rms, wavs,        &
+       measpec, fitspec, fitres, latrange, errstat)         
+
+  USE OMSAO_precision_module  
+  USE OMSAO_he5_module
+
+  IMPLICIT NONE
+
+  ! ------------------------------
+  ! Name of this module/subroutine
+  ! ------------------------------
+  CHARACTER (LEN=16), PARAMETER :: modulename = 'he5_radcal_write'
+  
+  ! ---------------
+  ! Input variables
+  ! ---------------
+  INTEGER (KIND=i2), INTENT(IN) :: itnum
+  INTEGER (KIND=i4), INTENT(IN) :: ix, nwvl, exval
+  REAL    (KIND=r8), INTENT(IN) :: shift, hw1e, e_asym, rms
+  REAL    (KIND=r4), DIMENSION(2), INTENT(IN) :: latrange
+  REAL    (KIND=r8), DIMENSION(1:nwvl), INTENT(IN) :: wavs, measpec, fitspec, fitres
+  
+  ! -----------------
+  ! Modified variable
+  ! -----------------
+  INTEGER (KIND=i4), INTENT (INOUT) :: errstat
+  
+  ! ---------------
+  ! Local variables
+  ! ---------------
+  INTEGER (KIND=i4) :: locerrstat
+  
+  
+  he5_start_1d  = ix-1 ;  he5_stride_1d = 1 ; he5_edge_1d = 1
+  
+  ! Elsunc exit flag
+  locerrstat = HE5_SWWRFLD ( pge_swath_id, TRIM(ADJUSTL(rwccf_field)), &
+       he5_start_1d, he5_stride_1d, he5_edge_1d, exval )
+  errstat = MAX ( errstat, locerrstat )
+  ! Iteration number
+  locerrstat = HE5_SWWRFLD ( pge_swath_id, TRIM(ADJUSTL(rwcic_field)), &
+       he5_start_1d, he5_stride_1d, he5_edge_1d, itnum )
+  errstat = MAX ( errstat, locerrstat )
+  ! Wavelength shift
+  locerrstat = HE5_SWWRFLD ( pge_swath_id, TRIM(ADJUSTL(rwcsh_field)), &
+       he5_start_1d, he5_stride_1d, he5_edge_1d, shift )
+  errstat = MAX ( errstat, locerrstat )
+  ! HW1E
+  locerrstat = HE5_SWWRFLD ( pge_swath_id, TRIM(ADJUSTL(rwchw_field)), &
+       he5_start_1d, he5_stride_1d, he5_edge_1d, hw1e )
+  errstat = MAX ( errstat, locerrstat )
+  ! Gauss Factor
+  locerrstat = HE5_SWWRFLD ( pge_swath_id, TRIM(ADJUSTL(rwcgf_field)), &
+       he5_start_1d, he5_stride_1d, he5_edge_1d, e_asym )
+  errstat = MAX ( errstat, locerrstat )
+  ! RMS
+  locerrstat = HE5_SWWRFLD ( pge_swath_id, TRIM(ADJUSTL(rwcrm_field)), &
+       he5_start_1d, he5_stride_1d, he5_edge_1d, rms )
+  errstat = MAX ( errstat, locerrstat )
+  
+  he5_start_2d  = (/ ix-1, 0 /) ;  he5_stride_2d = (/ 1, 1 /) ; he5_edge_2d = (/ 1, nwvl /)
+  ! Wavelengths
+  locerrstat = HE5_SWWRFLD ( pge_swath_id, TRIM(ADJUSTL(rwcwa_field)), &
+       he5_start_2d, he5_stride_2d, he5_edge_2d, wavs(1:nwvl) )
+  errstat = MAX ( errstat, locerrstat )
+  ! Radiance spectrum
+  locerrstat = HE5_SWWRFLD ( pge_swath_id, TRIM(ADJUSTL(rwcms_field)), &
+       he5_start_2d, he5_stride_2d, he5_edge_2d, measpec(1:nwvl) )
+  errstat = MAX ( errstat, locerrstat )
+  ! Fitted spectrum
+  locerrstat = HE5_SWWRFLD ( pge_swath_id, TRIM(ADJUSTL(rwcfs_field)), &
+       he5_start_2d, he5_stride_2d, he5_edge_2d, fitspec(1:nwvl) )
+  errstat = MAX ( errstat, locerrstat )
+  ! Fitting residual
+  locerrstat = HE5_SWWRFLD ( pge_swath_id, TRIM(ADJUSTL(rwcfr_field)), &
+       he5_start_2d, he5_stride_2d, he5_edge_2d, fitres(1:nwvl) )
+  errstat = MAX ( errstat, locerrstat )
+  
+  ! Radiance wavelength calibration latitude range
+  he5_start_1d  = 0 ;  he5_stride_1d = 1 ; he5_edge_1d = 2
+  locerrstat = HE5_SWWRFLD ( pge_swath_id, TRIM(ADJUSTL(rwclr_field)), &
+       he5_start_1d, he5_stride_1d, he5_edge_1d, latrange )
+  errstat = MAX ( errstat, locerrstat )
+  
+END SUBROUTINE he5_radcal_write
+
+
 SUBROUTINE he5_write_radfit_output ( &
      pge_idx, iline, nXtrack, nblock, fpix, lpix, &
      all_fitted_columns, all_fitted_errors, correlation_columns,&

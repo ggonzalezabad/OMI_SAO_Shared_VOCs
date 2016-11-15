@@ -15,6 +15,7 @@ SUBROUTINE xtrack_radiance_wvl_calibration (             &
        n_fitres_loop, fitres_range, yn_diagnostic_run
   USE OMSAO_slitfunction_module, ONLY: saved_shift, saved_squeeze
   USE OMSAO_omidata_module ! , exept_this_one => n_comm_wvl
+  USE OMSAO_radiance_ref_module, ONLY: radref_latrange
   USE OMSAO_errstat_module
   USE EZspline_obj
   USE EZspline
@@ -207,6 +208,15 @@ SUBROUTINE xtrack_radiance_wvl_calibration (             &
           0, 1, pge_errstat_ok, OMSAO_S_PROGRESS, TRIM(ADJUSTL(addmsg)), &
           vb_lev_omidebug, locerrstat )
      IF ( verb_thresh_lev >= vb_lev_screen ) WRITE (*, '(A)') TRIM(ADJUSTL(addmsg))
+
+     ! ------------------------------------------
+     ! Write out radiance calibration diagnostics
+     ! ------------------------------------------
+     CALL he5_radcal_write( &
+          ipix, n_rad_wvl, radcal_exval, radcal_itnum, fitvar_cal(shi_idx), &
+          hw1e, e_asym, rms, curr_rad_spec(wvl_idx, 1:n_rad_wvl),           &
+          curr_rad_spec(spc_idx, 1:n_rad_wvl),                              &
+          fitspec(1:n_rad_wvl), fitres(1:n_rad_wvl), radref_latrange, errstat)            
 
      DEALLOCATE(fitspec)
      DEALLOCATE(fitres)

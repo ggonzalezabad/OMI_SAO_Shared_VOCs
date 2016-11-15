@@ -418,7 +418,7 @@ CONTAINS
     ! ------------------------------
     ! Name of this module/subroutine
     ! ------------------------------
-    CHARACTER (LEN=14), PARAMETER :: modulename = 'he5_solcal_amf'
+    CHARACTER (LEN=16), PARAMETER :: modulename = 'he5_solcal_write'
 
     ! ---------------
     ! Input variables
