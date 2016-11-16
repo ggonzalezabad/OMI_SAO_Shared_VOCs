@@ -289,29 +289,6 @@ SUBROUTINE omi_fitting (                                  &
   END IF
 
   ! ---------------------------------------------------------------
-  ! Solar wavelength calibration, done even when we use a composite
-  ! solar spectrum to avoid un-initialized variables. However, no
-  ! actual fitting is performed in the latter case.
-  ! ---------------------------------------------------------------
-  CALL xtrack_solar_calibration_loop ( first_wc_pix, last_wc_pix, errstat )
-  pge_error_status = MAX ( pge_error_status, errstat )
-  IF ( pge_error_status >= pge_errstat_error )  GO TO 666
-  stop
-  ! ---------------------------------------------------------------
-  ! No matter what, we need a swath line for radiance wavelength 
-  ! calibration. This may be a single line or it may be the average
-  ! over a block of lines. However, if we are not using a radiance
-  ! reference, then we are still doing a radiance calibration and
-  ! need to make sure that we are using a radiance from the current
-  ! granule.
-  ! ---------------------------------------------------------------
-  CALL omi_get_radiance_reference (                             &
-       l1b_radref_filename, nTimesRadRR, nXtrackRad, nWvlCCDrr, &
-       radiance_wavcal_lnums, errstat                             )
-  pge_error_status = MAX ( pge_error_status, errstat )
-  IF ( pge_error_status >= pge_errstat_error )  GO TO 666
-
-  ! ---------------------------------------------------------------
   ! The Climatology is going to be read here and kept in memory. If
   ! this has a bad impact in the efficiency of the application then
   ! I will find a different way. We are doing this to be able to in
@@ -322,12 +299,6 @@ SUBROUTINE omi_fitting (                                  &
   ! ---------------------------------------------------------------
   CALL omi_read_climatology ( errstat )
 
-  ! ---------------------------
-  ! Initialize omi_ozone_amount
-  ! ---------------------------
-  ALLOCATE (omi_ozone_amount(1:nXtrackRad,0:nTimesRad-1))
-  omi_ozone_amount = r8_missval
-  
   ! ----------------------------------------
   ! Initialization of HE5 output data fields
   ! ----------------------------------------
@@ -337,6 +308,34 @@ SUBROUTINE omi_fitting (                                  &
   pge_error_status = MAX ( pge_error_status, errstat )
   IF ( pge_error_status >= pge_errstat_error )  GO TO 666
 
+  ! ---------------------------------------------------------------
+  ! Solar wavelength calibration, done even when we use a composite
+  ! solar spectrum to avoid un-initialized variables. However, no
+  ! actual fitting is performed in the latter case.
+  ! ---------------------------------------------------------------
+  CALL xtrack_solar_calibration_loop ( first_wc_pix, last_wc_pix, errstat )
+  pge_error_status = MAX ( pge_error_status, errstat )
+  IF ( pge_error_status >= pge_errstat_error )  GO TO 666
+
+  ! ---------------------------------------------------------------
+  ! No matter what, we need a swath line for radiance wavelength 
+  ! calibration. This may be a single line or it may be the average
+  ! over a block of lines. However, if we are not using a radiance
+  ! reference, then we are still doing a radiance calibration and
+  ! need to make sure that we are using a radiance from the current
+  ! granule.
+  ! ---------------------------------------------------------------
+  CALL omi_get_radiance_reference (                        &
+       l1b_radref_filename, radiance_wavcal_lnums, errstat )
+  pge_error_status = MAX ( pge_error_status, errstat )
+  IF ( pge_error_status >= pge_errstat_error )  GO TO 666
+
+  ! ---------------------------
+  ! Initialize omi_ozone_amount
+  ! ---------------------------
+  ALLOCATE (omi_ozone_amount(1:nXtrackRad,0:nTimesRad-1))
+  omi_ozone_amount = r8_missval
+  
   ! -----------------------------------------------------------------------------------
   ! If we are NOT using a radiance reference, then we need to read the 
   ! swath line for radiance wavelength calibration. In this case, the
@@ -352,7 +351,7 @@ SUBROUTINE omi_fitting (                                  &
      pge_error_status = MAX ( pge_error_status, errstat )
      IF ( pge_error_status >= pge_errstat_error )  GO TO 666
   END IF
-
+  
   ! -----------------------------------------------------
   ! Across-track loop for radiance wavelength calibration
   ! -----------------------------------------------------
@@ -362,7 +361,7 @@ SUBROUTINE omi_fitting (                                  &
        first_wc_pix, last_wc_pix, n_max_rspec, n_comm_wvl, errstat )
   pge_error_status = MAX ( pge_error_status, errstat )
   IF ( pge_error_status >= pge_errstat_error )  GO TO 666
-
+  stop
   ! --------------------------------------------------------------
   ! Terminate on not having any cross-track pixels left to process
   ! --------------------------------------------------------------
