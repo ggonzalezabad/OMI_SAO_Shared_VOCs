@@ -250,10 +250,9 @@ SUBROUTINE xtrack_radiance_wvl_calibration (             &
      ! ----------------------------------------------------
      ! Spline reference spectra to current wavelength grid.
      ! ----------------------------------------------------
-     rad_wvl(1:n_rad_wvl) = curr_rad_spec(wvl_idx,1:n_rad_wvl)
      Call prepare_databases ( &
           ipix, n_ref_wvl, ref_wvl(1:n_ref_wvl), ref_spc(1:n_ref_wvl), &
-          n_rad_wvl, rad_wvl(1:n_rad_wvl), n_max_rspec, locerrstat )
+          n_rad_wvl, curr_rad_spec(wvl_idx,1:n_rad_wvl), n_max_rspec, locerrstat )
      ! --------------------------------------------------------------------------------
 
      IF ( locerrstat >= pge_errstat_error ) EXIT XTrackWavCal
