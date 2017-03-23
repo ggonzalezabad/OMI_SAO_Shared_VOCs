@@ -176,7 +176,7 @@ SUBROUTINE spectrum_solar ( &
 END SUBROUTINE spectrum_solar
 
 SUBROUTINE spectrum_earthshine ( &
-     npts, n_fitvar, smooth, rad_wav_avg, locwvl, fit, fitvar, database, doas )
+     npts, n_fitvar, rad_wav_avg, locwvl, fit, fitvar, database, doas )
 
   USE OMSAO_precision_module
   USE OMSAO_indices_module, ONLY: &
@@ -207,7 +207,7 @@ SUBROUTINE spectrum_earthshine ( &
   ! ===============
   ! Input variables
   ! ===============
-  LOGICAL,                                                INTENT (IN) :: smooth, doas
+  LOGICAL,                                                INTENT (IN) :: doas
   INTEGER (KIND=i4),                                      INTENT (IN) :: npts, n_fitvar
   REAL    (KIND=r8),                                      INTENT (IN) :: rad_wav_avg
   REAL    (KIND=r8), DIMENSION (n_fitvar),                INTENT (IN) :: fitvar
@@ -510,10 +510,10 @@ SUBROUTINE spectrum_earthshine_o3exp ( &
   USE OMSAO_precision_module
   USE OMSAO_indices_module, ONLY: &
        max_rs_idx, max_calfit_idx, solar_idx, ring_idx, ad1_idx, &
-       lbe_idx, ad2_idx, mxs_idx, wvl_idx, spc_idx,                   &
-       bl0_idx, bl1_idx, bl2_idx, bl3_idx, bl4_idx, bl5_idx, sc0_idx, sc1_idx, sc2_idx, &
-       sc3_idx, sc4_idx, sc5_idx, sin_idx, shi_idx, squ_idx, &
-       o3_t1_idx, o3_t2_idx, o3_t3_idx
+       lbe_idx, ad2_idx, mxs_idx, wvl_idx, spc_idx, bl0_idx, &
+       bl1_idx, bl2_idx, bl3_idx, bl4_idx, bl5_idx, sc0_idx, &
+       sc1_idx, sc2_idx, sc3_idx, sc4_idx, sc5_idx, sin_idx, &
+       shi_idx, squ_idx, o3_t1_idx, o3_t2_idx, o3_t3_idx
   USE OMSAO_parameters_module, ONLY: max_spec_pts, downweight
   USE OMSAO_variables_module,  ONLY: &
        n_database_wvl, curr_sol_spec, fitvar_rad, mask_fitvar_rad, fitweights, &

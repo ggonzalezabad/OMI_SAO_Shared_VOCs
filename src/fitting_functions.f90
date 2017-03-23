@@ -145,7 +145,7 @@ SUBROUTINE specfit_func ( fitvar, nfitvar, ymod, npoints, ctrl, dyda, mdy )
      ! Calculate the weighted difference between fitted and measured spectrum.
      ! -----------------------------------------------------------------------
      CALL spectrum_earthshine ( &
-          npoints, nfitvar, yn_smooth, rad_wav_avg, locwvl(1:npoints), ymod(1:npoints), &
+          npoints, nfitvar, rad_wav_avg, locwvl(1:npoints), ymod(1:npoints), &
           fitvar(1:nfitvar), database, yn_doas )
      !IF ( .NOT. yn_reference_fit ) THEN
      !   WRITE (99,'(3I6)') num_fitfunc_calls, nfitvar, npoints
@@ -178,7 +178,7 @@ SUBROUTINE specfit_func ( fitvar, nfitvar, ymod, npoints, ctrl, dyda, mdy )
   CASE ( 3 )
      ! Calculate the spectrum, without weighting
      CALL spectrum_earthshine ( &
-          npoints, nfitvar, yn_smooth, rad_wav_avg, locwvl(1:npoints), ymod(1:npoints), &
+          npoints, nfitvar, rad_wav_avg, locwvl(1:npoints), ymod(1:npoints), &
           fitvar(1:nfitvar), database, yn_doas )
 
   CASE DEFAULT
