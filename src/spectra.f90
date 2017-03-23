@@ -512,7 +512,7 @@ SUBROUTINE spectrum_earthshine_o3exp ( &
        max_rs_idx, max_calfit_idx, solar_idx, ring_idx, ad1_idx, &
        lbe_idx, ad2_idx, mxs_idx, wvl_idx, spc_idx,                   &
        bl0_idx, bl1_idx, bl2_idx, bl3_idx, bl4_idx, bl5_idx, sc0_idx, sc1_idx, sc2_idx, &
-       sc3_idx, sc4_idx, sc5_idx, sin_idx, hwe_idx, asy_idx, shi_idx, squ_idx, bro_idx, &
+       sc3_idx, sc4_idx, sc5_idx, sin_idx, shi_idx, squ_idx, &
        o3_t1_idx, o3_t2_idx, o3_t3_idx
   USE OMSAO_parameters_module, ONLY: max_spec_pts, downweight
   USE OMSAO_variables_module,  ONLY: &
