@@ -2,13 +2,10 @@ SUBROUTINE spectrum_solar ( &
      npoints, nfitvar, sol_wav_avg, locwvl, fit, fitvar)
 
   USE OMSAO_precision_module
-  USE OMSAO_indices_module, ONLY: &
-       wvl_idx, spc_idx,      &
-       max_rs_idx, solar_idx, &
-       bl0_idx, bl1_idx, bl2_idx, bl3_idx, bl4_idx, bl5_idx, sc0_idx, sc1_idx, &
-       sc2_idx, sc3_idx, sc4_idx, sc5_idx, sin_idx, hwe_idx, asy_idx, shi_idx, &
-       squ_idx
-  USE OMSAO_parameters_module, ONLY: max_spec_pts
+  USE OMSAO_indices_module, ONLY: solar_idx, &
+       bl0_idx, bl1_idx, bl2_idx, bl3_idx, bl4_idx, bl5_idx, &
+       sc0_idx, sc1_idx, sc2_idx, sc3_idx, sc4_idx, sc5_idx, &
+       sin_idx, hwe_idx, asy_idx, shi_idx, squ_idx
   USE OMSAO_variables_module,  ONLY: &
        refspecs_original, solar_spec_convolved, yn_use_labslitfunc, &
        fitvar_cal, mask_fitvar_cal, yn_spectrum_norm, yn_newshift
@@ -181,10 +178,10 @@ SUBROUTINE spectrum_earthshine ( &
   USE OMSAO_precision_module
   USE OMSAO_indices_module, ONLY: &
        max_rs_idx, max_calfit_idx, solar_idx, ring_idx, ad1_idx, &
-       lbe_idx, ad2_idx, mxs_idx, wvl_idx, spc_idx,                   &
-       bl0_idx, bl1_idx, bl2_idx, bl3_idx, bl4_idx, bl5_idx, sc0_idx, sc1_idx, sc2_idx, &
-       sc3_idx, sc4_idx, sc5_idx, sin_idx, hwe_idx, asy_idx, shi_idx, squ_idx, bro_idx, &
-       o3_t1_idx, o3_t3_idx, io_idx
+       lbe_idx, ad2_idx, mxs_idx, spc_idx, wvl_idx, bl0_idx, &
+       bl1_idx, bl2_idx, bl3_idx, bl4_idx, bl5_idx, sc0_idx, &
+       sc1_idx, sc2_idx, sc3_idx, sc4_idx, sc5_idx, sin_idx, &
+       shi_idx, squ_idx, o3_t1_idx, o3_t3_idx
   USE OMSAO_parameters_module, ONLY: max_spec_pts, downweight
   USE OMSAO_variables_module,  ONLY: &
        n_database_wvl, curr_sol_spec, fitvar_rad, mask_fitvar_rad, fitweights, &
