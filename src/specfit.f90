@@ -4,7 +4,7 @@ SUBROUTINE specfit (                                       &
 
   USE OMSAO_precision_module
   USE OMSAO_indices_module,        ONLY: elsunc_userdef
-  USE OMSAO_parameters_module,     ONLY: max_spec_pts, elsunc_np, elsunc_nw, forever
+  USE OMSAO_parameters_module,     ONLY: elsunc_np, elsunc_nw, forever
   USE OMSAO_variables_module,      ONLY: &
        tol, epsrel, epsabs, epsx, num_fitfunc_calls, num_fitfunc_jacobi, max_fitfunc_calls
   USE OMSAO_elsunc_fitting_module, ONLY: elsunc
