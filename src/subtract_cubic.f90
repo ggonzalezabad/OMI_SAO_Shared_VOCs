@@ -94,7 +94,7 @@ END SUBROUTINE subtract_cubic
 SUBROUTINE subtract_cubic_meas ( locwvl, npoints, locspec, ll_rad, lu_rad )
 
   USE OMSAO_precision_module
-  USE OMSAO_parameters_module,     ONLY : max_spec_pts, doas_npol, elsunc_np, elsunc_nw
+  USE OMSAO_parameters_module,     ONLY : doas_npol
   USE OMSAO_variables_module,      ONLY : cubic_x, cubic_y, cubic_w
   USE OMSAO_elsunc_fitting_module, ONLY : elsunc
 
