@@ -7,8 +7,8 @@ SUBROUTINE undersample ( xtrack_pix, n_sensor_pts, curr_wvl, hw1e, e_asym, phase
   !     more common in OMI spectra.
 
   USE OMSAO_precision_module
-  USE OMSAO_indices_module,    ONLY: solar_idx, us1_idx, us2_idx, wvl_idx, spc_idx
-  USE OMSAO_parameters_module, ONLY: max_spec_pts, maxchlen
+  USE OMSAO_indices_module,    ONLY: solar_idx, us1_idx, us2_idx
+  USE OMSAO_parameters_module, ONLY: max_spec_pts
   USE OMSAO_variables_module,  ONLY: &
        refspecs_original, database, have_undersampling, yn_use_labslitfunc
   USE OMSAO_slitfunction_module
@@ -215,8 +215,8 @@ SUBROUTINE undersample_new ( xtrack_pix, n_sensor_pts, curr_wvl, n_solar_pts, so
   !     more common in OMI spectra.
 
   USE OMSAO_precision_module
-  USE OMSAO_indices_module,    ONLY: solar_idx, us1_idx, us2_idx, wvl_idx, spc_idx
-  USE OMSAO_parameters_module, ONLY: max_spec_pts, maxchlen
+  USE OMSAO_indices_module,    ONLY: solar_idx, us1_idx, us2_idx
+  USE OMSAO_parameters_module, ONLY: max_spec_pts
   USE OMSAO_variables_module,  ONLY: refspecs_original, database, yn_use_labslitfunc
   USE OMSAO_slitfunction_module
   USE OMSAO_errstat_module
