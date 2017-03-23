@@ -50,8 +50,8 @@ SUBROUTINE specfit_func_sol ( fitvar, nfitvar, ymod, npoints, ctrl, dyda, mdy )
      ! Calculate the weighted difference between fitted and measured spectrum.
      ! -----------------------------------------------------------------------
      CALL spectrum_solar ( &
-          npoints, nfitvar, yn_smooth, sol_wav_avg, locwvl(1:npoints), ymod(1:npoints), &
-          fitvar(1:nfitvar), yn_doas )
+          npoints, nfitvar, sol_wav_avg, locwvl(1:npoints), ymod(1:npoints), &
+          fitvar(1:nfitvar) )
      ymod(1:npoints) = ( ymod(1:npoints) - currspec(1:npoints) ) * fitweights(1:npoints)
 
   CASE ( 2 )
@@ -75,8 +75,8 @@ SUBROUTINE specfit_func_sol ( fitvar, nfitvar, ymod, npoints, ctrl, dyda, mdy )
   CASE ( 3 )
      ! Calculate the spectrum, without weighting
      CALL spectrum_solar ( &
-          npoints, nfitvar, yn_smooth, sol_wav_avg, locwvl(1:npoints), ymod(1:npoints), &
-          fitvar(1:nfitvar), yn_doas )
+          npoints, nfitvar, sol_wav_avg, locwvl(1:npoints), ymod(1:npoints), &
+          fitvar(1:nfitvar))
 
   CASE DEFAULT
      !WRITE (*,'(A,I4)') &
@@ -248,7 +248,7 @@ SUBROUTINE specfit_func_o3exp ( fitvar, nfitvar, ymod, npoints, ctrl, dyda, mdy 
      ! Calculate the weighted difference between fitted and measured spectrum.
      ! -----------------------------------------------------------------------
      CALL spectrum_earthshine_o3exp ( &
-          npoints, nfitvar, yn_smooth, rad_wav_avg, locwvl(1:npoints), ymod(1:npoints), &
+          npoints, nfitvar, rad_wav_avg, locwvl(1:npoints), ymod(1:npoints), &
           fitvar(1:nfitvar), database, yn_doas )
 
      !WRITE (*,'(1P100(E12.4:))') fitvar(1:nfitvar)
@@ -282,7 +282,7 @@ SUBROUTINE specfit_func_o3exp ( fitvar, nfitvar, ymod, npoints, ctrl, dyda, mdy 
   CASE ( 3 )
      ! Calculate the spectrum, without weighting
      CALL spectrum_earthshine_o3exp ( &
-          npoints, nfitvar, yn_smooth, rad_wav_avg, locwvl(1:npoints), ymod(1:npoints), &
+          npoints, nfitvar, rad_wav_avg, locwvl(1:npoints), ymod(1:npoints), &
           fitvar(1:nfitvar), database, yn_doas )
 
   CASE DEFAULT

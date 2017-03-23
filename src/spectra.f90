@@ -1,5 +1,5 @@
 SUBROUTINE spectrum_solar ( &
-     npoints, nfitvar, smooth, sol_wav_avg, locwvl, fit, fitvar, doas )
+     npoints, nfitvar, sol_wav_avg, locwvl, fit, fitvar)
 
   USE OMSAO_precision_module
   USE OMSAO_indices_module, ONLY: &
@@ -10,7 +10,7 @@ SUBROUTINE spectrum_solar ( &
        squ_idx
   USE OMSAO_parameters_module, ONLY: max_spec_pts
   USE OMSAO_variables_module,  ONLY: &
-       refspecs_original, phase, fitwavs, solar_spec_convolved, yn_use_labslitfunc, &
+       refspecs_original, solar_spec_convolved, yn_use_labslitfunc, &
        fitvar_cal, mask_fitvar_cal, yn_spectrum_norm, yn_newshift
   USE OMSAO_omidata_module,  ONLY: curr_xtrack_pixnum
   USE OMSAO_slitfunction_module
@@ -23,7 +23,6 @@ SUBROUTINE spectrum_solar ( &
 
 
   INTEGER (KIND=i4),                      INTENT (IN)    :: npoints, nfitvar
-  LOGICAL,                                INTENT (INOUT) :: smooth, doas
   REAL    (KIND=r8),                      INTENT (IN)    :: sol_wav_avg
   REAL    (KIND=r8), DIMENSION (nfitvar), INTENT (INOUT) :: fitvar
   REAL    (KIND=r8), DIMENSION (npoints), INTENT (INOUT) :: locwvl, fit
@@ -506,7 +505,7 @@ SUBROUTINE spectrum_earthshine ( &
 END SUBROUTINE spectrum_earthshine
 
 SUBROUTINE spectrum_earthshine_o3exp ( &
-     npts, n_fitvar, smooth, rad_wav_avg, locwvl, fit, fitvar, database, doas )
+     npts, n_fitvar, rad_wav_avg, locwvl, fit, fitvar, database, doas )
 
   USE OMSAO_precision_module
   USE OMSAO_indices_module, ONLY: &
@@ -536,7 +535,7 @@ SUBROUTINE spectrum_earthshine_o3exp ( &
   ! ===============
   ! Input variables
   ! ===============
-  LOGICAL,                                                INTENT (IN) :: smooth, doas
+  LOGICAL,                                                INTENT (IN) :: doas
   INTEGER (KIND=i4),                                      INTENT (IN) :: npts, n_fitvar
   REAL    (KIND=r8),                                      INTENT (IN) :: rad_wav_avg
   REAL    (KIND=r8), DIMENSION (n_fitvar),                INTENT (IN) :: fitvar
