@@ -1696,7 +1696,7 @@ CONTAINS
     locerrstat = pge_errstat_ok
 
     swath_file = TRIM(ADJUSTL(voc_amf_filenames(voc_isccp_idx)))
-
+    
     ! -----------------------------------------------------------
     ! Open HE5 output file and check SWATH_FILE_ID ( -1 if error)
     ! -----------------------------------------------------------
@@ -1712,6 +1712,7 @@ CONTAINS
     ! ---------------------------------------------
     ! Check for existing HE5 swath and attach to it
     ! ---------------------------------------------
+    swath_name = ''
     locerrstat  = HE5_SWinqswath  ( TRIM(ADJUSTL(swath_file)), swath_name, swlen )
     amf_swath_names(voc_isccp_idx) = TRIM(ADJUSTL(swath_name))
     swath_id = HE5_SWattach ( swath_file_id, TRIM(ADJUSTL(swath_name)) )
@@ -1782,7 +1783,7 @@ CONTAINS
     ! -----------------------------------------------
     he5stat = HE5_SWdetach ( swath_id )
     he5stat = HE5_SWclose  ( swath_file_id )
-
+    
     RETURN
   END SUBROUTINE voc_amf_readisccp
   
