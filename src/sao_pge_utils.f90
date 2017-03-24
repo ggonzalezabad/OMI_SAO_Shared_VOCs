@@ -10,7 +10,7 @@ SUBROUTINE get_pge_ident ( tmpchar, pge_name, pge_idx, errstat )
   ! Find name and index of current PGE from input string
   ! ====================================================
 
-  USE OMSAO_indices_module, ONLY: n_sao_pge, sao_pge_names, sao_pge_min_idx, sao_pge_max_idx
+  USE OMSAO_indices_module, ONLY: sao_pge_names, sao_pge_min_idx, sao_pge_max_idx
   USE OMSAO_errstat_module
 
   IMPLICIT NONE
@@ -159,7 +159,7 @@ SUBROUTINE utc_julian_date_and_time ( year, month, day, julday, hour, minute, se
   ! i.e., day of the year.
   ! -------------------------------------------------------------
 
-  USE OMSAO_precision_module, ONLY: i4, r4
+  USE OMSAO_precision_module, ONLY: i4
   IMPLICIT NONE
 
   ! ---------------
@@ -733,7 +733,7 @@ SUBROUTINE interpolation ( &
      n1, x1, y1, n2, x2, y2, filltype, fillval, yn_full_range, errstat )
 
   USE OMSAO_precision_module
-  USE OMSAO_errstat_module, ONLY: pge_errstat_ok, pge_errstat_warning, pge_errstat_error
+  USE OMSAO_errstat_module, ONLY: pge_errstat_ok, pge_errstat_error
   IMPLICIT NONE
 
   ! ---------------

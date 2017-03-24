@@ -243,12 +243,6 @@ CONTAINS
     REAL    (KIND=r8), DIMENSION (nwvl, n_sf_pol, n_sf_segs) :: wvlpar
     REAL    (KIND=r8), DIMENSION (n_sf_pol, npts)            :: xpol
 
-    ! -------------------------------
-    ! Name of the function/subroutine
-    ! -------------------------------
-    CHARACTER (LEN=20), PARAMETER :: modulename = 'omi_slitfunc_compute'
-
-
     ! ----------------------------------------------------------------------
     ! Compose  row and array of column values, making sure that they stay 
     ! within the  bounds of the tabulated slit function parameters. Constant

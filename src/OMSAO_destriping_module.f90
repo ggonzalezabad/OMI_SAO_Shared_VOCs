@@ -92,12 +92,6 @@ CONTAINS
     REAL    (KIND=r8), DIMENSION (nxtrack)            :: xtr_median, xtr_weight
     LOGICAL,           DIMENSION (0:ntimes-1)         :: yn_dst_range
 
-
-    ! ------------------------------
-    ! Name of this module/subroutine
-    ! ------------------------------
-    CHARACTER (LEN=17), PARAMETER :: modulename = 'xtrack_destriping'
-
     locerrstat = pge_errstat_ok
 
     ! ---------------------------------------------------------------

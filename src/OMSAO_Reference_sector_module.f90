@@ -38,7 +38,6 @@ MODULE OMSAO_Reference_sector_module
   REAL    (KIND=r8), DIMENSION (maxngrid)    :: Ref_column_month
   INTEGER (KIND=i2)                          :: ngridpoints
 
-!!$  REAL    (KIND=r8), DIMENSION (:,:), ALLOCATABLE :: background_correction
   INTEGER (KIND=i2), DIMENSION (:,:), ALLOCATABLE :: refmqf
 
   CONTAINS
@@ -85,11 +84,6 @@ MODULE OMSAO_Reference_sector_module
       ! Error handling variables
       ! ------------------------
       INTEGER (KIND=i4) :: version, locerrstat
-
-      ! ------------------------------
-      ! Name of this module/subroutine
-      ! ------------------------------
-      CHARACTER (LEN=27), PARAMETER :: modulename = 'Reference_sector_correction'
       
       locerrstat = pge_errstat_ok
 
@@ -112,12 +106,10 @@ MODULE OMSAO_Reference_sector_module
            l1b_radref_filename, nTimesRadRR, nXtrackRadRR, nWvlCCDrr, &
            omi_radiance_swathname, errstat                          )
 
-!!$      ALLOCATE (background_correction(1:nXtrackRadRR,0:nTimesRadRR-1))
       ALLOCATE (refmqf(1:nXtrackRadRR,0:nTimesRadRR-1))
       ! --------------------------
       ! Initialize these variables
       ! --------------------------
-!!$      background_correction           = 0.0_r8
       refmqf                          = i2_missval
       Ref_column_month(1:ngridpoints) = Reference_sector_concentration(1:ngridpoints,granule_month)
 
@@ -135,18 +127,6 @@ MODULE OMSAO_Reference_sector_module
       DO itrack = 1, nxtrack
          DO iline = 0, ntimes-1
             int_saocol(itrack,iline) = int_saocol(itrack,iline) * saoamf(itrack,iline)
-!!$            IF ( extr(itrack,iline) .NE. 0 .AND. saomqf(itrack,iline) .GE. 0 .AND. &
-!!$                 saomqf(itrack,iline) .LE. 1 .AND.                                 &
-!!$                 refmqf(itrack,iline) .GE. 0 .AND. refmqf(itrack,iline) .LE. 1) THEN
-!!$               ! ----------------------------
-!!$               ! Apply pixel based correction
-!!$               ! ----------------------------
-!!$               int_saocol(itrack,iline) = int_saocol(itrack,iline) - background_correction(itrack,iline)
-!!$
-!!$               ! --------------------------------
-!!$               ! Apply smooth correction (median)
-!!$               ! --------------------------------
-!!$            ELSE
             IF (saomqf(itrack,iline) .EQ. 0 .AND. extr(itrack,iline) .EQ. 0 ) THEN               
                ! -------------------------------------------------------------
                ! Interpolate background_level, and reference_sector_correction
@@ -347,11 +327,6 @@ MODULE OMSAO_Reference_sector_module
       ! Error handling variables
       ! ------------------------
       INTEGER (KIND=i4) :: version, locerrstat
-      ! ------------------------------
-      ! Name of this module/subroutine
-      ! ------------------------------
-      CHARACTER (LEN=64), PARAMETER :: modulename = &
-           'Reference_Sector_radiance_reference_granule_retrieval'
       
       locerrstat = pge_errstat_ok
 
@@ -503,10 +478,6 @@ MODULE OMSAO_Reference_sector_module
       ! ------------------------------------------------
       mem_column_amount = mem_column_amount * mem_amf
 
-!!$      CALL compute_background_correction_bis(mem_column_amount, mem_latitude, mem_amf, &
-!!$                                         nXtrackRadRR, nTimesRadRR, refmqf,            &
-!!$                                         mem_xtrflg, locerrstat)
-
       ! -----------------------------------------------------
       ! Once we have the radiance reference retrievals we can
       ! compute the background correction
@@ -530,76 +501,12 @@ MODULE OMSAO_Reference_sector_module
 
     END SUBROUTINE Reference_Sector_radref_retrieval_and_median
 
-!!$    SUBROUTINE compute_background_correction_bis(mem_column_amount, mem_latitude, mem_amf, &
-!!$                                                 nXtrackRadRR, nTimesRadRR, refmqf, mem_xtrflg, locerrstat)
-!!$
-!!$      USE OMSAO_variables_module, ONLY: max_good_col
-!!$
-!!$      IMPLICIT NONE
-!!$      
-!!$      ! ---------------
-!!$      ! Input variables
-!!$      ! ---------------
-!!$      INTEGER (KIND=i4),                                           INTENT(IN) :: &
-!!$                         nTimesRadRR, nXtrackRadRR
-!!$      REAL    (KIND=r8), DIMENSION (nXtrackRadRR,0:nTimesRadRR-1), INTENT(IN) :: &
-!!$                         mem_column_amount, mem_amf
-!!$      INTEGER (KIND=i2), DIMENSION (nXtrackRadRR,0:nTimesRadRR-1), INTENT(IN) :: refmqf, mem_xtrflg
-!!$      REAL    (KIND=r4), DIMENSION (nXtrackRadRR,0:nTimesRadRR-1), INTENT(IN) :: mem_latitude
-!!$      LOGICAL                                                                 :: yn_row
-!!$
-!!$      ! ------------------
-!!$      ! Modified variables
-!!$      ! ------------------
-!!$      INTEGER (KIND=i4), INTENT(INOUT) :: locerrstat
-!!$
-!!$      ! ---------------
-!!$      ! Local variables
-!!$      ! ---------------
-!!$      INTEGER (KIND=i4)               :: iline, itrack, igrid, npixels, ipixel
-!!$      REAL    (KIND=r8), DIMENSION(1) :: Ref_column, latitude
-!!$      REAL    (KIND=r8)               :: nTotal, Total, Average, nSted, Stddev
-!!$
-!!$      ! -------------------
-!!$      ! Routine starts here
-!!$      ! -------------------
-!!$      locerrstat       = pge_errstat_ok
-!!$      
-!!$      ! -----------------------------------------------------------
-!!$      ! Loop pixel by pixel to compute the background correction as
-!!$      ! sao_colum - reference_colum only for row anomaly pixels
-!!$      ! -----------------------------------------------------------
-!!$      DO iline = 0,nTimesRadRR-1
-!!$         DO itrack = 1,nXtrackRadRR
-!!$
-!!$            ! -----------------------------------------------------
-!!$            ! If the main quality flag of the retrieval is not good
-!!$            ! then cycle.
-!!$            ! -----------------------------------------------------
-!!$            IF (refmqf(itrack,iline) .EQ. 0) THEN
-!!$               ! ---------------------------------------------------
-!!$               ! For the rest of the pixels find out the latitude,
-!!$               ! interpolate the reference column and substrack from
-!!$               ! the retrieved colum
-!!$               ! ---------------------------------------------------
-!!$               latitude(1) = REAL(mem_latitude(itrack,iline), KIND=r8)
-!!$               CALL ezspline_1d_interpolation ( INT(ngridpoints, KIND=i4),    &
-!!$                    grid_lat(1:ngridpoints), Ref_column_month(1:ngridpoints), &
-!!$                    1, latitude(1), Ref_column(1), locerrstat )
-!!$               background_correction(itrack,iline) = mem_column_amount(itrack,iline) &
-!!$                    - ( Ref_column(1) * mem_amf(itrack,iline) )
-!!$            ENDIF
-!!$         END DO
-!!$      END DO      
-!!$      
-!!$    END SUBROUTINE compute_background_correction_bis    
-
     SUBROUTINE he5_write_reference_sector_corrected_column(pge_idx, &
          nt, nx, column, uncertainty, errstat)
 
       USE OMSAO_he5_module
       USE OMSAO_omidata_module,   ONLY: n_roff_dig
-      USE OMSAO_indices_module,   ONLY: pge_hcho_idx, pge_gly_idx, pge_bro_idx
+      USE OMSAO_indices_module,   ONLY: pge_hcho_idx
 
       IMPLICIT NONE
 

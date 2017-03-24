@@ -65,7 +65,7 @@ MODULE OMSAO_he5_datafields_module
 
     SUBROUTINE he5_initialize_datafields (  )
   
-      USE OMSAO_parameters_module,   ONLY: r8_missval, r4_missval, i4_missval, i2_missval, str_missval
+      USE OMSAO_parameters_module,   ONLY: r8_missval
       USE OMSAO_radiance_ref_module, ONLY: yn_radiance_reference
       USe OMSAO_destriping_module,   ONLY: yn_run_destriping
 
@@ -398,7 +398,7 @@ MODULE OMSAO_he5_datafields_module
     SUBROUTINE he5_find_datatype ( tyc, numtype, missval )
 
       USE OMSAO_parameters_module, ONLY: &
-           r8_missval, r4_missval, i4_missval, i2_missval, i1_missval, str_missval
+           r8_missval, r4_missval, i4_missval, i2_missval, i1_missval
       IMPLICIT NONE
 
       CHARACTER (LEN=2), INTENT (IN) :: tyc

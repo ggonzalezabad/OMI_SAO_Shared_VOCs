@@ -1,7 +1,6 @@
 SUBROUTINE omi_pge_fitting_process ( pge_idx, n_max_rspec, pge_error_status )
 
   USE OMSAO_precision_module
-  USE OMSAO_parameters_module,   ONLY: maxchlen
   USE OMSAO_errstat_module,      ONLY: pge_errstat_ok, pge_errstat_error, pge_errstat_fatal
   USE OMSAO_he5_module,          ONLY: NrofScanLines, NrofCrossTrackPixels
   USE OMSAO_solcomp_module
@@ -110,20 +109,13 @@ SUBROUTINE omi_fitting (                                  &
        nTimesRadRR, nWvlCCDrr, pge_error_status             )
 
   USE OMSAO_precision_module
-  USE OMSAO_indices_module,    ONLY: &
-       wvl_idx, spc_idx, sig_idx, shi_idx,                                        &
-       sao_pge_names, hwe_idx, asy_idx, sao_molecule_names, bro_idx,              &
-       o3_t1_idx, o3_t3_idx, pge_o3_idx, pge_hcho_idx, pge_bro_idx, pge_oclo_idx, &
-       n_max_fitpars, radref_idx, radfit_idx, radcal_idx
-  USE OMSAO_parameters_module, ONLY:                                                     &
-       i2_missval, i4_missval, r4_missval, r8_missval,                                   &
-       main_qa_missing, deg2rad, one_r8, zero_r8
-  USE OMSAO_variables_module,  ONLY:  &
-       l1b_rad_filename,                                                                 &
-       verb_thresh_lev, hw1e, e_asym, phase, l2_filename, radwavcal_freq, pixnum_lim,    &
-       radfit_latrange, database, n_fitvar_rad, refspecs_original,                       &
-       fitvar_rad_init, fitvar_rad_saved, yn_solar_comp, yn_diagnostic_run,              &
-       n_fitres_loop, fitres_range, yn_common_iter, common_latlines, common_latrange,    &
+  USE OMSAO_indices_module, ONLY: sao_molecule_names, pge_hcho_idx, n_max_fitpars
+  USE OMSAO_parameters_module, ONLY: i2_missval, r8_missval
+  USE OMSAO_variables_module, ONLY: l1b_rad_filename, verb_thresh_lev, hw1e, &
+       e_asym, phase, l2_filename, radwavcal_freq, pixnum_lim, radfit_latrange, &
+       database, n_fitvar_rad, refspecs_original, fitvar_rad_init, &
+       fitvar_rad_saved, yn_solar_comp, yn_diagnostic_run, n_fitres_loop, &
+       fitres_range, yn_common_iter, common_latlines, common_latrange, &
        radiance_wavcal_lnums, yn_solmonthave
   USE OMSAO_omidata_module
   USE OMSAO_he5_module,       ONLY:  pge_swath_name

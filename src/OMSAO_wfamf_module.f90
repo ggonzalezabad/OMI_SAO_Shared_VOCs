@@ -388,11 +388,6 @@ CONTAINS
          Rstar = 8.314,    &
          Navogadro = 6.02214e+23, &
          gplanet = 9.806    
- 
-    ! ------------------------------
-    ! Name of this module/subroutine
-    ! ------------------------------
-    CHARACTER (LEN=30), PARAMETER :: modulename = 'omi_climatology' 
 
     ! ----------------------
     ! Subroutine starts here
@@ -1414,7 +1409,7 @@ CONTAINS
 
   SUBROUTINE compute_geometric_amf ( nt, nx, sza, vza, xtrange, amfgeo, amfdiag )
 
-    USE OMSAO_parameters_module, ONLY: deg2rad, rad2deg
+    USE OMSAO_parameters_module, ONLY: deg2rad
     USE OMSAO_variables_module,  ONLY: szamax
     USE OMSAO_omidata_module,    ONLY: omi_geo_amf, omi_oobview_amf
 
@@ -1795,8 +1790,8 @@ CONTAINS
        nt, nx, lat, lon, sza, vza, snow, glint, xtrange, ctpmin, ctpmax, l2cfr, l2ctp, amfdiag )
 
     USE OMSAO_omidata_module,   ONLY: omi_oobview_amf, omi_glint_add, omi_height, &
-         omi_geo_amf, omi_bigsza_amf, omi_cfr_addmiss, omi_ctp_addmiss, &
-         omi_oob_cfr, omi_oob_ctp
+         omi_bigsza_amf, omi_cfr_addmiss, omi_ctp_addmiss, &
+         omi_oob_ctp
     USE OMSAO_variables_module, ONLY: winwav_min, winwav_max
     
     IMPLICIT NONE
@@ -2344,11 +2339,6 @@ CONTAINS
     ! ---------------
     INTEGER (KIND=i4)                      :: locerrstat, n, n1, ixtrack, itimes, itest
    
-    ! ------------------------------
-    ! Name of this module/subroutine
-    ! ------------------------------
-    CHARACTER (LEN=11), PARAMETER :: modulename = 'compute_amf'
-
     ! ----------------------
     ! Subroutine starts here
     ! ----------------------
@@ -2395,11 +2385,6 @@ CONTAINS
     ! ------------------
     INTEGER (KIND=i4),                         INTENT (INOUT) :: errstat
 
-    ! ------------------------------
-    ! Name of this module/subroutine
-    ! ------------------------------
-    CHARACTER (LEN=16), PARAMETER :: modulename = 'write_albedo_he5'
-    
     ! ---------------
     ! Local variables
     ! ---------------
@@ -2444,12 +2429,7 @@ CONTAINS
     ! Modified variables
     ! ------------------
     INTEGER (KIND=i4),                         INTENT (INOUT) :: errstat
-
-    ! ------------------------------
-    ! Name of this module/subroutine
-    ! ------------------------------
-    CHARACTER (LEN=24), PARAMETER :: modulename = 'write_climatology_he5' ! JED fix
-    
+  
     ! ---------------
     ! Local variables
     ! ---------------
@@ -2505,11 +2485,6 @@ CONTAINS
     ! ------------------
     INTEGER (KIND=i4),                         INTENT (INOUT) :: errstat
 
-    ! ------------------------------
-    ! Name of this module/subroutine
-    ! ------------------------------
-    CHARACTER (LEN=16), PARAMETER :: modulename = 'write_scatt_he5'
-    
     ! ---------------
     ! Local variables
     ! ---------------
@@ -2543,15 +2518,9 @@ SUBROUTINE he5_amf_write ( &
   USE OMSAO_he5_module
   USE OMSAO_errstat_module
   USE OMSAO_omidata_module,   ONLY: n_roff_dig
-  USE OMSAO_indices_module,   ONLY: pge_hcho_idx, pge_gly_idx, pge_bro_idx, pge_h2o_idx
+  USE OMSAO_indices_module,   ONLY: pge_hcho_idx, pge_gly_idx, pge_h2o_idx
 
   IMPLICIT NONE
-
-  ! ------------------------------
-  ! Name of this module/subroutine
-  ! ------------------------------
-  CHARACTER (LEN=13), PARAMETER :: modulename = 'he5_write_amf'
-
 
   ! ---------------
   ! Input variables
@@ -2683,11 +2652,6 @@ SUBROUTINE read_lookup_table (errstat)
 
     INTEGER(SIZE_T)                :: size
     LOGICAL, SAVE :: h5inited = .FALSE.
-  
-    ! ------------------------------
-    ! Name of this module/subroutine
-    ! ------------------------------
-    CHARACTER (LEN=26), PARAMETER :: modulename = 'read_lookup_table' 
 
     ! ----------------------
     ! Subroutine starts here

@@ -7,9 +7,9 @@ SUBROUTINE omi_pge_swathline_loop_memory (                               &
 
 
   USE OMSAO_precision_module,  ONLY: i4, r8
-  USE OMSAO_parameters_module, ONLY: i2_missval, r8_missval, main_qa_missing, &
+  USE OMSAO_parameters_module, ONLY: i2_missval, r8_missval, &
        maxchlen, r4_missval
-  USE OMSAO_indices_module,    ONLY: pge_hcho_idx, n_max_fitpars, solar_idx
+  USE OMSAO_indices_module,    ONLY: pge_hcho_idx, n_max_fitpars
   USE OMSAO_variables_module,  ONLY:  &
        n_fitvar_rad, fitvar_rad_init, fitvar_rad_saved, l1b_rad_filename, &
        verb_thresh_lev, n_fincol_idx, fincol_idx, n_rad_wvl, n_rad_wvl_max

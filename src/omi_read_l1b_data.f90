@@ -1,7 +1,6 @@
 SUBROUTINE omi_read_irradiance_data ( ntimes, nxtrack, errstat ) 
 
   USE OMSAO_precision_module
-  USE OMSAO_parameters_module, ONLY: maxchlen
   USE OMSAO_variables_module,  ONLY: &
        l1b_irrad_filename, l1b_channel, verb_thresh_lev, fit_winwav_lim, &
        fit_winexc_lim
@@ -166,7 +165,6 @@ SUBROUTINE omi_read_radiance_paras ( &
      l1bfile, ntimes, nxtrack, nwavel_ccd, l1bswath, errstat )
 
   USE OMSAO_precision_module
-  USE OMSAO_parameters_module, ONLY : maxchlen, r4_missval, r8_missval
   USE OMSAO_variables_module,  ONLY : verb_thresh_lev, l1b_channel
   USE OMSAO_omidata_module,    ONLY : EarthSunDistance
   USE OMSAO_errstat_module
@@ -263,7 +261,6 @@ SUBROUTINE omi_read_binning_factor ( &
      l1bfile, l1bswath, ntimes, binfac, yn_szoom, errstat )
 
   USE OMSAO_precision_module
-  USE OMSAO_parameters_module, ONLY : maxchlen, r4_missval, r8_missval
   USE OMSAO_variables_module,  ONLY : verb_thresh_lev, l1b_channel
   USE OMSAO_omidata_module,    ONLY : global_mode, szoom_mode
   USE OMSAO_errstat_module
@@ -401,19 +398,15 @@ SUBROUTINE omi_read_radiance_lines ( &
      l1bfile, iline, nxtrack, nloop, nwavel_ccd, errstat )
 
   USE OMSAO_precision_module
-  USE OMSAO_indices_module, ONLY: pge_o3_idx
-  USE OMSAO_parameters_module, ONLY: &
-       i1_missval, i2_missval, i2_missval_l1, r4_missval, &
-       min_zenith, max_zenith, min_azimuth, max_azimuth, &  ! "non-inclusive"
-       min_latitude, max_latitude, min_longitude, max_longitude, &
-       earth_radius_avg, eos_aura_avgalt
+  USE OMSAO_parameters_module, ONLY: i1_missval, i2_missval, r4_missval, &
+       min_zenith, min_azimuth, max_azimuth, &  ! "non-inclusive"
+       max_latitude, max_longitude, earth_radius_avg
   USE OMSAO_variables_module,  ONLY: verb_thresh_lev, zatmos, pge_idx
   USE OMSAO_omidata_module,  ONLY: &
-       nxtrack_max, omi_radiance_swathname, omi_radiance_spec, omi_radiance_prec,  &
+       omi_radiance_swathname, omi_radiance_spec, omi_radiance_prec,  &
        omi_radiance_wavl, omi_radiance_qflg, omi_height, omi_geoflg, omi_latitude,             &
        omi_longitude, omi_szenith, omi_sazimuth, omi_vzenith, omi_vazimuth,                    &
        omi_razimuth, omi_auraalt, omi_time, omi_nwav_rad, omi_radiance_errstat,                &
-       omi_min_specres,                                                                        &
        omi_irradiance_ccdpix, omi_radiance_ccdpix, omi_nwav_irrad, omi_irradiance_wavl,        &
        omi_ccdpix_selection,                                                                   &
        omi_xtrflg_l1b, omi_xtrflg
@@ -926,11 +919,6 @@ SUBROUTINE omi_xtract_swathname ( l1bfile, l1bchan, omiswath )
   INTEGER   (KIND=i4)      :: is, ie
   INTEGER   (KIND=i4)      :: swfid, nswath, strbufsize, xswath
   CHARACTER (LEN=maxchlen) :: swathlist
-
-  ! ------------------------------
-  ! Name of this module/subroutine
-  ! ------------------------------
-  CHARACTER (LEN=20), PARAMETER :: modulename = 'omi_xtract_swathname'
 
   ! ------------------
   ! External Functions

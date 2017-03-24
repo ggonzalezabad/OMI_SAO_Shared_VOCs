@@ -3,18 +3,17 @@ SUBROUTINE xtrack_radiance_wvl_calibration (             &
      first_pix, last_pix, n_max_rspec, n_comm_wvl_out, errstat )
 
   USE OMSAO_precision_module
-  USE OMSAO_indices_module,    ONLY: &
-       wvl_idx, spc_idx, sig_idx, max_calfit_idx, max_rs_idx, hwe_idx, asy_idx,  &
-       shi_idx, squ_idx, oclo_idx, o2o2_idx, bro_idx, solar_idx, pge_bro_idx,    &
-       pge_oclo_idx, ccd_idx, radcal_idx
+  USE OMSAO_indices_module, ONLY: wvl_idx, spc_idx, sig_idx, &
+       max_calfit_idx, max_rs_idx, hwe_idx, asy_idx, shi_idx, &
+       squ_idx, solar_idx, ccd_idx, radcal_idx
   USE OMSAO_parameters_module, ONLY: maxchlen, downweight, normweight
-  USE OMSAO_variables_module,  ONLY:  &
-       verb_thresh_lev, hw1e, e_asym, n_rad_wvl, curr_rad_spec, rad_spec_wavcal, &
-       sol_wav_avg, database, fitvar_cal, fitvar_cal_saved,                      &
-       fitvar_rad_init, pge_idx, rad_wght_wavcal,         &
-       n_fitres_loop, fitres_range, yn_diagnostic_run
+  USE OMSAO_variables_module, ONLY: verb_thresh_lev, hw1e, e_asym, &
+       n_rad_wvl, curr_rad_spec, rad_spec_wavcal, sol_wav_avg, &
+       database, fitvar_cal, fitvar_cal_saved, fitvar_rad_init, &
+       pge_idx, rad_wght_wavcal, n_fitres_loop, fitres_range, &
+       yn_diagnostic_run
   USE OMSAO_slitfunction_module, ONLY: saved_shift, saved_squeeze
-  USE OMSAO_omidata_module ! , exept_this_one => n_comm_wvl
+  USE OMSAO_omidata_module
   USE OMSAO_errstat_module
   USE EZspline_obj
   USE EZspline
@@ -317,12 +316,11 @@ SUBROUTINE xtrack_radiance_fitting_loop (                             &
      target_var, errstat, fitspc_out, fitspc_out_dim0                 )
 
   USE OMSAO_precision_module
-  USE OMSAO_indices_module,    ONLY: &
-       wvl_idx, spc_idx, sig_idx, o3_t1_idx, o3_t3_idx, hwe_idx, asy_idx, shi_idx, squ_idx, &
-       pge_o3_idx, pge_hcho_idx, n_max_fitpars, solar_idx, ccd_idx, radfit_idx, bro_idx,    &
-       pge_gly_idx
+  USE OMSAO_indices_module, ONLY: wvl_idx, spc_idx, sig_idx, o3_t1_idx, &
+       o3_t3_idx, hwe_idx, asy_idx, pge_o3_idx, pge_hcho_idx, solar_idx, &
+       ccd_idx, radfit_idx, pge_gly_idx
   USE OMSAO_parameters_module, ONLY: &
-       i2_missval, i4_missval, r4_missval, r8_missval, maxchlen, elsunc_less_is_noise
+       i2_missval, r8_missval
   USE OMSAO_variables_module,  ONLY:  &
        database, curr_sol_spec, n_rad_wvl, curr_rad_spec, sol_wav_avg, hw1e, e_asym,     &
        verb_thresh_lev, fitvar_rad_saved, fitvar_rad_init, n_database_wvl, &
@@ -381,8 +379,6 @@ SUBROUTINE xtrack_radiance_fitting_loop (                             &
   ! CCM Array for holding fitted spectra
   REAL    (KIND=r8), DIMENSION (fitspc_out_dim0) :: fitspc
   REAL    (KIND=i4)                           :: id
-
-  CHARACTER (LEN=28), PARAMETER :: modulename = 'xtrack_radiance_fitting_loop'
 
   locerrstat = pge_errstat_ok
 

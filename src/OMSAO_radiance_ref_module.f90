@@ -21,10 +21,8 @@ CONTAINS
 
   SUBROUTINE omi_get_radiance_reference ( l1bfile, ntrr, nxrr, nwrr, radwcal_lines, errstat )
 
-    USE OMSAO_parameters_module, ONLY: &
-         r4_missval, r8_missval, downweight, normweight, deg2rad, rad2deg
-    USE OMSAO_indices_module,    ONLY: &
-       qflg_mis_idx, qflg_bad_idx, qflg_err_idx, qflg_tra_idx, qflg_rts_idx, qflg_sat_idx
+    USE OMSAO_parameters_module, ONLY: r4_missval, downweight, normweight
+    USE OMSAO_indices_module,    ONLY: qflg_mis_idx, qflg_bad_idx, qflg_err_idx
     USE OMSAO_variables_module,  ONLY: pixnum_lim, fit_winwav_lim, fit_winexc_lim
     USE OMSAO_omidata_module,    ONLY: &
          omi_ccdpix_selection, omi_radiance_qflg, omi_radiance_spec, omi_radiance_wavl, &
@@ -352,10 +350,9 @@ CONTAINS
 
     USE OMSAO_indices_module,    ONLY: &
          wvl_idx, spc_idx, sig_idx, o3_t1_idx, o3_t3_idx, hwe_idx, asy_idx, shi_idx, squ_idx, &
-         pge_bro_idx, pge_o3_idx, pge_hcho_idx, n_max_fitpars, solar_idx, ccd_idx, radref_idx,&
-         bro_idx
+         pge_hcho_idx, solar_idx, ccd_idx, radref_idx
     USE OMSAO_parameters_module, ONLY:  &
-         i2_missval, i4_missval, r4_missval, r8_missval, downweight, normweight
+         i2_missval, r8_missval, downweight, normweight
     USE OMSAO_variables_module,  ONLY:  &
          database, curr_sol_spec, n_rad_wvl, curr_rad_spec, sol_wav_avg,                  &
          hw1e, e_asym, n_fitvar_rad, verb_thresh_lev, fitvar_rad_saved, fitvar_rad_init,  &
@@ -408,8 +405,6 @@ CONTAINS
     INTEGER (KIND=i4)                                :: n_solar_pts
     REAL    (KIND=r8), DIMENSION (1:nw)              :: solar_wgt
     REAL    (KIND=r8), DIMENSION (n_fincol_idx,1:nx) :: target_var 
-
-    CHARACTER (LEN=30), PARAMETER :: modulename = 'xtrack_radiance_reference_loop'
 
     ! CCM fitted spectrum now returned from radiance_fit.f90
     !REAL    (KIND=r8), DIMENSION (n_rad_wvl)         :: fitspctmp
@@ -652,7 +647,6 @@ CONTAINS
        nw, ipix, jpix, n_fincol_idx, fincol_idx, &
        target_npol, target_var, target_fit         )
 
-    USE OMSAO_indices_module,   ONLY: solar_idx
     USE OMSAO_parameters_module,ONLY: downweight, r8_missval
     USE OMSAO_omidata_module,   ONLY: omi_radref_spec, n_omi_database_wvl, omi_database, omi_nwav_radref
     USE OMSAO_variables_module, ONLY: refspecs_original
@@ -680,8 +674,6 @@ CONTAINS
     INTEGER (KIND=i4)                 :: i, j, k, l, nwvl
     REAL    (KIND=r8)                 :: yfloc
     REAL    (KIND=r8), DIMENSION (nw) :: tmpexp
-
-    CHARACTER (LEN=27), PARAMETER :: modulename = 'remove_target_from_radiance'
 
     ! ----------------
     ! DPOLFt variables

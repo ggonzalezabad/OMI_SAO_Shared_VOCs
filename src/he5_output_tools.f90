@@ -124,9 +124,9 @@ FUNCTION he5_define_fields ( pge_idx, swath_name, nTimes, nXtrack, nSwLevels ) R
   !------------------------------------------------------------------------------
 
   USE OMSAO_indices_module,    ONLY: &
-       pge_hcho_idx, pge_bro_idx, pge_gly_idx, pge_o3_idx, sao_molecule_names, &
+       pge_hcho_idx, pge_gly_idx, pge_o3_idx, sao_molecule_names, &
        o3_t1_idx, o3_t3_idx, pge_h2o_idx
-  USE OMSAO_parameters_module, ONLY: maxchlen, i4_missval, r4_missval, r8_missval
+  USE OMSAO_parameters_module, ONLY: maxchlen
   USE OMSAO_variables_module,  ONLY: yn_diagnostic_run, yn_refseccor, yn_sw
   USE OMSAO_radiance_ref_module, ONLY: yn_radiance_reference
   USE OMSAO_omidata_module,    ONLY: n_field_maxdim
@@ -575,7 +575,7 @@ END FUNCTION he5_define_fields
 
 SUBROUTINE he5_write_wavcal_output ( nXtloc, fpix, lpix, errstat )
 
-  USE OMSAO_precision_module, ONLY: i4, r8, r4
+  USE OMSAO_precision_module, ONLY: i4, r8
   USE OMSAO_indices_module,   ONLY: max_calfit_idx
   USE OMSAO_he5_module
   USE OMSAO_he5_datafields_module
@@ -720,17 +720,13 @@ END SUBROUTINE he5_write_wavcal_output
 SUBROUTINE he5_write_radfit_output ( &
      pge_idx, iline, nXtrack, nblock, fpix, lpix, &
      all_fitted_columns, all_fitted_errors, correlation_columns,&
-!!$     omi_fitspc, nt, 
      errstat )
 
   USE OMSAO_precision_module
-  USE OMSAO_parameters_module, ONLY: maxchlen, r8_missval
   USE OMSAO_variables_module,  ONLY: n_fitvar_rad, n_rad_wvl, n_rad_wvl_max
   USE OMSAO_indices_module,    ONLY: &
        pge_bro_idx, pge_o3_idx, o3_t1_idx, sao_molecule_names, &
-       corr_didx,  corrcol_didx, correrr_didx, itnum_didx,  &
-       fitwt_didx, posobs_didx,  spcobs_didx,  spcfit_didx, &
-       spcres_didx
+       corr_didx,  corrcol_didx, correrr_didx, itnum_didx
   USE OMSAO_variables_module,  ONLY: yn_diagnostic_run
   USE OMSAO_omidata_module
   USE OMSAO_he5_module
@@ -779,9 +775,8 @@ SUBROUTINE he5_write_radfit_output ( &
   !CHARACTER (LEN=4)   :: molstr
 
   ! ---------------
-  ! Local variables gga
+  ! Local variables
   ! ---------------
-  INTEGER   (KIND=C_LONG), PARAMETER       :: zerocl = 0, onecl = 1 
   INTEGER   (KIND=C_LONG)                  :: ilinecl, nblockcl
   INTEGER   (KIND=i4)                      :: locerrstat, i, j, npix
   CHARACTER (LEN=4)                        :: molstr
@@ -948,90 +943,6 @@ SUBROUTINE he5_write_radfit_output ( &
 
   END IF
 
-  ! -------------------------------
-  ! CCM Write Fit residuals to disk
-  ! -------------------------------
-!!$  IF( yn_diagnostic_run ) THEN
-!!$  			
-!!$     ! Write to he5
-!!$     he5_start_3d  = (/ 0,            0,      iline       /)
-!!$     he5_stride_3d = (/ 1,            1,      1           /)
-!!$     he5_edge_3d   = (/ n_comm_wvl, nXtrack, nblock /)
-!!$     
-!!$     ! (1) Model Spectrum
-!!$     IF( yn_output_diag( spcfit_didx ) ) THEN
-!!$        DO ii=1,n_comm_wvl
-!!$           DO jj=1,nXtrack
-!!$              DO kk=0,nblock-1
-!!$                 tmp_fitspc(ii,jj,kk) = omi_fitspc(ii,jj,1,kk)
-!!$              ENDDO
-!!$           ENDDO
-!!$        ENDDO
-!!$        locerrstat = HE5_SWWRFLD ( pge_swath_id,spcfit_field, he5_start_3d, he5_stride_3d, he5_edge_3d, &
-!!$             tmp_fitspc(1:n_rad_wvl,1:nXtrack,0:nblock-1) )
-!!$     ENDIF
-!!$     
-!!$     ! (2) Measured Spectrum
-!!$     IF( yn_output_diag( spcobs_didx ) ) THEN
-!!$        DO ii=1,n_comm_wvl
-!!$           DO jj=1,nXtrack
-!!$              DO kk=0,nblock-1
-!!$                 tmp_fitspc(ii,jj,kk) = omi_fitspc(ii,jj,2,kk)
-!!$              ENDDO
-!!$           ENDDO
-!!$        ENDDO
-!!$        locerrstat = HE5_SWWRFLD ( pge_swath_id,spcobs_field, he5_start_3d, he5_stride_3d, he5_edge_3d, &
-!!$             tmp_fitspc(1:n_rad_wvl,1:nXtrack,0:nblock-1) )
-!!$     ENDIF
-!!$     
-!!$     ! (3) Measured Position
-!!$     IF( yn_output_diag( posobs_didx ) ) THEN
-!!$        DO ii=1,n_comm_wvl
-!!$           DO jj=1,nXtrack
-!!$              DO kk=0,nblock-1
-!!$                 tmp_fitspc(ii,jj,kk) = omi_fitspc(ii,jj,3,kk)
-!!$              ENDDO
-!!$           ENDDO
-!!$           
-!!$           CALL roundoff_2darr_r8 ( n_roff_dig, nXtrack, nblock, tmp_fitspc(ii,1:nXtrack,0:nblock-1) )
-!!$           
-!!$        ENDDO
-!!$        
-!!$        locerrstat = HE5_SWWRFLD ( pge_swath_id,posobs_field, he5_start_3d, he5_stride_3d, he5_edge_3d, &
-!!$             tmp_fitspc(1:n_rad_wvl,1:nXtrack,0:nblock-1) )
-!!$     ENDIF
-!!$     
-!!$     ! (4) Fit Weights
-!!$     IF( yn_output_diag( fitwt_didx ) ) THEN
-!!$        DO ii=1,n_comm_wvl
-!!$           DO jj=1,nXtrack
-!!$              DO kk=0,nblock-1
-!!$                 tmp_fitspc(ii,jj,kk) = omi_fitspc(ii,jj,4,kk)
-!!$              ENDDO
-!!$           ENDDO
-!!$        ENDDO
-!!$        
-!!$    	locerrstat = HE5_SWWRFLD ( pge_swath_id,fitwt_field, he5_start_3d, he5_stride_3d, he5_edge_3d, &
-!!$          tmp_fitspc(1:n_rad_wvl,1:nXtrack,0:nblock-1) )
-!!$  ENDIF
-!!$  
-!!$  ! Residual Spectrum 
-!!$  IF( yn_output_diag( spcres_didx ) ) THEN 
-!!$     DO ii=1,n_comm_wvl
-!!$        DO jj=1,nXtrack
-!!$           DO kk=0,nblock-1
-!!$              tmp_fitspc(ii,jj,kk) = omi_fitspc(ii,jj,2,kk) - omi_fitspc(ii,jj,1,kk)
-!!$           ENDDO
-!!$        ENDDO
-!!$     ENDDO
-!!$     
-!!$     locerrstat = HE5_SWWRFLD ( pge_swath_id,spcres_field, he5_start_3d, he5_stride_3d, he5_edge_3d, &
-!!$          tmp_fitspc(1:n_rad_wvl,1:nXtrack,0:nblock-1) )
-!!$  ENDIF
-!!$  
-!!$END IF
-! CCM
-
 ! ------------------
 ! Check error status
 ! ------------------
@@ -1147,10 +1058,8 @@ SUBROUTINE he5_write_omi_database ( database_he5, database_he5_wvl, nRefSpec,  n
   USE OMSAO_precision_module
   USE OMSAO_errstat_module
   USE OMSAO_he5_module
-  USE OMSAO_omidata_module,   ONLY: n_roff_dig
   USE OMSAO_variables_module, ONLY: refspecs_original
-  USE OMSAO_indices_module,   ONLY: refspec_strings, &
-																		spdata_didx, spnrmf_didx, spname_didx, spdatw_didx
+  USE OMSAO_indices_module,   ONLY: spdata_didx, spnrmf_didx, spdatw_didx
   IMPLICIT NONE
 
   ! ------------------------------
@@ -1379,15 +1288,9 @@ SUBROUTINE he5_write_amf ( &
   USE OMSAO_he5_module
   USE OMSAO_errstat_module
   USE OMSAO_omidata_module,   ONLY: n_roff_dig
-  USE OMSAO_indices_module,   ONLY: pge_hcho_idx, pge_gly_idx, pge_bro_idx, pge_h2o_idx
+  USE OMSAO_indices_module,   ONLY: pge_hcho_idx, pge_gly_idx, pge_h2o_idx
 
   IMPLICIT NONE
-
-  ! ------------------------------
-  ! Name of this module/subroutine
-  ! ------------------------------
-  CHARACTER (LEN=13), PARAMETER :: modulename = 'he5_write_amf'
-
 
   ! ---------------
   ! Input variables
@@ -1510,9 +1413,8 @@ FUNCTION he5_set_field_attributes ( pge_idx ) RESULT ( he5stat )
   !------------------------------------------------------------------------------
 
   USE OMSAO_indices_module,    ONLY: &
-       pge_hcho_idx, pge_bro_idx, pge_gly_idx, pge_o3_idx, max_calfit_idx, sao_molecule_names, &
+       pge_hcho_idx, pge_gly_idx, pge_o3_idx, sao_molecule_names, &
        o3_t1_idx, o3_t3_idx, pge_h2o_idx
-  USE OMSAO_parameters_module, ONLY: maxchlen, i4_missval, r4_missval, r8_missval
   USE OMSAO_variables_module,  ONLY: yn_diagnostic_run, yn_refseccor, yn_sw
   USE OMSAO_he5_module
   USE OMSAO_he5_datafields_module
@@ -1936,7 +1838,7 @@ FUNCTION he5_close_output_file ( pge_idx ) RESULT ( he5stat )
 
   USE OMSAO_indices_module,    ONLY: &
        pge_bro_idx, pge_hcho_idx, pge_oclo_idx, pge_gly_idx, &
-       voc_isccp_idx, voc_isccp_idx, n_voc_amf_luns, n_voc_amf_luns, pge_h2o_idx
+       voc_isccp_idx, voc_isccp_idx, n_voc_amf_luns, n_voc_amf_luns
   USE OMSAO_variables_module,  ONLY: verb_thresh_lev
   USE OMSAO_he5_module
   USE OMSAO_errstat_module
@@ -2131,7 +2033,7 @@ SUBROUTINE he5_write_local_attributes ( addstr, data_field, errstat )
   ! ---------------
   ! Local Variables
   ! ---------------
-  INTEGER (KIND=C_LONG), PARAMETER :: zerocl = 0, onecl = 1 , twocl = 2
+  INTEGER (KIND=C_LONG), PARAMETER :: onecl = 1 , twocl = 2
   INTEGER (KIND=i4) :: locerrstat
   INTEGER (KIND=i1)                :: locmis_i1
   INTEGER (KIND=i2)                :: locmis_i2
@@ -2550,7 +2452,7 @@ END FUNCTION he5_open_readwrite
 SUBROUTINE saopge_geofield_read ( &
      ntimes, nxtrack, geodata_field, geodata, errstat )
 
-  USE OMSAO_precision_module, ONLY: i2, i4, r4, r8
+  USE OMSAO_precision_module, ONLY: i2, i4, r4
   USE OMSAO_omidata_module,   ONLY: nlines_max
   USE OMSAO_he5_module
   USE OMSAO_errstat_module

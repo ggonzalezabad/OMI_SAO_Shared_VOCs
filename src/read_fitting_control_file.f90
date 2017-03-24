@@ -8,16 +8,16 @@ SUBROUTINE read_fitting_control_file ( pge_idx, l1b_radiance_esdt, pge_error_sta
 
   USE OMSAO_precision_module
   USE OMSAO_indices_module, ONLY: &
-       max_rs_idx, calfit_strings, max_calfit_idx, radfit_strings, mxs_idx, n_max_fitpars, &
-       hwe_idx, refspec_strings,    icf_idx, pge_static_input_luns,                        &
-       genline_str, socline_str, racline_str, rrsline_str, procline_str,                   &
-       rafline_str, rspline_str, iofline_str, molline_str, eoi3str, us1_idx, us2_idx,      &
-       pge_oclo_idx,  pge_hcho_idx, pge_no2_idx, pge_gly_idx, pge_no2d_idx,                &
-       solcal_idx, radcal_idx, radref_idx, radfit_idx, wavwindow_str, fitresconst_str,     &
-       destriping_str, scpline_str, nrmline_str, comline_str, o3amf_str, maxgoodcol_str,   &
-       comm_idx, procmode_diag, procmode_prod, solmonthave_str, wfmod_amf_str,             &
+       max_rs_idx, calfit_strings, max_calfit_idx, radfit_strings, mxs_idx, &
+       hwe_idx, refspec_strings, icf_idx, pge_static_input_luns, &
+       genline_str, socline_str, racline_str, rrsline_str, procline_str, &
+       rafline_str, molline_str, eoi3str, us1_idx, us2_idx, &
+       pge_hcho_idx, pge_gly_idx, solcal_idx, radcal_idx, radref_idx, &
+       radfit_idx, wavwindow_str, fitresconst_str, destriping_str, &
+       scpline_str, nrmline_str, comline_str, o3amf_str, maxgoodcol_str,   &
+       comm_idx, procmode_diag, solmonthave_str, wfmod_amf_str, &
        newshift_str, refseccor_str, scattweight_str
-  USE OMSAO_parameters_module,   ONLY: maxchlen, forever, n_fit_winwav, max_mol_fit
+  USE OMSAO_parameters_module,   ONLY: maxchlen, n_fit_winwav
   USE OMSAO_variables_module,    ONLY: &
        fitcol_idx, n_mol_fit, max_itnum_sol, max_itnum_rad, yn_smooth, yn_doas,            &
        fitvar_sol_init, fitvar_rad_init,  fitvar_rad_saved, szamax,                        &
@@ -31,7 +31,7 @@ SUBROUTINE read_fitting_control_file ( pge_idx, l1b_radiance_esdt, pge_error_sta
        common_fitpos, common_fitvar, common_latrange, yn_o3amf_cor, yn_diagnostic_run,     &
        max_good_col, yn_solmonthave, yn_newshift, yn_refseccor, yn_sw
   USE OMSAO_prefitcol_module, ONLY: yn_bro_prefit, yn_o3_prefit, yn_lqh2o_prefit
-  USE OMSAO_omidata_module, ONLY: vis_lower_wvl, omi_ccdpix_selection, nxtrack_max
+  USE OMSAO_omidata_module, ONLY: omi_ccdpix_selection, nxtrack_max
   USE OMSAO_radiance_ref_module, ONLY: &
        yn_radiance_reference, radref_latrange, yn_remove_target, target_npol
   USE OMSAO_destriping_module, ONLY: &
@@ -665,7 +665,7 @@ SUBROUTINE find_radiance_fitting_variables ( errstat )
        calfit_titles,  radfit_titles,  refspec_titles,     &
        calfit_strings, radfit_strings, refspec_strings,    &
        o3_t1_idx, o3_t2_idx, o3_t3_idx, bro_idx, comm_idx, &
-       hwe_idx, asy_idx, ad1_idx, ad2_idx
+       hwe_idx, asy_idx
   USE OMSAO_variables_module,    ONLY: &
        n_fitvar_rad, all_radfit_idx, mask_fitvar_rad, fitvar_rad_init,         &
        lo_radbnd, up_radbnd, n_fincol_idx, n_mol_fit, fitcol_idx, fincol_idx,  &

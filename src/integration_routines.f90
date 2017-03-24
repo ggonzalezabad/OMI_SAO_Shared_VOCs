@@ -5494,7 +5494,6 @@ subroutine timestamp ( )
   !
   !    None
   !
-  USE OMSAO_precision_module, ONLY: r8
   implicit none
 
   character ( len = 8 ) ampm

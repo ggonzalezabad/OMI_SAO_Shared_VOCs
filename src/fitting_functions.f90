@@ -8,9 +8,7 @@ SUBROUTINE specfit_func_sol ( fitvar, nfitvar, ymod, npoints, ctrl, dyda, mdy )
   !
 
   USE OMSAO_precision_module
-  USE OMSAO_parameters_module, ONLY : &
-       max_spec_pts, elsunc_parsoob_eval, elsunc_infloop_eval
-
+  USE OMSAO_parameters_module, ONLY : elsunc_parsoob_eval, elsunc_infloop_eval
   USE OMSAO_variables_module,  ONLY : &
        yn_smooth, yn_doas, fitwavs, fitweights, currspec, sol_wav_avg, &
        lobnd, upbnd, num_fitfunc_calls, num_fitfunc_jacobi, max_fitfunc_calls
@@ -97,11 +95,10 @@ SUBROUTINE specfit_func ( fitvar, nfitvar, ymod, npoints, ctrl, dyda, mdy )
   !
 
   USE OMSAO_precision_module
-  USE OMSAO_parameters_module, ONLY : &
-       max_spec_pts, elsunc_parsoob_eval, elsunc_infloop_eval
-  USE OMSAO_variables_module, ONLY : &
-       database, yn_doas, yn_smooth, rad_wav_avg, fitwavs, fitweights, currspec, &
-       lobnd, upbnd, num_fitfunc_calls, num_fitfunc_jacobi, max_fitfunc_calls
+  USE OMSAO_parameters_module, ONLY : elsunc_infloop_eval
+  USE OMSAO_variables_module, ONLY : database, yn_doas, yn_smooth, &
+       rad_wav_avg, fitwavs, fitweights, currspec, lobnd, upbnd, &
+       num_fitfunc_calls, num_fitfunc_jacobi, max_fitfunc_calls
   USE OMSAO_radiance_ref_module, ONLY: yn_reference_fit
 
   IMPLICIT NONE
@@ -200,8 +197,7 @@ SUBROUTINE specfit_func_o3exp ( fitvar, nfitvar, ymod, npoints, ctrl, dyda, mdy 
   !
 
   USE OMSAO_precision_module
-  USE OMSAO_parameters_module, ONLY : &
-       max_spec_pts, elsunc_parsoob_eval, elsunc_infloop_eval
+  USE OMSAO_parameters_module, ONLY : elsunc_infloop_eval
   USE OMSAO_variables_module, ONLY : &
        database, yn_doas, yn_smooth, rad_wav_avg, fitwavs, fitweights, currspec, &
        lobnd, upbnd, num_fitfunc_calls, num_fitfunc_jacobi, max_fitfunc_calls
@@ -333,7 +329,6 @@ END SUBROUTINE cubic_func
 SUBROUTINE cubic_specfit ( a, na, y, m, ctrl, dyda, mdy )
 
   USE OMSAO_precision_module
-  USE OMSAO_parameters_module, ONLY : max_spec_pts
   USE OMSAO_variables_module, ONLY : cubic_x, cubic_y, cubic_w
 
   IMPLICIT NONE

@@ -193,8 +193,6 @@ CONTAINS
     CHARACTER (LEN=17), PARAMETER :: dcol_str = "ColumnUncertainty"
     INTEGER  (KIND=i4), PARAMETER :: lcolstr = LEN(col_str), ldcolstr = LEN(dcol_str)
 
-    CHARACTER (LEN=19), PARAMETER :: modulename = 'read_prefit_columns'
-
 		! -----------------------------------
 		! Read prefits for specific retrieval
 		! -----------------------------------

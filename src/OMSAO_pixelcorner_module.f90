@@ -70,10 +70,6 @@ CONTAINS
     REAL (KIND=r8), DIMENSION (0:nxtrack,0:ntimes)     :: corner_lat, corner_lon
     REAL (KIND=r4), DIMENSION (:,:), ALLOCATABLE       :: cor_latlon
 
-    
-    CHARACTER (LEN=21), PARAMETER :: modulename = 'compute_pixel_corners'
-
-
     errstat = pge_errstat_ok
 
     !! --------------------------------------------------------------------

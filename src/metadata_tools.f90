@@ -1,6 +1,6 @@
 SUBROUTINE init_metadata ( errstat )
 
-  USE OMSAO_precision_module,   ONLY: i4, r8
+  USE OMSAO_precision_module,   ONLY: i4
   USE OMSAO_indices_module,     ONLY: &
        l1b_irradiance_lun, l1b_radiance_lun, l1b_radianceref_lun, &
        mcf_lun, md_inventory_idx, md_archive_idx,                 &
@@ -570,9 +570,9 @@ END SUBROUTINE check_metadata_consistency
 
 SUBROUTINE set_l2_metadata ( errstat )
 
-  USE OMSAO_precision_module,  ONLY: i4, r8
-  USE OMSAO_indices_module,    ONLY: &
-       md_inventory_idx, md_archive_idx, pge_l2_output_lun, sao_molecule_names
+  USE OMSAO_precision_module,  ONLY: i4
+  USE OMSAO_indices_module,    ONLY: md_inventory_idx, md_archive_idx, &
+       pge_l2_output_lun
   USE OMSAO_he5_module,        ONLY: n_lun_inp_max, n_lun_inp, lun_input
   USE OMSAO_metadata_module
   USE OMSAO_errstat_module
@@ -732,18 +732,13 @@ END SUBROUTINE set_l2_metadata
 
 SUBROUTINE copy_psa_metadata ( errstat )
 
-  USE OMSAO_precision_module,  ONLY: i4, r8
-  USE OMSAO_indices_module,    ONLY: &
-       md_inventory_idx, md_archive_idx, pge_l2_output_lun, l1b_radiance_lun
+  USE OMSAO_precision_module,  ONLY: i4
+  USE OMSAO_indices_module, ONLY: md_inventory_idx, &
+       l1b_radiance_lun
   USE OMSAO_metadata_module
   USE OMSAO_errstat_module
 
   IMPLICIT NONE
-
-  ! ------------------------------
-  ! Name of this module/subroutine
-  ! ------------------------------
-  CHARACTER (LEN=17), PARAMETER :: modulename = "copy_psa_metadata"
 
   ! ---------------
   ! Output variable
@@ -882,11 +877,11 @@ END SUBROUTINE copy_psa_metadata
 
 SUBROUTINE set_str_int_dbl_metadata ( errstat )
 
-  USE OMSAO_precision_module,  ONLY: i4, r8
-  USE OMSAO_indices_module,    ONLY: md_inventory_idx, md_archive_idx
+  USE OMSAO_precision_module, ONLY: i4
+  USE OMSAO_indices_module, ONLY: md_inventory_idx, md_archive_idx
   USE OMSAO_metadata_module
   USE OMSAO_errstat_module
-  USE OMSAO_variables_module,  ONLY: pge_idx
+  USE OMSAO_variables_module, ONLY: pge_idx
   IMPLICIT NONE
 
   ! ------------------------------
@@ -1047,11 +1042,10 @@ END SUBROUTINE set_str_int_dbl_metadata
 
 SUBROUTINE set_pge_metadata ( errstat )
 
-  USE OMSAO_precision_module,  ONLY: i4, r8
-  USE OMSAO_indices_module,    ONLY: md_inventory_idx, md_archive_idx
+  USE OMSAO_indices_module, ONLY: md_inventory_idx
   USE OMSAO_metadata_module
   USE OMSAO_errstat_module
-  USE OMSAO_variables_module,  ONLY: pge_idx
+  USE OMSAO_variables_module, ONLY: pge_idx
 
   IMPLICIT NONE
 
@@ -1136,7 +1130,7 @@ CHARACTER (LEN=*) FUNCTION compose_localgranuleid ( errstat ) RESULT ( local_gra
   ! Function to compose local granule id
   ! ====================================
 
-  USE OMSAO_precision_module,  ONLY: i4, r4
+  USE OMSAO_precision_module,  ONLY: i4
   USE OMSAO_parameters_module, ONLY: maxchlen
   USE OMSAO_metadata_module
   USE OMSAO_errstat_module
@@ -1316,8 +1310,8 @@ END SUBROUTINE set_automatic_quality_flag
 
 SUBROUTINE get_l1br_opf_version ( l1br_opf_version )
 
-  USE OMSAO_precision_module,   ONLY: i4
-  USE OMSAO_indices_module,     ONLY: l1b_radiance_lun, md_inventory_idx
+  USE OMSAO_precision_module, ONLY: i4
+  USE OMSAO_indices_module, ONLY: l1b_radiance_lun
   USE OMSAO_metadata_module
   IMPLICIT NONE
 

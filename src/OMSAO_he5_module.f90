@@ -868,9 +868,6 @@ CONTAINS
     ! No Swath ID Variables passed through MODULE.
     !
     !------------------------------------------------------------------------------
-
-    USE OMSAO_indices_module,    ONLY: pge_hcho_idx, pge_bro_idx, max_calfit_idx
-    USE OMSAO_parameters_module, ONLY: i4_missval, r4_missval, r8_missval
     USE OMSAO_errstat_module
 
     IMPLICIT NONE

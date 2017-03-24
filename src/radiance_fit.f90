@@ -15,10 +15,10 @@ SUBROUTINE radiance_fit ( &
   USE OMSAO_precision_module
   USE OMSAO_indices_module,      ONLY: &
        solar_idx, n_max_fitpars, wvl_idx, spc_idx, sig_idx, ccd_idx, &
-       max_calfit_idx, o3_t1_idx, o3_t2_idx, o3_t3_idx, bro_idx,     &
+       max_calfit_idx, o3_t1_idx, o3_t3_idx, &
        pge_o3_idx, pge_hcho_idx, pge_gly_idx
   USE OMSAO_parameters_module,   ONLY: &
-       r8_missval, i4_missval, i2_missval, downweight, elsunc_less_is_noise
+       r8_missval, i2_missval, downweight
   USE OMSAO_variables_module,    ONLY:                                    &
        n_mol_fit, fitcol_idx, n_fincol_idx, fincol_idx, pm_one, database, &
        n_database_wvl, yn_doas, yn_smooth, rad_wav_avg, fitvar_rad,       &

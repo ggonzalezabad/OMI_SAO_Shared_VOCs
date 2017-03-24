@@ -81,10 +81,9 @@ SUBROUTINE prepare_solar_refspec ( &
   ! ***********************************************************
 
   USE OMSAO_precision_module
-  USE OMSAO_indices_module,    ONLY: &
-       max_rs_idx, solar_idx, ring_idx, wvl_idx, spc_idx
-  USE OMSAO_parameters_module, ONLY: maxchlen
-  USE OMSAO_variables_module,  ONLY: yn_doas, fit_winwav_idx, yn_smooth, n_refspec, database
+  USE OMSAO_indices_module, ONLY: max_rs_idx, solar_idx, ring_idx
+  USE OMSAO_variables_module,  ONLY: yn_doas, fit_winwav_idx, &
+       yn_smooth, n_refspec, database
   USE OMSAO_errstat_module
 
   IMPLICIT NONE

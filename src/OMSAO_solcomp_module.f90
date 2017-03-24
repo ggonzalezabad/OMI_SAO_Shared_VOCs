@@ -523,12 +523,6 @@ CONTAINS
     INTEGER (KIND=i4) :: iwvl, iloc, ipow, nbin, npol
     REAL    (KIND=r8) :: binwvl, binpow, snorm
 
-    ! -------------------------------
-    ! Name of the function/subroutine
-    ! -------------------------------
-    CHARACTER (LEN=12), PARAMETER :: modulename = 'soco_compute'
-
-
     nbin  = solarcomp_pars%nBins
     npol  = solarcomp_pars%nPol
     snorm = solarcomp_pars%SolarNorm

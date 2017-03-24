@@ -1,13 +1,12 @@
 SUBROUTINE read_reference_spectra ( pge_idx, n_max_rspec, pge_error_status )
 
   USE OMSAO_precision_module
-  USE OMSAO_indices_module,    ONLY: &
-       max_rs_idx, wvl_idx, spc_idx, pge_static_input_luns, &
+  USE OMSAO_indices_module, ONLY: max_rs_idx, pge_static_input_luns, &
        pge_o3_idx, o3_t1_idx, o3_t2_idx, o3_t3_idx, comm_idx
-  USE OMSAO_parameters_module, ONLY: maxchlen, max_spec_pts, zerospec_string, r8_missval
-  USE OMSAO_variables_module,  ONLY: &
-       verb_thresh_lev, winwav_min, winwav_max, ReferenceSpectrum, refspecs_original, &
-       common_mode_spec, yn_solar_comp, solar_comp_typ, solar_comp_orb,           &
+  USE OMSAO_parameters_module, ONLY: zerospec_string, r8_missval
+  USE OMSAO_variables_module, ONLY: verb_thresh_lev, winwav_min, &
+       winwav_max, ReferenceSpectrum, refspecs_original, &
+       common_mode_spec, yn_solar_comp, solar_comp_typ, solar_comp_orb, &
        OMSAO_solcomp_filename, l1br_opf_version, l1b_channel, yn_common_iter
   USE OMSAO_he5_datafields_module, ONLY: o3_prefit_he5fields
   USE OMSAO_solcomp_module
@@ -135,8 +134,8 @@ SUBROUTINE read_one_refspec ( &
      rs_idx, omi_lun, specname, winwav_min, winwav_max, refspec_orig, nspec, errstat )
 
   USE OMSAO_precision_module,   ONLY: r8
-  USE OMSAO_indices_module,     ONLY: wvl_idx, spc_idx, ring_idx
-  USE OMSAO_parameters_module,  ONLY: maxchlen, max_spec_pts, lm_start_of_table
+  USE OMSAO_indices_module,     ONLY: ring_idx
+  USE OMSAO_parameters_module,  ONLY: maxchlen, max_spec_pts
   USE OMSAO_variables_module,   ONLY: verb_thresh_lev, ReferenceSpectrum, l1b_channel
   USE OMSAO_errstat_module
   
@@ -346,8 +345,7 @@ SUBROUTINE read_commonmode_spec ( &
      omi_lun, specname, winwav_min, winwav_max, common_orig, errstat )
 
   USE OMSAO_precision_module,   ONLY: r8
-  USE OMSAO_indices_module,     ONLY: wvl_idx, spc_idx, ring_idx
-  USE OMSAO_parameters_module,  ONLY: maxchlen, max_spec_pts, lm_start_of_table
+  USE OMSAO_parameters_module,  ONLY: maxchlen, max_spec_pts
   USE OMSAO_variables_module,   ONLY: verb_thresh_lev, CommonModeSpectrum
   USE OMSAO_omidata_module,     ONLY: nxtrack_max
   USE OMSAO_errstat_module

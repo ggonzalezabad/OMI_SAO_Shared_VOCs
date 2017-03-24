@@ -16,7 +16,6 @@ SUBROUTINE OMSAO_main ( exit_value )
   ! ************************************************************************
 
   USE OMSAO_precision_module
-  USE OMSAO_indices_module,    ONLY: pge_bro_idx
   USE OMSAO_parameters_module
   USE OMSAO_variables_module,  ONLY: pge_idx
   USE OMSAO_errstat_module

@@ -1,13 +1,11 @@
 SUBROUTINE omi_set_fitting_parameters ( pge_idx, errstat )
 
   USE OMSAO_precision_module
-  USE OMSAO_parameters_module, ONLY: maxchlen
   USE OMSAO_variables_module,  ONLY: l1b_channel
   USE OMSAO_he5_module,        ONLY: swath_base_name, pge_swath_name
   USE OMSAO_errstat_module,    ONLY: pge_errstat_ok
   USE OMSAO_omidata_module,    ONLY: omi_radiance_swathname, omi_irradiance_swathname
-  USE OMSAO_indices_module,    ONLY: &
-       sao_molecule_names, pge_oclo_idx, pge_no2_idx, pge_no2d_idx, pge_gly_idx, pge_h2o_idx
+  USE OMSAO_indices_module,    ONLY: sao_molecule_names
 
   IMPLICIT NONE
 
@@ -20,12 +18,6 @@ SUBROUTINE omi_set_fitting_parameters ( pge_idx, errstat )
   ! Output variables
   ! ----------------
   INTEGER (KIND=i4), INTENT (OUT) :: errstat
-
-
-  ! ------------------------------
-  ! Name of this module/subroutine
-  ! ------------------------------
-  CHARACTER (LEN=26), PARAMETER :: modulename = 'omi_set_fitting_parameters'
 
   ! --------------------------
   ! Initialize OUTPUT variable
@@ -61,12 +53,11 @@ SUBROUTINE omi_adjust_irradiance_data ( &
      omi_irrad_qflg, omi_irrad_ccd, n_sol_wvl, curr_sol_spec, yn_skip_pix, errstat )
 
   USE OMSAO_precision_module
-  USE OMSAO_indices_module,         ONLY: &
-       wvl_idx, spc_idx, sig_idx, ccd_idx, &
-       qflg_mis_idx, qflg_bad_idx, qflg_err_idx, qflg_tra_idx, qflg_rts_idx
-  USE OMSAO_parameters_module,      ONLY: downweight, normweight, r4_missval
-  USE OMSAO_variables_module,       ONLY: &
-       fit_winexc_lim,  sol_wav_avg, yn_spectrum_norm
+  USE OMSAO_indices_module, ONLY: wvl_idx, spc_idx, sig_idx, ccd_idx, &
+       qflg_mis_idx, qflg_bad_idx, qflg_err_idx
+  USE OMSAO_parameters_module, ONLY: downweight, normweight, r4_missval
+  USE OMSAO_variables_module, ONLY: fit_winexc_lim, sol_wav_avg, &
+       yn_spectrum_norm
   USE OMSAO_errstat_module
 
   IMPLICIT NONE
@@ -301,13 +292,12 @@ SUBROUTINE omi_adjust_radiance_data (                                   &
      rad_spec_avg, yn_skip_pix )
 
   USE OMSAO_precision_module
-  USE OMSAO_indices_module,       ONLY: &
-       wvl_idx, spc_idx, sig_idx, ccd_idx, &
-       qflg_mis_idx, qflg_bad_idx, qflg_err_idx, qflg_tra_idx, qflg_rts_idx, qflg_sat_idx
-  USE OMSAO_parameters_module,    ONLY: downweight, normweight, r4_missval
-  USE OMSAO_variables_module,     ONLY: fit_winexc_lim, yn_solar_comp, yn_spectrum_norm
-  USE OMSAO_radiance_ref_module,  ONLY: yn_radiance_reference
-  USE OMSAO_solcomp_module,       ONLY: solarcomp_pars
+  USE OMSAO_indices_module, ONLY: wvl_idx, spc_idx, sig_idx, ccd_idx, &
+       qflg_mis_idx, qflg_bad_idx, qflg_err_idx
+  USE OMSAO_parameters_module, ONLY: downweight, r4_missval
+  USE OMSAO_variables_module, ONLY: fit_winexc_lim, yn_solar_comp, yn_spectrum_norm
+  USE OMSAO_radiance_ref_module, ONLY: yn_radiance_reference
+  USE OMSAO_solcomp_module, ONLY: solarcomp_pars
   USE OMSAO_errstat_module
 
   IMPLICIT NONE
@@ -835,16 +825,14 @@ END SUBROUTINE compute_fitting_statistics
 SUBROUTINE set_input_pointer_and_versions ( pge_idx )
 
   USE OMSAO_precision_module,    ONLY: i4
-  USE OMSAO_parameters_module,   ONLY : maxchlen
   USE OMSAO_prefitcol_module,    ONLY : yn_o3_prefit, yn_bro_prefit, yn_lqh2o_prefit
   USE OMSAO_indices_module,      ONLY: &
-       sao_pge_names,  pge_oclo_idx, pge_bro_idx, pge_hcho_idx, pge_o3_idx,    &
+       pge_oclo_idx, pge_bro_idx, pge_hcho_idx, pge_o3_idx,    &
        pge_gly_idx, l1b_radiance_lun, l1b_radianceref_lun, l1b_irradiance_lun, &
        o3_prefit_lun, bro_prefit_lun, lqh2o_prefit_lun,                        &
-       voc_amf_luns, voc_amf_lun_str, voc_omicld_idx, pge_h2o_idx
+       voc_amf_luns, voc_omicld_idx, pge_h2o_idx
   USE OMSAO_omidata_module,      ONLY: l1b_radiance_esdt
   USE OMSAO_he5_module,          ONLY: n_lun_inp, lun_input, input_versions
-  USE OMSAO_errstat_module,      ONLY: pge_errstat_ok
   USE OMSAO_variables_module,    ONLY: yn_solar_comp, l1b_rad_filename
   USE OMSAO_radiance_ref_module, ONLY: yn_radiance_reference, l1b_radref_filename
 
@@ -859,11 +847,6 @@ SUBROUTINE set_input_pointer_and_versions ( pge_idx )
   ! Local variables
   ! ---------------
   LOGICAL :: yn_radref
-
-  ! ------------------------------
-  ! Name of this module/subroutine
-  ! ------------------------------
-  CHARACTER (LEN=31), PARAMETER :: modulename = 'set_input_pointer_and_versions'
 
   ! ----------------------------------------
   ! Initialize variables returned via MODULE
@@ -973,7 +956,6 @@ END SUBROUTINE set_input_pointer_and_versions
 SUBROUTINE get_input_versions (pge_idx, yn_solar_comp, yn_radref, input_versions )
 
   USE OMSAO_precision_module,  ONLY: i4
-  USE OMSAO_parameters_module, ONLY: maxchlen
   USE OMSAO_indices_module,    ONLY: pge_hcho_idx, pge_gly_idx, pge_h2o_idx
   USE OMSAO_prefitcol_module,  ONLY: yn_o3_prefit, yn_bro_prefit, yn_lqh2o_prefit
   USE OMSAO_metadata_module
@@ -1358,7 +1340,7 @@ END SUBROUTINE omi_radiance_wvl_smoothing
 SUBROUTINE compact_fitting_spectrum ( n_fit_wvl, curr_fit_spec )
 
   USE OMSAO_precision_module,  ONLY: i4, r8
-  USE OMSAO_indices_module,    ONLY: wvl_idx, sig_idx, spc_idx, ccd_idx
+  USE OMSAO_indices_module,    ONLY: wvl_idx, sig_idx, ccd_idx
   USE OMSAO_parameters_module, ONLY: normweight
 
   IMPLICIT NONE
@@ -1527,11 +1509,6 @@ SUBROUTINE omi_set_xtrpix_range (                 &
   ! ---------------
   INTEGER (KIND=i4)          :: first_pix, last_pix, i, locerrstat
 
-  ! -----------------------
-  ! Name of this subroutine
-  ! -----------------------
-  CHARACTER (LEN=20), PARAMETER :: modulename = 'omi_set_xtrpix_range'
-
   ! ---------------------------
   ! Initialize return variables
   ! ---------------------------
@@ -1680,13 +1657,13 @@ SUBROUTINE compute_common_mode ( &
      yn_reference_fit, xti, nwvl, fitwvl, fitres, yn_final_call )
 
   USE OMSAO_precision_module, ONLY: i2, i4, r8
-  USE OMSAO_indices_module,   ONLY: max_calfit_idx, max_rs_idx, comm_idx, mxs_idx
-  USE OMSAO_variables_module, ONLY:                                           &
-       common_mode_spec, fitvar_rad_init, lo_radbnd, up_radbnd,               &
-       common_fitpos, common_fitvar, common_latrange, refspecs_original
-  USE OMSAO_omidata_module,   ONLY:                                           &
-       common_spc, common_wvl, common_cnt, n_omi_database_wvl, omi_database,  &
-       omi_ccdpix_selection, omi_blockline_no, omi_latitude, n_comm_wvl
+  USE OMSAO_indices_module, ONLY: max_calfit_idx, comm_idx, mxs_idx
+  USE OMSAO_variables_module, ONLY: common_mode_spec, fitvar_rad_init, &
+       lo_radbnd, up_radbnd, common_fitpos, common_fitvar, &
+       common_latrange, refspecs_original
+  USE OMSAO_omidata_module, ONLY: common_spc, common_wvl, common_cnt, &
+       n_omi_database_wvl, omi_database, omi_ccdpix_selection, &
+       omi_blockline_no, omi_latitude, n_comm_wvl
 
   IMPLICIT NONE
 
@@ -1702,9 +1679,6 @@ SUBROUTINE compute_common_mode ( &
   ! ---------------
   INTEGER (KIND=i4) :: i, j, k
   REAL    (KIND=r8) :: comnorm
-
-  CHARACTER (LEN=19), PARAMETER :: modulename = 'compute_common_mode'
-
 
   IF ( yn_final_call ) THEN
      ! ---------------------------------------------------
@@ -1835,17 +1809,11 @@ SUBROUTINE find_swathline_range ( &
      l1bfile, l1bswath, nt, nx, l1blats, latrange, yn_in_range, errstat )
 
   USE OMSAO_precision_module
-  USE OMSAO_parameters_module, ONLY: r4_missval
-  USE OMSAO_variables_module,  ONLY: pixnum_lim
+  USE OMSAO_variables_module, ONLY: pixnum_lim
   USE OMSAO_errstat_module
   USE L1B_Reader_class
 
   IMPLICIT NONE
-
-  ! ------------------------------
-  ! Name of this module/subroutine
-  ! ------------------------------
-  CHARACTER (LEN=20), PARAMETER :: modulename = 'find_swathline_range'
 
   ! ---------------
   ! Input variables
@@ -2206,7 +2174,6 @@ END SUBROUTINE find_swathrange_by_latitude
 
 SUBROUTINE read_latitude (l1bfile, l1bswath, nt, nx, latr4 )
 
-  USE OMSAO_parameters_module, ONLY: r4_missval
   USE OMSAO_omidata_module,    ONLY: nlines_max
   USE OMSAO_errstat_module
   USE L1B_Reader_class
