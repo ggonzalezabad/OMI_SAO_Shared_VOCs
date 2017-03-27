@@ -414,14 +414,7 @@ CONTAINS
           ! ----------------------------------------------------
           idx_lat = MINVAL(MINLOC(ABS(latvals(1:Cmlat) - REAL(lat(ixtrack,itimes),KIND=8) )))
           idx_lon = MINVAL(MINLOC(ABS(lonvals(1:Cmlon) - REAL(lon(ixtrack,itimes),KIND=8) )))
-
-          ! ----------------------------------------------
-          ! Convert pixel terrain height to pressure using
-          ! USSA (good below 50 km)
-          ! ----------------------------------------------
-!!$          CALL ussa_press(REAL(terrain_height(ixtrack,itimes),KIND=r8) / 1000.0_r8, &
-!!$               local_psurf(ixtrack,itimes) )
-          
+        
           ! ---------------------------------------------------------
           ! For OMH2O I should use terrain heigh from the climatology
           ! ---------------------------------------------------------
@@ -433,10 +426,10 @@ CONTAINS
           local_lat(1) = REAL(lat(ixtrack,itimes),KIND=8)
           IF (local_lon(1) .LT. MINVAL(lonvals(1:Cmlon))) local_lon(1) = MINVAL(lonvals(1:Cmlon))
           IF (local_lon(1) .GT. MAXVAL(lonvals(1:Cmlon))) local_lon(1) = MAXVAL(lonvals(1:Cmlon))
-          IF (local_lat(1) .LT. MINVAL(latvals(1:Cmlon))) local_lat(1) = MINVAL(latvals(1:Cmlon))
-          IF (local_lat(1) .GT. MAXVAL(latvals(1:Cmlon))) local_lat(1) = MAXVAL(latvals(1:Cmlon))
+          IF (local_lat(1) .LT. MINVAL(latvals(1:Cmlat))) local_lat(1) = MINVAL(latvals(1:Cmlat))
+          IF (local_lat(1) .GT. MAXVAL(latvals(1:Cmlat))) local_lat(1) = MAXVAL(latvals(1:Cmlat))
           local_psurf(ixtrack,itimes) = linInterpol(Cmlon, Cmlat, &
-               lonvals(1:Cmlat), latvals(1:Cmlon), &
+               lonvals(1:Cmlon), latvals(1:Cmlat), &
                Psurface(1:Cmlon,1:Cmlat), &
                local_lon(1), local_lat(1), &
                status=status)
