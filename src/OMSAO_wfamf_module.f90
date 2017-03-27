@@ -2073,11 +2073,11 @@ CONTAINS
           ! in function of latitude and ozone column.
           ! -----------------------------------------        
           IF ( ABS(lat(ixtrack,itime)) .GT. 60.0 ) THEN
-             toms_idx = MINLOC(ABS(hxxx-omi_ozone_amount(ixtrack,itime)/du/amfgeo(ixtrack,itime)), 1) + 0
+             toms_idx = MINLOC(ABS(hxxx-omi_ozone_amount(ixtrack,itime)/du/amfgeo(ixtrack,itime)), 1) +  0
           ELSE IF ( ABS(lat(ixtrack,itime)) .GT. 30.0 .AND. ABS(lat(ixtrack,itime)) .LE. 60.0 ) THEN
-             toms_idx = MINLOC(ABS(mxxx-omi_ozone_amount(ixtrack,itime)/du/amfgeo(ixtrack,itime)), 1) + 17
+             toms_idx = MINLOC(ABS(mxxx-omi_ozone_amount(ixtrack,itime)/du/amfgeo(ixtrack,itime)), 1) + 16
           ELSE IF ( ABS(lat(ixtrack,itime)) .LE. 30.0 ) THEN
-             toms_idx = MINLOC(ABS(lxxx-omi_ozone_amount(ixtrack,itime)/du)/amfgeo(ixtrack,itime), 1) + 11
+             toms_idx = MINLOC(ABS(lxxx-omi_ozone_amount(ixtrack,itime)/du)/amfgeo(ixtrack,itime), 1) + 10
           ENDIF
 
           ! ----------------------------------------------
