@@ -76,7 +76,7 @@ SUBROUTINE spectrum_solar ( &
   !     Lambda = Lambda * (1 + squeeze) + shift - sol_wav_avg * squeeze
 
 
-  IF (yn_newshift .EQ. .true.) THEN ! gga
+  IF (yn_newshift .EQV. .true.) THEN ! gga
      solar_pos(1:npts) = solar_pos(1:npts) * (1.0_r8 + fitvar_cal(squ_idx)) + fitvar_cal(shi_idx) - sol_wav_avg * fitvar_cal(squ_idx)
   ELSE ! gga
      solar_pos(1:npts) = solar_pos(1:npts) * (1.0_r8 + fitvar_cal(squ_idx)) + fitvar_cal(shi_idx)
@@ -638,7 +638,7 @@ SUBROUTINE spectrum_earthshine_o3exp ( &
      locwvl_shift(1:npts) = locwvl(1:npts) - shift
      CALL array_locate_r8 ( npts, locwvl(1:npts), locwvl_shift(   1), 'GE', j1 )
      CALL array_locate_r8 ( npts, locwvl(1:npts), locwvl_shift(npts), 'LE', j2 )
-  ELSE IF (yn_newshift .EQ. .true.) THEN !gga
+  ELSE IF (yn_newshift .EQV. .true.) THEN !gga
      sunpos_ss(1:n_sunpos) = sunpos_ss(1:n_sunpos) * (1.0_r8 + squeeze) +       &
                              shift - rad_wav_avg * squeeze
      CALL array_locate_r8 ( npts, locwvl(1:npts), sunpos_ss(       1), 'GE', j1 )

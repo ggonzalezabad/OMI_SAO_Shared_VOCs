@@ -3,7 +3,7 @@ for three SAO OMI PGEs OMHCHO, OMCHOCHO and OMH2O. It is not a PGE by itself.
 OMI_SAO_Shared_VOCs must be checked out prior to PGE compilation, and must be 
 added to doc/ciList.txt of these three PGEs. Be careful, different versions
 of OMI_SAO_Shared_VOCs work for different PGEs. For example for OMH2O you
-should use version 1.0.6 but for OMHCHO 1.0.4. These numbers will
+should use version 1.0.8 but for OMHCHO 1.0.4. These numbers will
 obviously change over time.
 
 gonzalo gonzalez abad (3 April, 2015)

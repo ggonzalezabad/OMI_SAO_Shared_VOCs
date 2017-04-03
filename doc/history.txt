@@ -16,6 +16,20 @@ NOTE: OMI_SAO_Shared_VOCs is not a PGE in itself. It is the shared code
       OMCHOCHO and OMH2O.
 --------------------------------------------------------------------------------
 
+1.0.8                                                              30 March 2017
+--------------------------------------------------------------------------------
+Adaptation to gfortran and 64 bit. Improved AMF calculations using MERRA for inp
+ut climatologies. Speed up interpolation of scattering weights. 
+
+1.0.7                                                          27 September 2016
+--------------------------------------------------------------------------------
+First of several major updates on AMFs calculations. This one is specific for
+H2O retrievals. Fixes some bugs (getting rid of some problems with the
+scattering weights at high altitudes) and moves towards simplified
+look-up-tables (without wavelength dependence and better parameterizations for
+elevated SZA and VZA). We also include the RAA and some short of ozone
+dependence in the selection of TOMS.
+
 1.0.6                                                               22 June 2015
 --------------------------------------------------------------------------------
 Modify OMSAO_parameters_module to set up I0 correction for water vapor

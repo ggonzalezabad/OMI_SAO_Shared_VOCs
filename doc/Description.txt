@@ -1,5 +1,5 @@
 APP Name:  OMI_SAO_Shared_VOCs
-APP Version: 1.0.6
+APP Version: 1.0.8
 APP Type: MODULE
 Description: Shared code for OMHCHO & OMH2O
 Software Developer: Gonzalo Gonzalez Abad
@@ -7,13 +7,7 @@ Software Developer: Gonzalo Gonzalez Abad
 Compilers:
 
  - CI:        gcc
-   Version:   4.1.2
-
- - CI:        ifort
-   Version:   10.1
-
- - CI:        pgf90
-   Version:   10.6-0
+   Version:   4.8.5
 
  - CI:        makedepf90
    Version:   2.8.8
@@ -24,15 +18,15 @@ Environment:
    Version:   0.9.9
 
  - CI:        HDF5
-   Version:   5-1.8.3
+   Version:   5-1.8.14
 
  - CI:        PGSTK
-   Version:   5.2.18v1.00
+   Version:   5.2.19v1.00
 
 Operating System:
 
  - CI:        Linux
-   Version:   2.6.18
+   Version:   4.10.4
 
  - CI:        make
-   Version:   3.81
+   Version:   3.82
