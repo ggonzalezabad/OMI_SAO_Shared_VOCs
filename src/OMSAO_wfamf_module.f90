@@ -2041,10 +2041,10 @@ CONTAINS
     ! look up tables
     ! ------------------------------- ------------------------
     DO isza = 1, sza_dim(1)
-       re_sza(isza) = dcos(d2r*REAL(lut_sza(sza_dim(1)+1-isza), KIND = r8))  ! JED fix
+       re_sza(isza) = cos(d2r*REAL(lut_sza(sza_dim(1)+1-isza), KIND = r8))  ! JED fix
     END DO
     DO ivza = 1, vza_dim(1)
-       re_vza(ivza) = dcos(d2r*REAL(lut_vza(vza_dim(1)+1-ivza), KIND = r8)) ! JED fix
+       re_vza(ivza) = cos(d2r*REAL(lut_vza(vza_dim(1)+1-ivza), KIND = r8)) ! JED fix
     END DO
     DO isrf = 1, srf_dim(1)
        re_srf(isrf) = REAL(lut_srf(srf_dim(1)+1-isrf), KIND = r8)
