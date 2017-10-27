@@ -274,15 +274,6 @@ CONTAINS
        ! ------------------------------------------------------------------
        CALL read_lookup_table (locerrstat)
 
-       ! ----------------------------------------------------------------------
-       ! amfdiag is used to keep track of the pixels were enough information is
-       ! available to carry on the AMFs calculation.
-       ! ----------------------------------------------------------------------
-       CALL amf_diagnostic (                                                   &
-            nt, nx, lat, lon, sza, vza, snow, glint, xtrange,                  &
-            MINVAL(lut_clp), MAXVAL(lut_clp), l2cfr, l2ctp, &
-            amfdiag  )
-
        ! ---------------------------------------------------------------------
        ! The climatology has already been read, inside omi_pge_fitting_process
        ! Now it is only needed to interpolate to the pixels of the granule.
@@ -295,6 +286,14 @@ CONTAINS
        ! Write the climatology to the he5 file
        ! -------------------------------------
        IF (yn_write) CALL write_climatology_he5 (climatology, cli_psurface, nt, nx, CmETA, locerrstat)
+
+       ! ----------------------------------------------------------------------
+       ! amfdiag is used to keep track of the pixels were enough information is
+       ! available to carry on the AMFs calculation.
+       ! ----------------------------------------------------------------------
+       CALL amf_diagnostic ( nt, nx, lat, lon, sza, vza, glint, xtrange, &
+            MINVAL(lut_clp), MAXVAL(lut_clp), l2cfr, l2ctp, l2csnow, l2cpres, &
+            l2crefl, albedo, cli_psurface, amfdiag  )
 
        ! --------------------------------------------------------
        ! Compute Scattering weights in the look up table grid but
@@ -1931,7 +1930,8 @@ CONTAINS
   END SUBROUTINE voc_amf_readisccp
   
   SUBROUTINE amf_diagnostic ( &
-       nt, nx, lat, lon, sza, vza, snow, glint, xtrange, ctpmin, ctpmax, l2cfr, l2ctp, amfdiag )
+       nt, nx, lat, lon, sza, vza, glint, xtrange, ctpmin, ctpmax, l2cfr, l2ctp, &
+       l2csnow, l2cpres, l2crefl, albedo, cli_psurface, amfdiag )
 
     USE OMSAO_omidata_module,   ONLY: omi_oobview_amf, omi_glint_add, omi_height, &
          omi_bigsza_amf, omi_cfr_addmiss, omi_ctp_addmiss, &
@@ -1946,14 +1946,15 @@ CONTAINS
     INTEGER (KIND=i4),                          INTENT (IN) :: nt, nx
     REAL    (KIND=r4),                          INTENT (IN) :: ctpmin, ctpmax
     REAL    (KIND=r4), DIMENSION (1:nx,0:nt-1), INTENT (IN) :: lat, lon, sza, vza
-    INTEGER (KIND=i2), DIMENSION (1:nx,0:nt-1), INTENT (IN) :: snow, glint
+    INTEGER (KIND=i2), DIMENSION (1:nx,0:nt-1), INTENT (IN) :: l2csnow, glint
     INTEGER (KIND=i4), DIMENSION (0:nt-1,1:2),  INTENT (IN) :: xtrange
-
+    REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1), INTENT (IN) :: l2cpres, l2crefl
     ! ----------------
     ! Modified variabe
     ! ----------------
     INTEGER (KIND=i2), DIMENSION (1:nx,0:nt-1), INTENT (INOUT) :: amfdiag
-    REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1), INTENT (INOUT) :: l2cfr, l2ctp
+    REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1), INTENT (INOUT) :: l2cfr, l2ctp, &
+         albedo, cli_psurface
 
     ! ---------------
     ! Local variables
@@ -2094,8 +2095,8 @@ CONTAINS
        ! -----------------------
        WHERE (                                       &
             amfdiag     (spix:epix,it) >= 0_i2 .AND. &
-            snow(spix:epix,it) >= 0_i2         )
-          amfdiag(spix:epix,it) = snow(spix:epix,it) + amfdiag(spix:epix,it)
+            l2csnow(spix:epix,it) >= 0_i2         )
+          amfdiag(spix:epix,it) = l2csnow(spix:epix,it) + amfdiag(spix:epix,it)
        END WHERE
 
        ! ---------------------------
