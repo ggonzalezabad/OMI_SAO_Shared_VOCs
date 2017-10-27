@@ -1484,13 +1484,21 @@ CONTAINS
     ! ---------------
     ! Local variables
     ! ---------------
-    INTEGER (KIND=i4)        :: it, nt_loc, nx_loc, locerrstat, swath_id
-    REAL    (KIND=r4)        :: scale_cfr, offset_cfr, missval_cfr, scale_ctp, offset_ctp
-    INTEGER (KIND=i2)        :: missval_ctp
-    CHARACTER (LEN=5)        :: addstr
-    INTEGER (KIND=i2), DIMENSION (1:nx,0:nt-1) :: o4ctp
-    REAL    (KIND=r4), DIMENSION (1:nx,0:nt-1) :: cfr, ctp
-    LOGICAL                  :: yn_raman_clouds
+    INTEGER (KIND=i4) :: it, nt_loc, nx_loc, locerrstat, swath_id
+    REAL (KIND=r4) :: scale_cfr, offset_cfr, missval_cfr, scale_ctp, offset_ctp, &
+         scale_snowice, offset_snowice, &
+         offset_TerrainPressure, offset_TerrainReflectivity
+    REAL (KIND=r4), DIMENSION (1:nx,0:nt-1) :: cfr, ctp, refl, pres
+    INTEGER (KIND=i2) :: missval_ctp, missval_TerrainPressure
+    INTEGER (KIND=i2), DIMENSION (1:nx,0:nt-1) :: o4ctp, TerrainPressure, snowice
+    INTEGER (KIND=i2) :: missval_snowice
+    INTEGER (KIND=i1), DIMENSION (1:nx,0:nt-1) :: tmpsnow, tmprefl
+    INTEGER (KIND=i1) :: missval_TerrainReflectivity
+    REAL (KIND=r8) :: scale_TerrainReflectivity, scale_TerrainPressure
+
+    CHARACTER (LEN=5) :: addstr
+    LOGICAL :: yn_raman_clouds
+    
 
     ! ---------------------------------------
     ! For accesing the file (local variables)
@@ -1506,6 +1514,9 @@ CONTAINS
     ! -------------------
     CHARACTER (LEN=13), PARAMETER :: omicld_cfrac_field      = 'CloudFraction'
     CHARACTER (LEN=13), PARAMETER :: omicld_cpres_field      = 'CloudPressure'
+    CHARACTER (LEN=13), PARAMETER :: omicld_csnow_field      = 'SnowIceExtent'
+    CHARACTER (LEN=15), PARAMETER :: omicld_csurf_field      = 'TerrainPressure'
+    CHARACTER (LEN=19), PARAMETER :: omicld_crefl_field      = 'TerrainReflectivity'
 
     ! ----------------------
     ! Name of the subroutine
@@ -1544,10 +1555,44 @@ CONTAINS
     ! Read scaling of cloud data fields (working?)
     ! --------------------------------------------
     scale_cfr = 1.0_r4 ; offset_cfr = 0.0_r4 ; missval_cfr = 0.0_r4
-    locerrstat = HE5_SWrdlattr ( omicloud_swath_id, omicld_cfrac_field//TRIM(ADJUSTL(addstr)), 'MissingValue', missval_cfr )
+    locerrstat = HE5_SWrdlattr ( omicloud_swath_id, omicld_cfrac_field//TRIM(ADJUSTL(addstr)), &
+         'MissingValue', missval_cfr )
+    locerrstat = HE5_SWrdlattr ( omicloud_swath_id, omicld_cfrac_field//TRIM(ADJUSTL(addstr)), &
+         'Offset', offset_cfr )
+    locerrstat = HE5_SWrdlattr ( omicloud_swath_id, omicld_cfrac_field//TRIM(ADJUSTL(addstr)), &
+         'ScaleFactor', scale_cfr )
 
     scale_ctp = 1.0_r4 ; offset_ctp = 0.0_r4 ; missval_ctp = 0
-    locerrstat = HE5_SWrdlattr ( omicloud_swath_id, omicld_cpres_field//TRIM(ADJUSTL(addstr)), 'MissingValue', missval_ctp )
+    locerrstat = HE5_SWrdlattr ( omicloud_swath_id, omicld_cpres_field//TRIM(ADJUSTL(addstr)), &
+         'MissingValue', missval_ctp )
+    locerrstat = HE5_SWrdlattr ( omicloud_swath_id, omicld_cpres_field//TRIM(ADJUSTL(addstr)), &
+         'Offset', offset_ctp )
+    locerrstat = HE5_SWrdlattr ( omicloud_swath_id, omicld_cpres_field//TRIM(ADJUSTL(addstr)), &
+         'ScaleFactor', scale_ctp )
+
+    scale_snowice = 1.0_r4 ; offset_snowice = 0.0_r4 ; missval_snowice = 0
+    locerrstat = HE5_SWrdlattr ( omicloud_swath_id, omicld_csnow_field//TRIM(ADJUSTL(addstr)), &
+         'MissingValue', missval_snowice )
+    locerrstat = HE5_SWrdlattr ( omicloud_swath_id, omicld_csnow_field//TRIM(ADJUSTL(addstr)), &
+         'Offset', offset_snowice )
+    locerrstat = HE5_SWrdlattr ( omicloud_swath_id, omicld_csnow_field//TRIM(ADJUSTL(addstr)), &
+         'ScaleFactor', scale_snowice )
+
+    scale_terrainpressure = 1.0_r4 ; offset_terrainpressure = 0.0_r4 ; missval_terrainpressure = 0
+    locerrstat = HE5_SWrdlattr ( omicloud_swath_id, omicld_csurf_field//TRIM(ADJUSTL(addstr)), &
+         'MissingValue', missval_terrainpressure )
+    locerrstat = HE5_SWrdlattr ( omicloud_swath_id, omicld_csurf_field//TRIM(ADJUSTL(addstr)), &
+         'Offset', offset_terrainpressure )
+    locerrstat = HE5_SWrdlattr ( omicloud_swath_id, omicld_csurf_field//TRIM(ADJUSTL(addstr)), &
+         'ScaleFactor', scale_terrainpressure )
+
+  !  scale_terrainreflectivity = 1.0_r4 ; offset_terrainreflectivity = 0.0_r4 ; missval_terrainreflectivity = 0
+    locerrstat = HE5_SWrdlattr ( omicloud_swath_id, omicld_crefl_field//TRIM(ADJUSTL(addstr)), &
+         'MissingValue', missval_terrainreflectivity )
+    locerrstat = HE5_SWrdlattr ( omicloud_swath_id, omicld_crefl_field//TRIM(ADJUSTL(addstr)), &
+         'Offset', offset_terrainreflectivity )
+    locerrstat = HE5_SWrdlattr ( omicloud_swath_id, omicld_crefl_field//TRIM(ADJUSTL(addstr)), &
+         'ScaleFactor', scale_terrainreflectivity )
 
     ! -----------------------
     ! Read current data block
@@ -1559,7 +1604,6 @@ CONTAINS
     ! Eventually we may read the cloud uncertainties also, but for the
     ! first version we stick with just the basic cloud products.
     ! ----------------------------------------------------------------
-
     ! ---------------------------------------------------------------------------
     ! (1) Cloud Fraction is of type REAL*4 in both Raman and O2-O2 cloud products
     ! ---------------------------------------------------------------------------
@@ -1652,6 +1696,109 @@ CONTAINS
     ENDWHERE
     WHERE ( l2ctp <= REAL(missval_ctp, KIND=r8) )
        l2ctp = r8_missval
+    ENDWHERE
+
+    ! --------------------------------------------------
+    ! (3) Cloud snow ice extent is of type integer 8 bit
+    ! --------------------------------------------------
+    locerrstat = HE5_SWrdfld ( &
+         omicloud_swath_id, omicld_csnow_field//TRIM(ADJUSTL(addstr)),   &
+         he5_start_2d, he5_stride_2d, he5_edge_2d, tmpsnow(1:nx,0:nt-1) )
+    IF ( locerrstat /= pge_errstat_ok ) &
+         CALL error_check ( locerrstat, OMI_S_SUCCESS, pge_errstat_error, OMSAO_E_PREFITCOL, &
+         modulename//f_sep//'OMIL2 SnowIceExtent access failed.', vb_lev_default, errstat )
+    ! Convert from 8bit to 16bit integer
+    snowice = INT(iand(tmpsnow,255),KIND=i2)
+
+    ! ---------------------------------------------------------------
+    ! Check for rebinned zoom data swath storage ("1-30" vs. "16-45")
+    ! ---------------------------------------------------------------
+    DO it = 0, nt-1
+       IF ( yn_szoom(it) .AND. &
+            ALL ( snowice(gzoom_epix:nx,it) <= missval_snowice ) ) THEN
+          snowice(gzoom_spix:gzoom_epix,it) = snowice(1:gzoom_npix,it)
+          snowice(1:gzoom_spix-1,       it) = missval_snowice
+       END IF
+    END DO
+
+    ! ------------------------------------------------------------------
+    ! Assign the cloud snow ice extent array used in the AMF calculation
+    ! ------------------------------------------------------------------
+    WHERE ( snowice > missval_snowice )
+       snowice = snowice * INT(scale_snowice,KIND=i2) + INT(offset_snowice,KIND=i2)
+    END WHERE
+
+    ! ----------------------------------------------------
+    ! (4) Cloud Terrain Pressure is of type integer 16 bit
+    ! ----------------------------------------------------
+    locerrstat = HE5_SWrdfld ( &
+         omicloud_swath_id, omicld_csurf_field//TRIM(ADJUSTL(addstr)),   &
+         he5_start_2d, he5_stride_2d, he5_edge_2d, TerrainPressure(1:nx,0:nt-1) )
+    IF ( locerrstat /= pge_errstat_ok ) &
+         CALL error_check ( locerrstat, OMI_S_SUCCESS, pge_errstat_error, OMSAO_E_PREFITCOL, &
+         modulename//f_sep//'OMIL2 TerrainPressure access failed.', vb_lev_default, errstat )
+
+    ! ---------------------------------------------------------------
+    ! Check for rebinned zoom data swath storage ("1-30" vs. "16-45")
+    ! ---------------------------------------------------------------
+    DO it = 0, nt-1
+       IF ( yn_szoom(it) .AND. &
+            ALL ( TerrainPressure(gzoom_epix:nx,it) <= missval_TerrainPressure ) ) THEN
+          TerrainPressure(gzoom_spix:gzoom_epix,it) = TerrainPressure(1:gzoom_npix,it)
+          TerrainPressure(1:gzoom_spix-1,       it) = missval_TerrainPressure
+       END IF
+    END DO
+
+    ! -------------------------------------------------------------
+    ! Assign the Terrain Pressure array used in the AMF calculation
+    ! -------------------------------------------------------------
+    WHERE ( TerrainPressure > missval_TerrainPressure )
+       pres = REAL(TerrainPressure,KIND=r4) * REAL(scale_TerrainPressure,KIND=r4) &
+            + REAL(offset_TerrainPressure,KIND=r4)
+    END WHERE
+
+    ! ---------------------------------------------------------
+    ! Replace Terrain Pressure values by SAO PGE missing values
+    ! ---------------------------------------------------------
+    WHERE ( TerrainPressure <= missval_TerrainPressure )
+       pres = r4_missval
+    ENDWHERE
+
+    ! -------------------------------------------------------
+    ! (5) Cloud Terrain Reflectivity is of type integer 8 bit
+    ! -------------------------------------------------------
+    locerrstat = HE5_SWrdfld ( &
+         omicloud_swath_id, omicld_crefl_field//TRIM(ADJUSTL(addstr)),   &
+         he5_start_2d, he5_stride_2d, he5_edge_2d, tmprefl(1:nx,0:nt-1) )
+    IF ( locerrstat /= pge_errstat_ok ) &
+         CALL error_check ( locerrstat, OMI_S_SUCCESS, pge_errstat_error, OMSAO_E_PREFITCOL, &
+         modulename//f_sep//'OMIL2 TerrainReflectivity access failed.', vb_lev_default, errstat )
+    refl = REAL(tmprefl,KIND=r4)
+
+    ! ---------------------------------------------------------------
+    ! Check for rebinned zoom data swath storage ("1-30" vs. "16-45")
+    ! ---------------------------------------------------------------
+    DO it = 0, nt-1
+       IF ( yn_szoom(it) .AND. &
+            ALL ( refl(gzoom_epix:nx,it) <= REAL(missval_TerrainReflectivity,KIND=r4) ) ) THEN
+          Refl(gzoom_spix:gzoom_epix,it) = Refl(1:gzoom_npix,it)
+          Refl(1:gzoom_spix-1,       it) = REAL(missval_TerrainReflectivity, KIND=r4)
+       END IF
+    END DO
+
+    ! -----------------------------------------------------------------
+    ! Assign the Terrain Reflectivity array used in the AMF calculation
+    ! -----------------------------------------------------------------
+    WHERE ( Refl > REAL(missval_TerrainReflectivity, KIND=r4) )
+       refl = Refl * REAL(scale_TerrainReflectivity,KIND=r4) &
+            + REAL(offset_TerrainReflectivity,KIND=r4)
+    END WHERE
+
+    ! ---------------------------------------------------------
+    ! Replace Terrain Pressure values by SAO PGE missing values
+    ! ---------------------------------------------------------
+    WHERE ( Refl <= REAL(missval_TerrainReflectivity,KIND=r4) )
+       refl = r4_missval
     ENDWHERE
     
     RETURN

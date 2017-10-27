@@ -64,7 +64,6 @@ SUBROUTINE dataspline ( xtrack_pix, n_radwvl, curr_rad_wvl, n_max_rspec, errstat
   IF ( yn_solar_i0 ) THEN
      idx  = solar_idx
      iii  = max_calfit_idx + (idx-1)*mxs_idx
-
      solar_wvl(1:nsol) = refspecs_original(idx)%RefSpecWavs(1:nsol)
      solar_spc(1:nsol) = refspecs_original(idx)%RefSpecData(1:nsol)
      CALL convolve_data (                                                              &
