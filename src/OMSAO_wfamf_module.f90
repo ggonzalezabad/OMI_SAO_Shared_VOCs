@@ -190,9 +190,9 @@ CONTAINS
     ! Local variables
     ! ---------------
     INTEGER (KIND=i4)                                :: locerrstat, itt, spixx, epixx, current_month
-    INTEGER (KIND=i2), DIMENSION (1:nx,0:nt-1)       :: amfdiag
+    INTEGER (KIND=i2), DIMENSION (1:nx,0:nt-1)       :: amfdiag, l2csnow
     REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1)       :: amfgeo
-    REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1)       :: l2cfr, l2ctp
+    REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1)       :: l2cfr, l2ctp, l2cpres, l2crefl
     REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1)       :: albedo, cli_psurface
     REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1,CmETA) :: climatology
     REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1,CmETA) :: scattw !, akernels
@@ -250,13 +250,13 @@ CONTAINS
        ! Read the OMI L2 cloud product
        ! -----------------------------
        locerrstat = pge_errstat_ok
-       CALL amf_read_omiclouds ( nt, nx, yn_szoom, l2cfr, l2ctp, locerrstat )
+       CALL amf_read_omiclouds ( nt, nx, yn_szoom, l2cfr, l2ctp, l2csnow, l2cpres, l2crefl, locerrstat )
        errstat = MAX ( errstat, locerrstat )
        IF ( locerrstat >= pge_errstat_error ) THEN
           l2cfr = r8_missval
           l2ctp = r8_missval
        END IF
-       
+       stop
        ! ----------------------------
        ! Read ISCCP cloud climatology
        ! ----------------------------
@@ -280,7 +280,7 @@ CONTAINS
        ! ----------------------------------------------------------------------
        CALL amf_diagnostic (                                                   &
             nt, nx, lat, lon, sza, vza, snow, glint, xtrange,                  &
-            MINVAL(lut_clp), MAXVAL(lut_clp), l2cfr, l2ctp,&
+            MINVAL(lut_clp), MAXVAL(lut_clp), l2cfr, l2ctp, &
             amfdiag  )
 
        ! ---------------------------------------------------------------------
@@ -288,7 +288,7 @@ CONTAINS
        ! Now it is only needed to interpolate to the pixels of the granule.
        ! It was read there to obtain the dimensions of the number of levels.
        ! ---------------------------------------------------------------------
-       CALL omi_climatology (climatology, cli_psurface, terrain_height, &
+       CALL omi_climatology (climatology, cli_psurface, &
             lat, lon, nt, nx, amfdiag, locerrstat)
        
        ! -------------------------------------
@@ -343,7 +343,7 @@ CONTAINS
     
   END SUBROUTINE amf_calculation
   
-  SUBROUTINE omi_climatology (climatology, local_psurf, terrain_height, &
+  SUBROUTINE omi_climatology (climatology, local_psurf, &
                               lat, lon, nt, nx, amfdiag, locerrstat)
 
     ! =========================================
@@ -358,7 +358,7 @@ CONTAINS
     ! Input variables
     ! ---------------
     INTEGER (KIND=i4),                          INTENT (IN) :: nt, nx
-    REAL    (KIND=r4), DIMENSION (1:nx,0:nt-1), INTENT (IN) :: lat, lon, terrain_height
+    REAL    (KIND=r4), DIMENSION (1:nx,0:nt-1), INTENT (IN) :: lat, lon
 
     ! ------------------
     ! Modified variables
@@ -1458,7 +1458,7 @@ CONTAINS
     RETURN
   END SUBROUTINE compute_geometric_amf
 
-  SUBROUTINE amf_read_omiclouds ( nt, nx, yn_szoom, l2cfr, l2ctp, errstat )
+  SUBROUTINE amf_read_omiclouds ( nt, nx, yn_szoom, l2cfr, l2ctp, l2snow, l2pres, l2refl, errstat )
 
     USE OMSAO_variables_module,  ONLY: voc_amf_filenames
     USE OMSAO_indices_module,    ONLY: voc_omicld_idx
@@ -1474,7 +1474,8 @@ CONTAINS
     ! ----------------
     ! Output variables
     ! ----------------
-    REAL (KIND=r8), DIMENSION (1:nx,0:nt-1), INTENT (OUT) :: l2cfr, l2ctp
+    REAL (KIND=r8), DIMENSION (1:nx,0:nt-1), INTENT (OUT) :: l2cfr, l2ctp, l2pres, l2refl
+    INTEGER (KIND=i2), DIMENSION (1:nx,0:nt-1), INTENT (OUT) :: l2snow
 
     ! ------------------
     ! Modified variables
@@ -1490,7 +1491,7 @@ CONTAINS
          offset_TerrainPressure, offset_TerrainReflectivity
     REAL (KIND=r4), DIMENSION (1:nx,0:nt-1) :: cfr, ctp, refl, pres
     INTEGER (KIND=i2) :: missval_ctp, missval_TerrainPressure
-    INTEGER (KIND=i2), DIMENSION (1:nx,0:nt-1) :: o4ctp, TerrainPressure, snowice
+    INTEGER (KIND=i2), DIMENSION (1:nx,0:nt-1) :: o4ctp, TerrainPressure
     INTEGER (KIND=i2) :: missval_snowice
     INTEGER (KIND=i1), DIMENSION (1:nx,0:nt-1) :: tmpsnow, tmprefl
     INTEGER (KIND=i1) :: missval_TerrainReflectivity
@@ -1708,24 +1709,24 @@ CONTAINS
          CALL error_check ( locerrstat, OMI_S_SUCCESS, pge_errstat_error, OMSAO_E_PREFITCOL, &
          modulename//f_sep//'OMIL2 SnowIceExtent access failed.', vb_lev_default, errstat )
     ! Convert from 8bit to 16bit integer
-    snowice = INT(iand(tmpsnow,255),KIND=i2)
+    l2snow = INT(iand(tmpsnow,255),KIND=i2)
 
     ! ---------------------------------------------------------------
     ! Check for rebinned zoom data swath storage ("1-30" vs. "16-45")
     ! ---------------------------------------------------------------
     DO it = 0, nt-1
        IF ( yn_szoom(it) .AND. &
-            ALL ( snowice(gzoom_epix:nx,it) <= missval_snowice ) ) THEN
-          snowice(gzoom_spix:gzoom_epix,it) = snowice(1:gzoom_npix,it)
-          snowice(1:gzoom_spix-1,       it) = missval_snowice
+            ALL ( l2snow(gzoom_epix:nx,it) <= missval_snowice ) ) THEN
+          l2snow(gzoom_spix:gzoom_epix,it) = l2snow(1:gzoom_npix,it)
+          l2snow(1:gzoom_spix-1,       it) = missval_snowice
        END IF
     END DO
 
     ! ------------------------------------------------------------------
     ! Assign the cloud snow ice extent array used in the AMF calculation
     ! ------------------------------------------------------------------
-    WHERE ( snowice > missval_snowice )
-       snowice = snowice * INT(scale_snowice,KIND=i2) + INT(offset_snowice,KIND=i2)
+    WHERE ( l2snow > missval_snowice )
+       l2snow = l2snow * INT(scale_snowice,KIND=i2) + INT(offset_snowice,KIND=i2)
     END WHERE
 
     ! ----------------------------------------------------
@@ -1763,6 +1764,7 @@ CONTAINS
     WHERE ( TerrainPressure <= missval_TerrainPressure )
        pres = r4_missval
     ENDWHERE
+    l2pres = REAL(pres,KIND=r8)
 
     ! -------------------------------------------------------
     ! (5) Cloud Terrain Reflectivity is of type integer 8 bit
@@ -1800,6 +1802,7 @@ CONTAINS
     WHERE ( Refl <= REAL(missval_TerrainReflectivity,KIND=r4) )
        refl = r4_missval
     ENDWHERE
+    l2refl = REAL(refl,KIND=r8)
     
     RETURN
   END SUBROUTINE amf_read_omiclouds
