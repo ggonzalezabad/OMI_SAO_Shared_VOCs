@@ -251,6 +251,7 @@ CONTAINS
        ! -----------------------------
        locerrstat = pge_errstat_ok
        CALL amf_read_omiclouds ( nt, nx, yn_szoom, l2cfr, l2ctp, l2csnow, l2cpres, l2crefl, locerrstat )
+
        errstat = MAX ( errstat, locerrstat )
        IF ( locerrstat >= pge_errstat_error ) THEN
           l2cfr = r8_missval
@@ -292,7 +293,7 @@ CONTAINS
        ! available to carry on the AMFs calculation.
        ! ----------------------------------------------------------------------
        CALL amf_diagnostic ( nt, nx, lat, lon, sza, vza, glint, xtrange, &
-            MINVAL(lut_clp), MAXVAL(lut_clp), l2cfr, l2ctp, l2csnow, l2cpres, &
+            l2cfr, l2ctp, l2csnow, l2cpres, &
             l2crefl, albedo, cli_psurface, amfdiag  )
 
        ! --------------------------------------------------------
@@ -401,12 +402,12 @@ CONTAINS
 
        DO ixtrack = 1, nx
 
+          IF (amfdiag(ixtrack,itimes) .LT. omi_geo_amf) CYCLE
+
           IF (lon(ixtrack,itimes) .LT. -180.0_r4 .OR. &
               lat(ixtrack,itimes) .LT.  -90.0_r4 .OR. &
               lon(ixtrack,itimes) .GT.  180.0_r4 .OR. &
               lat(ixtrack,itimes) .GT.  90.0_r4) amfdiag(ixtrack,itimes) = omi_oob_cli
-
-          IF (amfdiag(ixtrack,itimes) .LT. omi_geo_amf) CYCLE
 
           ! ----------------------------------------------------
           ! Just selecting the closest location to lat lon pixel
@@ -1485,16 +1486,16 @@ CONTAINS
     ! Local variables
     ! ---------------
     INTEGER (KIND=i4) :: it, nt_loc, nx_loc, locerrstat, swath_id
-    REAL (KIND=r4) :: scale_cfr, offset_cfr, missval_cfr, scale_ctp, offset_ctp, &
-         scale_snowice, offset_snowice, &
-         offset_TerrainPressure, offset_TerrainReflectivity
+    REAL (KIND=r4) :: offset_cfr, offset_ctp, offset_snowice, &
+         offset_TerrainPressure, offset_TerrainReflectivity, missval_cfr
     REAL (KIND=r4), DIMENSION (1:nx,0:nt-1) :: cfr, ctp, refl, pres
     INTEGER (KIND=i2) :: missval_ctp, missval_TerrainPressure
     INTEGER (KIND=i2), DIMENSION (1:nx,0:nt-1) :: o4ctp, TerrainPressure
     INTEGER (KIND=i2) :: missval_snowice
     INTEGER (KIND=i1), DIMENSION (1:nx,0:nt-1) :: tmpsnow, tmprefl
     INTEGER (KIND=i1) :: missval_TerrainReflectivity
-    REAL (KIND=r8) :: scale_TerrainReflectivity, scale_TerrainPressure
+    REAL (KIND=r8) :: scale_TerrainReflectivity, scale_TerrainPressure, scale_cfr, scale_ctp, &
+         scale_snowice
 
     CHARACTER (LEN=5) :: addstr
     LOGICAL :: yn_raman_clouds
@@ -1554,15 +1555,15 @@ CONTAINS
     ! --------------------------------------------
     ! Read scaling of cloud data fields (working?)
     ! --------------------------------------------
-    scale_cfr = 1.0_r4 ; offset_cfr = 0.0_r4 ; missval_cfr = 0.0_r4
+    scale_cfr = 1.0_r8 ; offset_cfr = 0.0_r4 ; missval_cfr = 0.0_r4
     locerrstat = HE5_SWrdlattr ( omicloud_swath_id, omicld_cfrac_field//TRIM(ADJUSTL(addstr)), &
          'MissingValue', missval_cfr )
     locerrstat = HE5_SWrdlattr ( omicloud_swath_id, omicld_cfrac_field//TRIM(ADJUSTL(addstr)), &
          'Offset', offset_cfr )
     locerrstat = HE5_SWrdlattr ( omicloud_swath_id, omicld_cfrac_field//TRIM(ADJUSTL(addstr)), &
          'ScaleFactor', scale_cfr )
-
-    scale_ctp = 1.0_r4 ; offset_ctp = 0.0_r4 ; missval_ctp = 0
+  
+    scale_ctp = 1.0_r8 ; offset_ctp = 0.0_r4 ; missval_ctp = 0
     locerrstat = HE5_SWrdlattr ( omicloud_swath_id, omicld_cpres_field//TRIM(ADJUSTL(addstr)), &
          'MissingValue', missval_ctp )
     locerrstat = HE5_SWrdlattr ( omicloud_swath_id, omicld_cpres_field//TRIM(ADJUSTL(addstr)), &
@@ -1570,7 +1571,7 @@ CONTAINS
     locerrstat = HE5_SWrdlattr ( omicloud_swath_id, omicld_cpres_field//TRIM(ADJUSTL(addstr)), &
          'ScaleFactor', scale_ctp )
 
-    scale_snowice = 1.0_r4 ; offset_snowice = 0.0_r4 ; missval_snowice = 0
+    scale_snowice = 1.0_r8 ; offset_snowice = 0.0_r4 ; missval_snowice = 0
     locerrstat = HE5_SWrdlattr ( omicloud_swath_id, omicld_csnow_field//TRIM(ADJUSTL(addstr)), &
          'MissingValue', missval_snowice )
     locerrstat = HE5_SWrdlattr ( omicloud_swath_id, omicld_csnow_field//TRIM(ADJUSTL(addstr)), &
@@ -1578,7 +1579,7 @@ CONTAINS
     locerrstat = HE5_SWrdlattr ( omicloud_swath_id, omicld_csnow_field//TRIM(ADJUSTL(addstr)), &
          'ScaleFactor', scale_snowice )
 
-    scale_terrainpressure = 1.0_r4 ; offset_terrainpressure = 0.0_r4 ; missval_terrainpressure = 0
+    scale_terrainpressure = 1.0_r8 ; offset_terrainpressure = 0.0_r4 ; missval_terrainpressure = 0
     locerrstat = HE5_SWrdlattr ( omicloud_swath_id, omicld_csurf_field//TRIM(ADJUSTL(addstr)), &
          'MissingValue', missval_terrainpressure )
     locerrstat = HE5_SWrdlattr ( omicloud_swath_id, omicld_csurf_field//TRIM(ADJUSTL(addstr)), &
@@ -1586,7 +1587,7 @@ CONTAINS
     locerrstat = HE5_SWrdlattr ( omicloud_swath_id, omicld_csurf_field//TRIM(ADJUSTL(addstr)), &
          'ScaleFactor', scale_terrainpressure )
 
-  !  scale_terrainreflectivity = 1.0_r4 ; offset_terrainreflectivity = 0.0_r4 ; missval_terrainreflectivity = 0
+    scale_terrainreflectivity = 1.0_r8 ; offset_terrainreflectivity = 0.0_r4 ; missval_terrainreflectivity = 0
     locerrstat = HE5_SWrdlattr ( omicloud_swath_id, omicld_crefl_field//TRIM(ADJUSTL(addstr)), &
          'MissingValue', missval_terrainreflectivity )
     locerrstat = HE5_SWrdlattr ( omicloud_swath_id, omicld_crefl_field//TRIM(ADJUSTL(addstr)), &
@@ -1624,14 +1625,13 @@ CONTAINS
           cfr(1:gzoom_spix-1,       it) = missval_cfr
        END IF
     END DO
-
     ! -----------------------------------------------------------
     ! Assign the cloud fraction array used in the AMF calculation
     ! -----------------------------------------------------------
-    l2cfr = REAL(cfr, KIND=r8)
     WHERE ( cfr > r4_missval )
-       l2cfr = l2cfr * scale_cfr + offset_cfr
+       cfr = REAL(cfr,KIND=r4) * REAL(scale_cfr,KIND=r4) + REAL(offset_cfr,KIND=r4)
     END WHERE
+    l2cfr = REAL(cfr, KIND=r8)
 
     ! ---------------------------------------------------------------------------
     ! (2) Cloud Pressure of type REAL*4 in Raman but INT*2 in O2-O2
@@ -1665,10 +1665,10 @@ CONTAINS
     ! ---------------------------------------------------------------
     ! Assign the cloud top pressure array used in the AMF calculation
     ! ---------------------------------------------------------------
-    l2ctp  = REAL(ctp, KIND=r8)
     WHERE ( ctp > REAL(missval_ctp, KIND=r4) )
-       l2ctp = l2ctp * scale_ctp + offset_ctp
+       l2ctp = REAL(l2ctp,KIND=r4) * REAL(scale_ctp,KIND=r4) + REAL(offset_ctp,KIND=r4)
     END WHERE
+    l2ctp  = REAL(ctp, KIND=r8)
 
     IF ( locerrstat /= pge_errstat_ok ) &
          CALL error_check ( locerrstat, OMI_S_SUCCESS, pge_errstat_error, OMSAO_E_PREFITCOL, &
@@ -1725,7 +1725,7 @@ CONTAINS
     ! Assign the cloud snow ice extent array used in the AMF calculation
     ! ------------------------------------------------------------------
     WHERE ( l2snow > missval_snowice )
-       l2snow = l2snow * INT(scale_snowice,KIND=i2) + INT(offset_snowice,KIND=i2)
+       l2snow = INT(l2snow,KIND=i2) * INT(scale_snowice,KIND=i2) + INT(offset_snowice,KIND=i2)
     END WHERE
 
     ! ----------------------------------------------------
@@ -1930,7 +1930,7 @@ CONTAINS
   END SUBROUTINE voc_amf_readisccp
   
   SUBROUTINE amf_diagnostic ( &
-       nt, nx, lat, lon, sza, vza, glint, xtrange, ctpmin, ctpmax, l2cfr, l2ctp, &
+       nt, nx, lat, lon, sza, vza, glint, xtrange, l2cfr, l2ctp, &
        l2csnow, l2cpres, l2crefl, albedo, cli_psurface, amfdiag )
 
     USE OMSAO_omidata_module,   ONLY: omi_oobview_amf, omi_glint_add, omi_height, &
@@ -1943,7 +1943,6 @@ CONTAINS
     ! Input variables
     ! ---------------
     INTEGER (KIND=i4),                          INTENT (IN) :: nt, nx
-    REAL    (KIND=r4),                          INTENT (IN) :: ctpmin, ctpmax
     REAL    (KIND=r4), DIMENSION (1:nx,0:nt-1), INTENT (IN) :: lat, lon, vza
     INTEGER (KIND=i2), DIMENSION (1:nx,0:nt-1), INTENT (IN) :: l2csnow, glint
     INTEGER (KIND=i4), DIMENSION (0:nt-1,1:2),  INTENT (IN) :: xtrange
@@ -1994,6 +1993,11 @@ CONTAINS
     DO it = 0, nt-1
        spix = xtrange(it,1) ; epix = xtrange(it,2)
 
+
+       write(*,'(3I7,6E13.4)') it, l2csnow(spix:epix,it), amfdiag(spix:epix,it), l2cfr(spix:epix,it), &
+            l2ctp(spix:epix,it), albedo(spix:epix,it), &
+            cli_psurface(spix:epix,it), l2crefl(spix:epix,it), l2cpres(spix:epix,it)
+
        ! ----------------
        ! Missing SZA, VZA
        ! ----------------
@@ -2031,17 +2035,17 @@ CONTAINS
                 
                 amfdiag(ix,it) = 0_i2
                 IF ( l2ctp(ix,it) < 0.0_r8 .AND. ISCCP_CloudClim%ctp(ilon) >= 0.0_r8 ) THEN
-                   amfdiag(ix,it) = omi_oob_cld + amfdiag(ix,it)
+                   amfdiag(ix,it) = omi_oob_cld
                    l2ctp  (ix,it) = ISCCP_CloudClim%ctp(ilon)
                 END IF
                 IF ( l2cfr(ix,it) < 0.0_r8 .AND. ISCCP_CloudClim%cfr(ilon) >= 0.0_r8 ) THEN
-                   amfdiag(ix,it) = omi_oob_cld + amfdiag(ix,it)
+                   amfdiag(ix,it) = omi_oob_cld
                    l2cfr  (ix,it) = ISCCP_CloudClim%cfr(ilon)
                 END IF
              ENDIF
           END DO
        END IF
-     
+
        ! ---------------------------------------------------
        ! Out of bounds clouds (too high or too low), make it
        ! the highest possible value in the look up table.
@@ -2115,8 +2119,9 @@ CONTAINS
             glint(spix:epix,it) > 0_i2           )
           amfdiag(spix:epix,it) = amfdiag(spix:epix,it) + omi_glint_add
        END WHERE
+             
     END DO
-    
+    stop
     RETURN
   END SUBROUTINE amf_diagnostic
 
