@@ -173,7 +173,7 @@ CONTAINS
     ! Input variables
     ! ---------------
     INTEGER (KIND=i4),                          INTENT (IN) :: nt, nx, pge_idx
-    REAL    (KIND=r4), DIMENSION (1:nx,0:nt-1), INTENT (IN) :: lat, lon, sza, vza, saa, vaa, &
+    REAL    (KIND=r4), DIMENSION (1:nx,0:nt-1), INTENT (INOUT) :: lat, lon, sza, vza, saa, vaa, &
          terrain_height
     INTEGER (KIND=i2), DIMENSION (1:nx,0:nt-1), INTENT (IN) :: snow, glint
     LOGICAL,           DIMENSION (     0:nt-1), INTENT (IN) :: yn_szoom
@@ -256,7 +256,7 @@ CONTAINS
           l2cfr = r8_missval
           l2ctp = r8_missval
        END IF
-       stop
+       
        ! ----------------------------
        ! Read ISCCP cloud climatology
        ! ----------------------------
@@ -350,7 +350,7 @@ CONTAINS
     ! No interpolation or something like that,
     ! Just pick the closest model grid
     ! =========================================
-    USE OMSAO_omidata_module,   ONLY: omi_oob_cli
+    USE OMSAO_omidata_module, ONLY: omi_oob_cli, omi_geo_amf
     IMPLICIT NONE
 
     ! ---------------
@@ -406,7 +406,7 @@ CONTAINS
               lon(ixtrack,itimes) .GT.  180.0_r4 .OR. &
               lat(ixtrack,itimes) .GT.  90.0_r4) amfdiag(ixtrack,itimes) = omi_oob_cli
 
-          IF (amfdiag(ixtrack,itimes) .LT. 0) CYCLE
+          IF (amfdiag(ixtrack,itimes) .LT. omi_geo_amf) CYCLE
 
           ! ----------------------------------------------------
           ! Just selecting the closest location to lat lon pixel
@@ -1934,8 +1934,7 @@ CONTAINS
        l2csnow, l2cpres, l2crefl, albedo, cli_psurface, amfdiag )
 
     USE OMSAO_omidata_module,   ONLY: omi_oobview_amf, omi_glint_add, omi_height, &
-         omi_bigsza_amf, omi_cfr_addmiss, omi_ctp_addmiss, &
-         omi_oob_ctp
+         omi_bigsza_amf, omi_oob_cld, omi_geo_amf
     USE OMSAO_variables_module, ONLY: winwav_min, winwav_max
     
     IMPLICIT NONE
@@ -1945,7 +1944,7 @@ CONTAINS
     ! ---------------
     INTEGER (KIND=i4),                          INTENT (IN) :: nt, nx
     REAL    (KIND=r4),                          INTENT (IN) :: ctpmin, ctpmax
-    REAL    (KIND=r4), DIMENSION (1:nx,0:nt-1), INTENT (IN) :: lat, lon, sza, vza
+    REAL    (KIND=r4), DIMENSION (1:nx,0:nt-1), INTENT (IN) :: lat, lon, vza
     INTEGER (KIND=i2), DIMENSION (1:nx,0:nt-1), INTENT (IN) :: l2csnow, glint
     INTEGER (KIND=i4), DIMENSION (0:nt-1,1:2),  INTENT (IN) :: xtrange
     REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1), INTENT (IN) :: l2cpres, l2crefl
@@ -1955,7 +1954,7 @@ CONTAINS
     INTEGER (KIND=i2), DIMENSION (1:nx,0:nt-1), INTENT (INOUT) :: amfdiag
     REAL    (KIND=r8), DIMENSION (1:nx,0:nt-1), INTENT (INOUT) :: l2cfr, l2ctp, &
          albedo, cli_psurface
-
+    REAL    (KIND=r4), DIMENSION (1:nx,0:nt-1), INTENT (INOUT) :: sza
     ! ---------------
     ! Local variables
     ! ---------------
@@ -1998,7 +1997,7 @@ CONTAINS
        ! ----------------
        ! Missing SZA, VZA
        ! ----------------
-       WHERE (                                   &
+       WHERE ( &
             sza(spix:epix,it) <= r8_missval .OR. &
             vza(spix:epix,it) <= r8_missval        )
           amfdiag(spix:epix,it) = i2_missval
@@ -2019,8 +2018,8 @@ CONTAINS
        ! Where the OMI cloud information is missing, select ISCCP climatology,
        ! but skip pixels where the SZA values are out of the AMF table bounds.
        ! ---------------------------------------------------------------------
-       IF ( ( ANY( l2cfr(spix:epix,it)   < 0.0_r8          ) ) .OR. &
-            ( ANY( l2ctp(spix:epix,it)   < 0.0_r8          ) ) ) THEN
+       IF ( ( ANY( l2cfr(spix:epix,it) < 0.0_r8 ) ) .OR. &
+            ( ANY( l2ctp(spix:epix,it) < 0.0_r8 ) ) ) THEN
 
           DO ix = spix, epix
              IF (amfdiag(ix,it) > omi_oobview_amf) THEN
@@ -2032,11 +2031,11 @@ CONTAINS
                 
                 amfdiag(ix,it) = 0_i2
                 IF ( l2ctp(ix,it) < 0.0_r8 .AND. ISCCP_CloudClim%ctp(ilon) >= 0.0_r8 ) THEN
-                   amfdiag(ix,it) = omi_ctp_addmiss + amfdiag(ix,it)
+                   amfdiag(ix,it) = omi_oob_cld + amfdiag(ix,it)
                    l2ctp  (ix,it) = ISCCP_CloudClim%ctp(ilon)
                 END IF
                 IF ( l2cfr(ix,it) < 0.0_r8 .AND. ISCCP_CloudClim%cfr(ilon) >= 0.0_r8 ) THEN
-                   amfdiag(ix,it) = omi_cfr_addmiss + amfdiag(ix,it)
+                   amfdiag(ix,it) = omi_oob_cld + amfdiag(ix,it)
                    l2cfr  (ix,it) = ISCCP_CloudClim%cfr(ilon)
                 END IF
              ENDIF
@@ -2051,14 +2050,14 @@ CONTAINS
             ( l2ctp(spix:epix,it)   <  MINVAL(lut_clp) ) .AND. &
             ( amfdiag(spix:epix,it) >  omi_oobview_amf ) )
           l2ctp(spix:epix,it) = MINVAL(lut_clp)
-          amfdiag(spix:epix,it) = amfdiag(spix:epix,it) + omi_oob_ctp
+          amfdiag(spix:epix,it) = omi_oob_cld
        END WHERE
 
        WHERE ( &
             ( l2ctp(spix:epix,it)   >  MAXVAL(lut_clp) ) .AND. &
             ( amfdiag(spix:epix,it) >  omi_oobview_amf ) )
           l2ctp(spix:epix,it) = MAXVAL(lut_clp)
-          amfdiag(spix:epix,it) = amfdiag(spix:epix,it) + omi_oob_ctp
+          amfdiag(spix:epix,it) = omi_oob_cld
        END WHERE
 
        ! -------------------------------------------------------
@@ -2071,12 +2070,9 @@ CONTAINS
        END WHERE
 
        ! ------------------------------------------------------
-       ! And AMFDIAG values > OOB must be good and are set to 0
-       ! if we have "good" clouds
+       ! And AMFDIAG values = geo must be good and are set to 0
        ! ------------------------------------------------------
-       WHERE ( &
-            ( amfdiag(spix:epix,it) > omi_oobview_amf ) .AND. &
-            ( amfdiag(spix:epix,it) < omi_cfr_addmiss )  )
+       WHERE ( amfdiag(spix:epix,it) .EQ. omi_geo_amf )
              amfdiag(spix:epix,it) = 0_i2
        END WHERE
 
@@ -2088,15 +2084,27 @@ CONTAINS
             ( sza(spix:epix,it)     .GE. amf_max_sza       ) .AND. &
             ( amfdiag(spix:epix,it) .GT. omi_oobview_amf ) )
               amfdiag(spix:epix,it) = omi_bigsza_amf + amfdiag(spix:epix,it)
+              sza(spix:epix,it) = amf_max_sza
        END WHERE
-
+     
        ! -----------------------
        ! Start with the ice flag
-       ! -----------------------
-       WHERE (                                       &
-            amfdiag     (spix:epix,it) >= 0_i2 .AND. &
-            l2csnow(spix:epix,it) >= 0_i2         )
+       ! ----------------------------------------------------------------
+       ! If the flag is equal to 0 (snow-free land), 252 (coastlines), &
+       ! 253 (suspect ice value), 254 (corners) or 255 (ocean) we don't
+       ! use the information from the l2 cloud snow and ice extent field.
+       ! Otherwise, we update the amfdiag flag and change accordingly
+       ! the cloud fraction, surface pressure and surface albedo values.
+       ! ----------------------------------------------------------------
+       WHERE ( amfdiag(spix:epix,it) >= 0_i2 .AND. &
+            l2csnow(spix:epix,it) > 0_i2 .AND. l2csnow(spix:epix,it) < 103_i2 )
+          ! See ice concentration (1-100), 101 permatent ice, 103 snow
           amfdiag(spix:epix,it) = l2csnow(spix:epix,it) + amfdiag(spix:epix,it)
+          ! Set cloud fraction to 0.0
+          l2cfr(spix:epix,it) = 0.0_r8
+          ! Set surface reflectance and surface pressure to L2 cloud data
+          albedo(spix:epix,it) = l2crefl(spix:epix,it)
+          cli_psurface(spix:epix,it) = l2cpres(spix:epix,it)
        END WHERE
 
        ! ---------------------------
@@ -2107,9 +2115,8 @@ CONTAINS
             glint(spix:epix,it) > 0_i2           )
           amfdiag(spix:epix,it) = amfdiag(spix:epix,it) + omi_glint_add
        END WHERE
- 
     END DO
-
+    
     RETURN
   END SUBROUTINE amf_diagnostic
 
