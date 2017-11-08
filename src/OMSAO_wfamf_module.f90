@@ -1993,11 +1993,6 @@ CONTAINS
     DO it = 0, nt-1
        spix = xtrange(it,1) ; epix = xtrange(it,2)
 
-
-       write(*,'(3I7,6E13.4)') it, l2csnow(spix:epix,it), amfdiag(spix:epix,it), l2cfr(spix:epix,it), &
-            l2ctp(spix:epix,it), albedo(spix:epix,it), &
-            cli_psurface(spix:epix,it), l2crefl(spix:epix,it), l2cpres(spix:epix,it)
-
        ! ----------------
        ! Missing SZA, VZA
        ! ----------------
@@ -2121,7 +2116,7 @@ CONTAINS
        END WHERE
              
     END DO
-    stop
+
     RETURN
   END SUBROUTINE amf_diagnostic
 
