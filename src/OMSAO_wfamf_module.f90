@@ -598,7 +598,7 @@ CONTAINS
     ! corresponds to the current month.
     ! ----------------------------------------------------------------
     IF (nswath > 1) THEN
-       CALL extract_swathname(nswath, TRIM(ADJUSTL(swath_name)), &
+       CALL extract_swathname(nswath, TRIM(ADJUSTL(swath_name(1:swlen))), &
             TRIM(ADJUSTL(months(granule_month))), locswathname)
        ! ---------------------------------------------------------------------------
        ! Check if we found the correct swath name. If not, report an error and exit.
@@ -611,7 +611,7 @@ CONTAINS
           RETURN
        END IF
     ELSE
-       locswathname = TRIM(ADJUSTL(swath_name))
+       locswathname = TRIM(ADJUSTL(swath_name(1:swlen)))
     END IF
 
     ! -----------------------------
