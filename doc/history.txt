@@ -16,6 +16,15 @@ NOTE: OMI_SAO_Shared_VOCs is not a PGE in itself. It is the shared code
       OMCHOCHO and OMH2O.
 --------------------------------------------------------------------------------
 
+1.0.9                                                           11 February 2019
+--------------------------------------------------------------------------------
+(1) Enhanced treatment of snow and ice pixels using new cloud product
+(2) Update AMF diagnostic flags
+(3) Add Vibrational Raman Scattering file
+(4) Use year specific MERRA 2 monthly climatology
+(5) Add I0 correction for NO2 and IO
+(6) Stop using ISCPP climatology for missing clouds
+
 1.0.8                                                              30 March 2017
 --------------------------------------------------------------------------------
 Adaptation to gfortran and 64 bit. Improved AMF calculations using MERRA for inp

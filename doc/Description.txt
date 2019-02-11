@@ -1,5 +1,5 @@
 APP Name:  OMI_SAO_Shared_VOCs
-APP Version: 1.0.8
+APP Version: 1.0.9
 APP Type: MODULE
 Description: Shared code for OMHCHO & OMH2O
 Software Developer: Gonzalo Gonzalez Abad

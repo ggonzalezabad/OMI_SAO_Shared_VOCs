@@ -160,6 +160,7 @@ CONTAINS
        saocol, saodco, saoamf, terrain_height,   &
        yn_write, errstat                                )
 
+    USE OMSAO_indices_module,   ONLY: pge_h2o_idx
     ! =================================================================
     ! This subroutine computes the AMF factor using the following eleme
     ! nts:
@@ -261,11 +262,14 @@ CONTAINS
        ! ----------------------------
        ! Read ISCCP cloud climatology
        ! ----------------------------
+       ! since clouds severly affect H2O amount
+       ! hwang 20181003 commented out the ISCCP stuff here
+       ! so that only actual cloud info is used
        locerrstat = pge_errstat_ok
        current_month = granule_month
        CALL voc_amf_readisccp  ( current_month, locerrstat )
        errstat = MAX ( errstat, locerrstat )
-       IF ( locerrstat >= pge_errstat_error ) THEN
+       IF ( locerrstat >= pge_errstat_error .OR. pge_idx == pge_h2o_idx) THEN
           ISCCP_CloudClim%cfr = r8_missval
           ISCCP_CloudClim%ctp = r8_missval
        END IF
@@ -281,7 +285,7 @@ CONTAINS
        ! It was read there to obtain the dimensions of the number of levels.
        ! ---------------------------------------------------------------------
        CALL omi_climatology (climatology, cli_psurface, &
-            lat, lon, nt, nx, amfdiag, locerrstat)
+            lat, lon, nt, nx, amfdiag, pge_idx, locerrstat)
        
        ! -------------------------------------
        ! Write the climatology to the he5 file
@@ -344,20 +348,21 @@ CONTAINS
   END SUBROUTINE amf_calculation
   
   SUBROUTINE omi_climatology (climatology, local_psurf, &
-                              lat, lon, nt, nx, amfdiag, locerrstat)
+                              lat, lon, nt, nx, amfdiag, pge_idx, locerrstat)
 
     ! =========================================
     ! Extract Gas climatology to granule pixels
     ! No interpolation or something like that,
     ! Just pick the closest model grid
     ! =========================================
+    USE OMSAO_indices_module, ONLY: pge_h2o_idx
     USE OMSAO_omidata_module, ONLY: omi_oob_cli, omi_geo_amf
     IMPLICIT NONE
 
     ! ---------------
     ! Input variables
     ! ---------------
-    INTEGER (KIND=i4),                          INTENT (IN) :: nt, nx
+    INTEGER (KIND=i4),                          INTENT (IN) :: nt, nx, pge_idx
     REAL    (KIND=r4), DIMENSION (1:nx,0:nt-1), INTENT (IN) :: lat, lon
 
     ! ------------------
@@ -440,7 +445,12 @@ CONTAINS
           ! clima_psurf < local_psurf(ixtrack,itimes) then
           ! clima_psurf = local_psurf(ixtrack,itimes)
           ! ----------------------------------------------
-          IF (clima_psurf .LT. local_psurf(ixtrack,itimes)) clima_psurf = local_psurf(ixtrack,itimes)
+          ! 20181003 hwang commented out the following
+          ! as MERRA2 and OMI spatial resolution are not too different
+          ! extroplation is not out of control
+          IF (pge_idx /= pge_h2o_idx) THEN
+             IF (clima_psurf .LT. local_psurf(ixtrack,itimes)) clima_psurf = local_psurf(ixtrack,itimes)
+          END IF
           
           ! lpre(0:CmETA) is pressure at layer boundaries, same unit as
           ! local_surf, convert from hPa to Pa, it is a CmETA+1 array
@@ -523,7 +533,7 @@ CONTAINS
     ! from one climatology to another one
     ! ==========================================================
     
-    USE OMSAO_indices_module,   ONLY: sao_molecule_names
+    USE OMSAO_indices_module,   ONLY: sao_molecule_names, pge_h2o_idx
     USE OMSAO_variables_module, ONLY: pge_idx, pge_name
     IMPLICIT NONE    
 
@@ -535,8 +545,8 @@ CONTAINS
     ! ---------------
     ! Local variables
     ! ---------------
-    INTEGER   (KIND=i4)         :: nswath, locerrstat, swath_id, swath_file_id, swlen, he5stat, &
-                                   ismonth, ndatafields, h2o_cli_idx
+    INTEGER   (KIND=i4) :: nswath, locerrstat, swath_id, swath_file_id, swlen, he5stat, &
+         ismonth, isyear, ndatafields, h2o_cli_idx, h5error, type_id, space_id, attr_id
     INTEGER   (KIND=i4), DIMENSION(10) :: datafield_rank, datafield_type
     INTEGER   (KIND=C_LONG)     :: nswathcl, Cmlatcl, Cmloncl, CmETAcl
     CHARACTER (LEN=   maxchlen) :: swath_file, locswathname, gasdatafieldname, datafield_name
@@ -554,6 +564,22 @@ CONTAINS
     REAL (KIND=r4) :: scale_lat, scale_lon, scale_gas, scale_Psurf, &
          scale_temperature, scale_H2O
 
+    ! --------------------
+    ! H2O climatology file
+    ! --------------------
+    integer(kind=hsize_t) :: asize
+    integer(kind=4) :: nyears, iyear
+    integer(kind=4), parameter :: year_len=4
+    character(len=year_len), allocatable, dimension(:) :: years_str
+    integer(kind=4), allocatable, dimension(:) :: years
+    integer(kind=hsize_t), dimension(3) :: space_dims, space_max_dims
+    character(len=16), parameter :: pre_h2o_data='/SurfacePressure'
+    character(len=19), parameter :: tem_h2o_data='/TemperatureProfile'
+    character(len=7), parameter :: vmr_h2o_data='/VMRH2O'
+    character(len=10), parameter :: std_h2o_data='/VMRH2O_sd'
+    character(len=29), parameter :: lat_h2o_data='/Geolocation Fields/Latitudes'
+    character(len=30), parameter :: lon_h2o_data='/Geolocation Fields/Longitudes'
+
     ! ------------------------
     ! Error handling variables
     ! ------------------------
@@ -570,7 +596,8 @@ CONTAINS
     locerrstat = pge_errstat_ok
     
     swath_file  = TRIM(ADJUSTL(OMSAO_climatology_filename))
-    ismonth     = granule_month
+    ismonth = granule_month
+    isyear  = granule_year
 
     ! Index to read H2O water vapor using sao_molecule_names
     h2o_cli_idx = 18
@@ -578,111 +605,354 @@ CONTAINS
     ! --------------------------------------------------------------
     ! Open he5 OMI climatology and check SWATH_FILE_ID (-1 if error)
     ! --------------------------------------------------------------
-    swath_file_id = HE5_SWOPEN (swath_file, he5f_acc_rdonly)
-    IF (swath_file_id == he5_stat_fail) THEN
-       CALL error_check (0, 1, pge_errstat_error, OMSAO_E_HE5SWOPEN, modulename, &
-            vb_lev_default, locerrstat)
-       errstat = MAX (errstat, locerrstat)
-       RETURN
-    END IF
-    
-    ! -----------------------------------------------------------
-    ! Check for existing HE5 swathw and attach to the one we need
-    ! -----------------------------------------------------------
-    nswathcl = HE5_SWinqswath(TRIM(ADJUSTL(swath_file)), swath_name, swlen )
-    nswath   = INT(nswathcl, KIND=i4 )
+    ! If we are doing water then the climatology file is HDF5 and
+    ! not HDF-EOS
+    ! --------------------------------------------------------------
+    if (pge_idx == pge_h2o_idx) then !HDF5 reader
+       call h5open_f(h5error) 
+       call h5fopen_f(swath_file, h5f_acc_rdonly_f, swath_file_id,h5error)
 
-    ! ----------------------------------------------------------------
-    ! If there is only one swath in the file, we can attach to it but
-    ! if there are more (NSWATH > 1), then we must find the swath that
-    ! corresponds to the current month.
-    ! ----------------------------------------------------------------
-    IF (nswath > 1) THEN
-       CALL extract_swathname(nswath, TRIM(ADJUSTL(swath_name(1:swlen))), &
-            TRIM(ADJUSTL(months(granule_month))), locswathname)
-       ! ---------------------------------------------------------------------------
-       ! Check if we found the correct swath name. If not, report an error and exit.
-       ! ---------------------------------------------------------------------------
-       IF ( INDEX (TRIM(ADJUSTL(locswathname)),TRIM(ADJUSTL(months(ismonth)))) == 0 ) THEN
+       ! --------------------
+       ! Read Years attribute
+       ! --------------------
+       call h5aopen_f(swath_file_id,'Years',swath_id,h5error)
+       call h5aget_type_f(swath_id,type_id,h5error)
+       call h5aget_storage_size_f(swath_id,asize,h5error)
+       nyears=asize/year_len
+       allocate(years_str(1:nyears),years(1:nyears))
+       call h5aread_f(swath_id,type_id,years_str(1:nyears),(/asize/),h5error)
+       call h5aclose_f(swath_id,h5error)
+       do iyear = 1, nyears
+          read(years_str(iyear),*) years(iyear)
+       end do
+       ! ----------------------
+       ! Find which year to use
+       ! ----------------------
+       iyear = minloc(abs(years-isyear),1)       
+      
+       ! -----------------------------------------------------------
+       ! Get the dimensions in the file using one of the 3D datasets
+       ! -----------------------------------------------------------
+       swath_name='/Data Fields/'//years_str(iyear)//'/'//TRIM(ADJUSTL(months(ismonth)))//vmr_h2o_data
+       call h5dopen_f(swath_file_id,TRIM(ADJUSTL(swath_name)),swath_id,h5error)
+       call h5dget_space_f(swath_id,space_id,h5error)
+       call h5sget_simple_extent_dims_f(space_id,space_dims,space_max_dims,h5error)
+       Cmlat=space_dims(2); Cmlon=space_dims(1); CmETA=space_dims(3)
+       Cmlatcl = INT ( Cmlat, KIND=C_LONG )
+       Cmloncl = INT ( Cmlon, KIND=C_LONG )
+       CmETAcl = INT ( CmETA, KIND=C_LONG )
+       call h5sclose_f(space_id,h5error)
+       call h5dclose_f(swath_id,h5error)
+
+       ! ---------------------------------------------
+       ! Allocate variables to hold climatology values
+       ! ---------------------------------------------
+       ! ---------------------------
+       ! Allocate Climatology arrays
+       ! ---------------------------
+       locerrstat = pge_errstat_ok
+       CALL climatology_allocate ( "a", Cmlat, Cmlon, CmETA, locerrstat )
+       IF ( locerrstat /= pge_errstat_ok ) THEN
+          errstat = MAX ( errstat, locerrstat ) 
+          CALL climatology_allocate ( "d", Cmlat, Cmlon, CmETA, locerrstat )
+          RETURN
+       END IF
+       
+       ! -----------------------------------
+       ! Allocate dummy arrays (necessary to 
+       ! read 32 bit arrays
+       ! -----------------------------------
+       ALLOCATE(dummy_lat(1:Cmlat))
+       ALLOCATE(dummy_lon(1:Cmlon))
+
+       ! -------------------------------
+       ! Read dimension-defining arrays
+       ! -------------------------------
+       ! Longitude
+       call h5dopen_f(swath_file_id,lon_h2o_data,swath_id,h5error)
+       call h5dget_type_f(swath_id,type_id,h5error)
+       call h5dread_f(swath_id,type_id,dummy_lon,(/space_dims(1)/),h5error)
+       call h5aopen_f(swath_id,'ScaleFactor',attr_id,h5error)
+       call h5aget_type_f(attr_id,type_id,h5error)
+       call h5aget_storage_size_f(attr_id,asize,h5error)
+       call h5aread_f(attr_id,type_id,scale_lon,(/asize/),h5error)
+       call h5aclose_f(attr_id,h5error)
+       call h5dclose_f(swath_id,h5error)
+
+       ! Latitude
+       call h5dopen_f(swath_file_id,lat_h2o_data,swath_id,h5error)
+       call h5dget_type_f(swath_id,type_id,h5error)
+       call h5dread_f(swath_id,type_id,dummy_lat,(/space_dims(2)/),h5error)
+       call h5aopen_f(swath_id,'ScaleFactor',attr_id,h5error)
+       call h5aget_type_f(attr_id,type_id,h5error)
+       call h5aget_storage_size_f(attr_id,asize,h5error)
+       call h5aread_f(attr_id,type_id,scale_lat,(/asize/),h5error)
+       call h5aclose_f(attr_id,h5error)
+       call h5dclose_f(swath_id,h5error)
+
+       ! ---------------------------------------
+       ! Allocate dummy variables to read 32 bit
+       ! ---------------------------------------
+       ALLOCATE(dummy_psurf(1:Cmlon,1:Cmlat))
+       ALLOCATE(dummy_temp(1:Cmlon,1:Cmlat,1:CmETA))
+       ALLOCATE(dummy_gaspr(1:Cmlon,1:Cmlat,1:CmETA))
+       ALLOCATE(dummy_h2opr(1:Cmlon,1:Cmlat,1:CmETA))
+       
+       ! ---------------------------------------------
+       ! Read surface pressure and temperature profile
+       ! ---------------------------------------------
+       ! Surface pressure
+       swath_name='/Data Fields/'//years_str(iyear)//'/'//TRIM(ADJUSTL(months(ismonth)))//pre_h2o_data
+       call h5dopen_f(swath_file_id,TRIM(ADJUSTL(swath_name)),swath_id,h5error)
+       call h5dget_type_f(swath_id,type_id,h5error)
+       call h5dread_f(swath_id,type_id,dummy_psurf,space_dims(1:2),h5error)
+       call h5aopen_f(swath_id,'ScaleFactor',attr_id,h5error)
+       call h5aget_type_f(attr_id,type_id,h5error)
+       call h5aget_storage_size_f(attr_id,asize,h5error)
+       call h5aread_f(attr_id,type_id,scale_Psurf,(/asize/),h5error)
+       call h5aclose_f(attr_id,h5error)
+       call h5dclose_f(swath_id,h5error)
+
+       ! Temperature profile
+       swath_name='/Data Fields/'//years_str(iyear)//'/'//TRIM(ADJUSTL(months(ismonth)))//tem_h2o_data
+       call h5dopen_f(swath_file_id,TRIM(ADJUSTL(swath_name)),swath_id,h5error)
+       call h5dget_type_f(swath_id,type_id,h5error)
+       call h5dread_f(swath_id,type_id,dummy_temp,space_dims,h5error)
+       call h5aopen_f(swath_id,'ScaleFactor',attr_id,h5error)
+       call h5aget_type_f(attr_id,type_id,h5error)
+       call h5aget_storage_size_f(attr_id,asize,h5error)
+       call h5aread_f(attr_id,type_id,scale_Temperature,(/asize/),h5error)
+       call h5aclose_f(attr_id,h5error)
+       call h5dclose_f(swath_id,h5error)
+       
+       ! H2O VMR profile
+       swath_name='/Data Fields/'//years_str(iyear)//'/'//TRIM(ADJUSTL(months(ismonth)))//vmr_h2o_data
+       call h5dopen_f(swath_file_id,TRIM(ADJUSTL(swath_name)),swath_id,h5error)
+       call h5dget_type_f(swath_id,type_id,h5error)
+       call h5dread_f(swath_id,type_id,dummy_gaspr,space_dims,h5error)
+       call h5aopen_f(swath_id,'ScaleFactor',attr_id,h5error)
+       call h5aget_type_f(attr_id,type_id,h5error)
+       call h5aget_storage_size_f(attr_id,asize,h5error)
+       call h5aread_f(attr_id,type_id,scale_gas,(/asize/),h5error)
+       call h5aclose_f(attr_id,h5error)
+       call h5dclose_f(swath_id,h5error)
+
+       ! Close file
+       call h5fclose_f(swath_file_id,h5error)
+       call h5close_f(h5error)
+
+       dummy_h2opr = dummy_gaspr
+       scale_H2O = scale_gas
+    else
+       swath_file_id = HE5_SWOPEN (swath_file, he5f_acc_rdonly)
+       IF (swath_file_id == he5_stat_fail) THEN
+          CALL error_check (0, 1, pge_errstat_error, OMSAO_E_HE5SWOPEN, modulename, &
+               vb_lev_default, locerrstat)
+          errstat = MAX (errstat, locerrstat)
+          RETURN
+       END IF
+       
+       ! -----------------------------------------------------------
+       ! Check for existing HE5 swathw and attach to the one we need
+       ! -----------------------------------------------------------
+       nswathcl = HE5_SWinqswath(TRIM(ADJUSTL(swath_file)), swath_name, swlen )
+       nswath   = INT(nswathcl, KIND=i4 )
+       
+       ! ----------------------------------------------------------------
+       ! If there is only one swath in the file, we can attach to it but
+       ! if there are more (NSWATH > 1), then we must find the swath that
+       ! corresponds to the current month.
+       ! ----------------------------------------------------------------
+       IF (nswath > 1) THEN
+          CALL extract_swathname(nswath, TRIM(ADJUSTL(swath_name(1:swlen))), &
+               TRIM(ADJUSTL(months(granule_month))), locswathname)
+          ! ---------------------------------------------------------------------------
+          ! Check if we found the correct swath name. If not, report an error and exit.
+          ! ---------------------------------------------------------------------------
+          IF ( INDEX (TRIM(ADJUSTL(locswathname)),TRIM(ADJUSTL(months(ismonth)))) == 0 ) THEN
+             CALL error_check ( &
+                  0, 1, pge_errstat_error, OMSAO_E_HE5SWLOCATE, modulename, &
+                  vb_lev_default, locerrstat )
+             errstat = MAX ( errstat, locerrstat )
+             RETURN
+          END IF
+       ELSE
+          locswathname = TRIM(ADJUSTL(swath_name(1:swlen)))
+       END IF
+       
+       ! -----------------------------
+       ! Attach to current month swath
+       ! -----------------------------
+       swath_id = HE5_SWattach ( swath_file_id, TRIM(ADJUSTL(locswathname)) )
+       IF ( swath_id == he5_stat_fail ) THEN
           CALL error_check ( &
-               0, 1, pge_errstat_error, OMSAO_E_HE5SWLOCATE, modulename, &
-               vb_lev_default, locerrstat )
+               0, 1, pge_errstat_error, OMSAO_E_HE5SWATTACH, modulename, vb_lev_default, locerrstat )
           errstat = MAX ( errstat, locerrstat )
           RETURN
        END IF
-    ELSE
-       locswathname = TRIM(ADJUSTL(swath_name(1:swlen)))
-    END IF
+       
+       ! ------------------------------------
+       ! Read dimensions of Climatology swath
+       ! ------------------------------------
+       locerrstat = pge_errstat_ok
+       CALL climatology_getdim ( swath_id, Cmlat, Cmlon, CmETA, locerrstat )
+       IF ( ismonth < 1 .OR. ismonth > nmonths .OR. locerrstat /= pge_errstat_ok ) THEN
+          errstat = MAX ( errstat, locerrstat ) 
+          RETURN
+       END IF
+       
+       ! ----------------------------------------------------------------------------
+       ! Create KIND=4/KIND=8 variables. We have to use those dimensions a few times
+       ! in this subroutine, so it saves some typing if we do the conversion once and
+       ! save them in new variables.
+       ! ----------------------------------------------------------------------------
+       Cmlatcl = INT ( Cmlat, KIND=C_LONG )
+       Cmloncl = INT ( Cmlon, KIND=C_LONG )
+       CmETAcl = INT ( CmETA, KIND=C_LONG )
+       
+       ! ---------------------------
+       ! Allocate Climatology arrays
+       ! ---------------------------
+       locerrstat = pge_errstat_ok
+       CALL climatology_allocate ( "a", Cmlat, Cmlon, CmETA, locerrstat )
+       IF ( locerrstat /= pge_errstat_ok ) THEN
+          errstat = MAX ( errstat, locerrstat ) 
+          CALL climatology_allocate ( "d", Cmlat, Cmlon, CmETA, locerrstat )
+          RETURN
+       END IF
+       
+       ! -----------------------------------
+       ! Allocate dummy arrays (necessary to 
+       ! read 32 bit arrays
+       ! -----------------------------------
+       ALLOCATE(dummy_lat(1:Cmlat))
+       ALLOCATE(dummy_lon(1:Cmlon))
+       
+       ! -------------------------------
+       ! Read dimension-defining arrays
+       ! -------------------------------
+       he5_start_1d = zerocl ; he5_stride_1d = onecl ; he5_edge_1d = Cmlatcl
+       he5stat = HE5_SWrdfld ( swath_id, cli_lat_field, &
+            he5_start_1d, he5_stride_1d, he5_edge_1d, dummy_lat(1:Cmlat) )
+       he5_start_1d = zerocl ; he5_stride_1d = onecl ; he5_edge_1d = Cmloncl
+       he5stat = HE5_SWrdfld ( swath_id, cli_lon_field, &
+            he5_start_1d, he5_stride_1d, he5_edge_1d, dummy_lon(1:Cmlon) )
+       IF ( he5stat /= pge_errstat_ok ) &
+            CALL error_check ( he5stat, OMI_S_SUCCESS, pge_errstat_error, OMSAO_E_PREFITCOL, &
+            modulename//f_sep//'Climatology arrays access failed.', vb_lev_default, errstat )
+       
+       ! -----------------------------------------------
+       ! Read dimension-defining scale factor attributes
+       ! -----------------------------------------------
+       he5stat = HE5_SWrdlattr ( swath_id, cli_lat_field, "ScaleFactor", scale_lat )
+       he5stat = HE5_SWrdlattr ( swath_id, cli_lon_field, "ScaleFactor", scale_lon )
+       IF ( he5stat /= pge_errstat_ok ) &
+            CALL error_check ( he5stat, OMI_S_SUCCESS, pge_errstat_error, OMSAO_E_PREFITCOL, &
+            modulename//f_sep//'Climatology attributes access failed.', vb_lev_default, errstat )
 
-    ! -----------------------------
-    ! Attach to current month swath
-    ! -----------------------------
-    swath_id = HE5_SWattach ( swath_file_id, TRIM(ADJUSTL(locswathname)) )
-    IF ( swath_id == he5_stat_fail ) THEN
-       CALL error_check ( &
-            0, 1, pge_errstat_error, OMSAO_E_HE5SWATTACH, modulename, vb_lev_default, locerrstat )
-       errstat = MAX ( errstat, locerrstat )
-       RETURN
-    END IF
+       ! ---------------------------------------
+       ! Allocate dummy variables to read 32 bit
+       ! ---------------------------------------
+       ALLOCATE(dummy_psurf(1:Cmlon,1:Cmlat))
+       ALLOCATE(dummy_temp(1:Cmlon,1:Cmlat,1:CmETA))
+       ALLOCATE(dummy_gaspr(1:Cmlon,1:Cmlat,1:CmETA))
+       ALLOCATE(dummy_h2opr(1:Cmlon,1:Cmlat,1:CmETA))
+       
+       ! -----------------------------------------------
+       ! Read the tables: Psurface, Heights, Temperature
+       ! -----------------------------------------------
+       he5_start_2d  = (/ zerocl, zerocl /)
+       he5_stride_2d = (/  onecl,  onecl /)
+       he5_edge_2d   = (/ Cmloncl, Cmlatcl /)
+       
+       he5_start_3d  = (/ zerocl, zerocl, zerocl/)
+       he5_stride_3d = (/  onecl,  onecl,  onecl /)
+       he5_edge_3d   = (/ Cmloncl, Cmlatcl, CmETAcl /)
+       he5stat = HE5_SWrdfld (                                &
+            swath_id, cli_Psurf_field,                        &
+            he5_start_2d, he5_stride_2d, he5_edge_2d,         &
+            dummy_psurf(1:Cmlon,1:Cmlat) )
+       he5stat = HE5_SWrdfld (                                &
+            swath_id, cli_Temperature_field,                  &
+            he5_start_3d, he5_stride_3d, he5_edge_3d,         &
+            dummy_temp(1:Cmlon,1:Cmlat,1:CmETA) )
+       
+       ! --------------------------------------
+       ! Read datafields scale factor attribute
+       ! --------------------------------------
+       he5stat = HE5_SWrdlattr ( swath_id, cli_Psurf_field,       "ScaleFactor", scale_Psurf       )
+       he5stat = HE5_SWrdlattr ( swath_id, cli_Temperature_field, "ScaleFactor", scale_Temperature )
+       
+       IF ( he5stat /= pge_errstat_ok ) &
+            CALL error_check ( he5stat, OMI_S_SUCCESS, pge_errstat_error, OMSAO_E_PREFITCOL, &
+            modulename//f_sep//'Climatology data fields access failed.', vb_lev_default, errstat )
+       
+       ! -----------------------------------------------------------------------
+       ! Finding out the data field for the gas of interest (.eq. to target gas)
+       ! -----------------------------------------------------------------------
+       ndatafields = HE5_swinqdflds(swath_id, datafield_name, datafield_rank, datafield_type)
+       CALL extract_swathname(nswath, TRIM(ADJUSTL(datafield_name)), &
+            TRIM(ADJUSTL(sao_molecule_names(pge_idx))), gasdatafieldname)
+       
+       ! ---------------------------------------------------------------------------
+       ! Check if we found the correct swath name. If not, report an error and exit.
+       ! ---------------------------------------------------------------------------
+       IF ( INDEX (TRIM(ADJUSTL(gasdatafieldname)),TRIM(ADJUSTL(sao_molecule_names(pge_idx)))) == 0 ) THEN
+          CALL error_check ( &
+               0, 1, pge_errstat_error, OMSAO_E_HE5SWLOCATE, modulename, &
+               vb_lev_default, locerrstat )
+          WRITE(*,*) "Climatology file does not contain data for ", sao_molecule_names(pge_idx)
+          errstat = MAX ( errstat, locerrstat )
+          RETURN
+       END IF
 
-    ! ------------------------------------
-    ! Read dimensions of Climatology swath
-    ! ------------------------------------
-    locerrstat = pge_errstat_ok
-    CALL climatology_getdim ( swath_id, Cmlat, Cmlon, CmETA, locerrstat )
-    IF ( ismonth < 1 .OR. ismonth > nmonths .OR. locerrstat /= pge_errstat_ok ) THEN
-       errstat = MAX ( errstat, locerrstat ) 
-       RETURN
-    END IF
-
-    ! ----------------------------------------------------------------------------
-    ! Create KIND=4/KIND=8 variables. We have to use those dimensions a few times
-    ! in this subroutine, so it saves some typing if we do the conversion once and
-    ! save them in new variables.
-    ! ----------------------------------------------------------------------------
-    Cmlatcl = INT ( Cmlat, KIND=C_LONG )
-    Cmloncl = INT ( Cmlon, KIND=C_LONG )
-    CmETAcl = INT ( CmETA, KIND=C_LONG )
-
-    ! ---------------------------
-    ! Allocate Climatology arrays
-    ! ---------------------------
-    locerrstat = pge_errstat_ok
-    CALL climatology_allocate ( "a", Cmlat, Cmlon, CmETA, locerrstat )
-    IF ( locerrstat /= pge_errstat_ok ) THEN
-       errstat = MAX ( errstat, locerrstat ) 
-       CALL climatology_allocate ( "d", Cmlat, Cmlon, CmETA, locerrstat )
-       RETURN
-    END IF
-
-    ! -----------------------------------
-    ! Allocate dummy arrays (necessary to 
-    ! read 32 bit arrays
-    ! -----------------------------------
-    ALLOCATE(dummy_lat(1:Cmlat))
-    ALLOCATE(dummy_lon(1:Cmlon))
-
-    ! -------------------------------
-    ! Read dimension-defining arrays
-    ! -------------------------------
-    he5_start_1d = zerocl ; he5_stride_1d = onecl ; he5_edge_1d = Cmlatcl
-    he5stat = HE5_SWrdfld ( swath_id, cli_lat_field, &
-         he5_start_1d, he5_stride_1d, he5_edge_1d, dummy_lat(1:Cmlat) )
-    he5_start_1d = zerocl ; he5_stride_1d = onecl ; he5_edge_1d = Cmloncl
-    he5stat = HE5_SWrdfld ( swath_id, cli_lon_field, &
-         he5_start_1d, he5_stride_1d, he5_edge_1d, dummy_lon(1:Cmlon) )
-    IF ( he5stat /= pge_errstat_ok ) &
-         CALL error_check ( he5stat, OMI_S_SUCCESS, pge_errstat_error, OMSAO_E_PREFITCOL, &
-         modulename//f_sep//'Climatology arrays access failed.', vb_lev_default, errstat )
-
-    ! -----------------------------------------------
-    ! Read dimension-defining scale factor attributes
-    ! -----------------------------------------------
-    he5stat = HE5_SWrdlattr ( swath_id, cli_lat_field, "ScaleFactor", scale_lat )
-    he5stat = HE5_SWrdlattr ( swath_id, cli_lon_field, "ScaleFactor", scale_lon )
-    IF ( he5stat /= pge_errstat_ok ) &
-         CALL error_check ( he5stat, OMI_S_SUCCESS, pge_errstat_error, OMSAO_E_PREFITCOL, &
-         modulename//f_sep//'Climatology attributes access failed.', vb_lev_default, errstat )
+       ! -----------------------------
+       ! Read data from this datafield
+       ! -----------------------------
+       he5stat = HE5_SWrdfld (                                &
+            swath_id, TRIM(ADJUSTL(gasdatafieldname)),        &
+            he5_start_3d, he5_stride_3d, he5_edge_3d,         &
+            dummy_gaspr(1:Cmlon,1:Cmlat,1:CmETA) )
+       
+       ! -----------------------------------------
+       ! Read gas datafield scale factor attribute
+       ! -----------------------------------------
+       he5stat = HE5_SWrdlattr ( swath_id, TRIM(ADJUSTL(gasdatafieldname)),&
+            "ScaleFactor", scale_gas       )
+       
+       ! -------------------------------------------------------------------
+       ! Finding out the data field for water vapor (to compute air density)
+       ! -------------------------------------------------------------------
+       ndatafields = HE5_swinqdflds(swath_id, datafield_name, datafield_rank, datafield_type)
+       CALL extract_swathname(nswath, TRIM(ADJUSTL(datafield_name)), &
+            TRIM(ADJUSTL(sao_molecule_names(h2o_cli_idx))), gasdatafieldname)
+       
+       ! ---------------------------------------------------------------------------
+       ! Check if we found the correct swath name. If not, report an error and exit.
+       ! ---------------------------------------------------------------------------
+       IF ( INDEX (TRIM(ADJUSTL(gasdatafieldname)),TRIM(ADJUSTL(sao_molecule_names(pge_idx)))) == 0 ) THEN
+          CALL error_check ( &
+               0, 1, pge_errstat_error, OMSAO_E_HE5SWLOCATE, modulename, &
+               vb_lev_default, locerrstat )
+          WRITE(*,*) "Climatology file does not contain data for ", sao_molecule_names(h2o_cli_idx)
+          errstat = MAX ( errstat, locerrstat )
+          RETURN
+       END IF
+       
+       ! -----------------------------
+       ! Read data from this datafield
+       ! -----------------------------
+       he5stat = HE5_SWrdfld (                                &
+            swath_id, TRIM(ADJUSTL(gasdatafieldname)),        &
+            he5_start_3d, he5_stride_3d, he5_edge_3d,         &
+            dummy_h2opr(1:Cmlon,1:Cmlat,1:CmETA) )
+       
+       ! -----------------------------------------
+       ! Read gas datafield scale factor attribute
+       ! -----------------------------------------
+       he5stat = HE5_SWrdlattr ( swath_id, TRIM(ADJUSTL(gasdatafieldname)),&
+            "ScaleFactor", scale_H2O       )
+    endif
 
     ! -----------------------------------
     ! Apply scaling factors to geo fields
@@ -696,109 +966,6 @@ CONTAINS
     ! ------------------------
     DEALLOCATE(dummy_lat)
     DEALLOCATE(dummy_lon)
-
-    ! ---------------------------------------
-    ! Allocate dummy variables to read 32 bit
-    ! ---------------------------------------
-    ALLOCATE(dummy_psurf(1:Cmlon,1:Cmlat))
-    ALLOCATE(dummy_temp(1:Cmlon,1:Cmlat,1:CmETA))
-    ALLOCATE(dummy_gaspr(1:Cmlon,1:Cmlat,1:CmETA))
-    ALLOCATE(dummy_h2opr(1:Cmlon,1:Cmlat,1:CmETA))
-
-    ! -----------------------------------------------
-    ! Read the tables: Psurface, Heights, Temperature
-    ! -----------------------------------------------
-    he5_start_2d  = (/ zerocl, zerocl /)
-    he5_stride_2d = (/  onecl,  onecl /)
-    he5_edge_2d   = (/ Cmloncl, Cmlatcl /)
-
-    he5_start_3d  = (/ zerocl, zerocl, zerocl/)
-    he5_stride_3d = (/  onecl,  onecl,  onecl /)
-    he5_edge_3d   = (/ Cmloncl, Cmlatcl, CmETAcl /)
-    he5stat = HE5_SWrdfld (                                &
-         swath_id, cli_Psurf_field,                        &
-         he5_start_2d, he5_stride_2d, he5_edge_2d,         &
-         dummy_psurf(1:Cmlon,1:Cmlat) )
-    he5stat = HE5_SWrdfld (                                &
-         swath_id, cli_Temperature_field,                  &
-         he5_start_3d, he5_stride_3d, he5_edge_3d,         &
-         dummy_temp(1:Cmlon,1:Cmlat,1:CmETA) )
-
-    ! --------------------------------------
-    ! Read datafields scale factor attribute
-    ! --------------------------------------
-    he5stat = HE5_SWrdlattr ( swath_id, cli_Psurf_field,       "ScaleFactor", scale_Psurf       )
-    he5stat = HE5_SWrdlattr ( swath_id, cli_Temperature_field, "ScaleFactor", scale_Temperature )
-
-    IF ( he5stat /= pge_errstat_ok ) &
-         CALL error_check ( he5stat, OMI_S_SUCCESS, pge_errstat_error, OMSAO_E_PREFITCOL, &
-         modulename//f_sep//'Climatology data fields access failed.', vb_lev_default, errstat )
-
-    ! -----------------------------------------------------------------------
-    ! Finding out the data field for the gas of interest (.eq. to target gas)
-    ! -----------------------------------------------------------------------
-    ndatafields = HE5_swinqdflds(swath_id, datafield_name, datafield_rank, datafield_type)
-    CALL extract_swathname(nswath, TRIM(ADJUSTL(datafield_name)), &
-         TRIM(ADJUSTL(sao_molecule_names(pge_idx))), gasdatafieldname)
-
-    ! ---------------------------------------------------------------------------
-    ! Check if we found the correct swath name. If not, report an error and exit.
-    ! ---------------------------------------------------------------------------
-    IF ( INDEX (TRIM(ADJUSTL(gasdatafieldname)),TRIM(ADJUSTL(sao_molecule_names(pge_idx)))) == 0 ) THEN
-       CALL error_check ( &
-            0, 1, pge_errstat_error, OMSAO_E_HE5SWLOCATE, modulename, &
-            vb_lev_default, locerrstat )
-       WRITE(*,*) "Climatology file does not contain data for ", sao_molecule_names(pge_idx)
-       errstat = MAX ( errstat, locerrstat )
-       RETURN
-    END IF
-
-    ! -----------------------------
-    ! Read data from this datafield
-    ! -----------------------------
-    he5stat = HE5_SWrdfld (                                &
-         swath_id, TRIM(ADJUSTL(gasdatafieldname)),        &
-         he5_start_3d, he5_stride_3d, he5_edge_3d,         &
-         dummy_gaspr(1:Cmlon,1:Cmlat,1:CmETA) )
-
-    ! -----------------------------------------
-    ! Read gas datafield scale factor attribute
-    ! -----------------------------------------
-    he5stat = HE5_SWrdlattr ( swath_id, TRIM(ADJUSTL(gasdatafieldname)),&
-              "ScaleFactor", scale_gas       )
-
-    ! -------------------------------------------------------------------
-    ! Finding out the data field for water vapor (to compute air density)
-    ! -------------------------------------------------------------------
-    ndatafields = HE5_swinqdflds(swath_id, datafield_name, datafield_rank, datafield_type)
-    CALL extract_swathname(nswath, TRIM(ADJUSTL(datafield_name)), &
-         TRIM(ADJUSTL(sao_molecule_names(h2o_cli_idx))), gasdatafieldname)
-
-    ! ---------------------------------------------------------------------------
-    ! Check if we found the correct swath name. If not, report an error and exit.
-    ! ---------------------------------------------------------------------------
-    IF ( INDEX (TRIM(ADJUSTL(gasdatafieldname)),TRIM(ADJUSTL(sao_molecule_names(pge_idx)))) == 0 ) THEN
-       CALL error_check ( &
-            0, 1, pge_errstat_error, OMSAO_E_HE5SWLOCATE, modulename, &
-            vb_lev_default, locerrstat )
-       WRITE(*,*) "Climatology file does not contain data for ", sao_molecule_names(h2o_cli_idx)
-       errstat = MAX ( errstat, locerrstat )
-       RETURN
-    END IF
-
-    ! -----------------------------
-    ! Read data from this datafield
-    ! -----------------------------
-    he5stat = HE5_SWrdfld (                                &
-         swath_id, TRIM(ADJUSTL(gasdatafieldname)),        &
-         he5_start_3d, he5_stride_3d, he5_edge_3d,         &
-         dummy_h2opr(1:Cmlon,1:Cmlat,1:CmETA) )
-
-    ! -----------------------------------------
-    ! Read gas datafield scale factor attribute
-    ! -----------------------------------------
-    he5stat = HE5_SWrdlattr ( swath_id, TRIM(ADJUSTL(gasdatafieldname)),&
-              "ScaleFactor", scale_H2O       )
 
     ! ------------------------------------
     ! Apply scaling factors to data fields
