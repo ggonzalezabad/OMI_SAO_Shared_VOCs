@@ -92,7 +92,7 @@ MODULE OMSAO_parameters_module
 			 								.TRUE. ,& ! o3_t1
 			 							        .TRUE. ,& ! o3_t2
 			 								.FALSE.,& ! o3_t3
-			 								.FALSE.,& ! no2_t1
+			 								.TRUE., & ! no2_t1
 			 								.TRUE., & ! no2_t2
 			 								.FALSE.,& ! o2o2
 			 								.FALSE.,& ! so2 
@@ -102,7 +102,7 @@ MODULE OMSAO_parameters_module
 				 							.TRUE., & ! h2o
 				 							.FALSE.,& ! lqh2o
 				 							.TRUE., & ! glyox
-				 							.FALSE.,& ! io
+				 							.TRUE., & ! io
 				 							.FALSE.,& ! hono
 				 							.FALSE.,& ! vraman
 				 							.FALSE.,& ! commod
