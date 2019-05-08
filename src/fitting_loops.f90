@@ -122,7 +122,7 @@ SUBROUTINE xtrack_radiance_wvl_calibration (             &
           n_omi_irradwvl = n_omi_radwvl
        END IF
      ELSE
-        n_omi_irradwvl          = n_omi_radwvl
+        n_omi_irradwvl          = omi_nwav_irrad(ipix)
         ref_wgt(1:n_omi_radwvl) = normweight
      END IF
 
@@ -235,6 +235,7 @@ SUBROUTINE xtrack_radiance_wvl_calibration (             &
      Call prepare_databases ( &
           ipix, n_ref_wvl, ref_wvl(1:n_ref_wvl), ref_spc(1:n_ref_wvl), &
           n_rad_wvl, rad_wvl(1:n_rad_wvl), n_max_rspec, locerrstat )
+
      ! --------------------------------------------------------------------------------
 
      IF ( locerrstat >= pge_errstat_error ) EXIT XTrackWavCal
@@ -245,7 +246,7 @@ SUBROUTINE xtrack_radiance_wvl_calibration (             &
      omi_database (1:max_rs_idx,1:n_rad_wvl,ipix) = database (1:max_rs_idx,1:n_rad_wvl)
      n_omi_database_wvl(ipix)                     = n_rad_wvl
      omi_database_wvl(1:n_rad_wvl, ipix)          = curr_rad_spec(wvl_idx,1:n_rad_wvl)
-     
+
      ! ----------------------------------------------------------------------
      ! Update the radiance reference with the wavelength calibrated values.
      ! ----------------------------------------------------------------------
