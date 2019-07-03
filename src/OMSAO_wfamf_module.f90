@@ -445,12 +445,7 @@ CONTAINS
           ! clima_psurf < local_psurf(ixtrack,itimes) then
           ! clima_psurf = local_psurf(ixtrack,itimes)
           ! ----------------------------------------------
-          ! 20181003 hwang commented out the following
-          ! as MERRA2 and OMI spatial resolution are not too different
-          ! extroplation is not out of control
-          IF (pge_idx /= pge_h2o_idx) THEN
-             IF (clima_psurf .LT. local_psurf(ixtrack,itimes)) clima_psurf = local_psurf(ixtrack,itimes)
-          END IF
+          IF (clima_psurf .LT. local_psurf(ixtrack,itimes)) clima_psurf = local_psurf(ixtrack,itimes)
           
           ! lpre(0:CmETA) is pressure at layer boundaries, same unit as
           ! local_surf, convert from hPa to Pa, it is a CmETA+1 array
